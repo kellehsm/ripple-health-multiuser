@@ -7,6 +7,11 @@
     "icon": "./assets/images/icon.png",
     "scheme": "wellnessfresh",
     "userInterfaceStyle": "automatic",
+    "ios": {
+      "infoPlist": {
+        "NSCameraUsageDescription": "Camera is used to scan food barcodes for meal logging."
+      }
+    },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -14,7 +19,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["android.permission.CAMERA"]
     },
     "web": {
       "output": "single",

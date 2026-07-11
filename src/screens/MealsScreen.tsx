@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { USER_ID } from "../api/config";
+import { BarcodeScannerModal } from "../components/BarcodeScannerModal";
 
 type MealType = "breakfast" | "lunch" | "dinner" | "snack";
 
@@ -164,6 +165,8 @@ export function MealsScreen() {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loadingMeals, setLoadingMeals] = useState(true);
   const [mealsError, setMealsError] = useState<string | null>(null);
+
+  const [scannerVisible, setScannerVisible] = useState(false);
 
   const [expandedMealId, setExpandedMealId] = useState<string | null>(null);
   const [glucoseData, setGlucoseData] = useState<Record<string, GlucoseReading[]>>({});
@@ -378,14 +381,13 @@ export function MealsScreen() {
           </Pressable>
         </View>
 
-        {/* TODO: barcode scanning via expo-camera */}
         <Pressable
-          disabled
-          style={[styles.barcodeButton, { borderColor: theme.cardBorder, opacity: 0.45 }]}
+          onPress={function () { setScannerVisible(true); }}
+          style={[styles.barcodeButton, { borderColor: theme.cardBorder }]}
         >
           <Ionicons name="barcode-outline" size={18} color={theme.textSoft} />
           <Text style={{ color: theme.textSoft, fontSize: 13, marginLeft: 6 }}>
-            Scan barcode (coming soon)
+            Scan barcode
           </Text>
         </Pressable>
 
@@ -533,6 +535,11 @@ export function MealsScreen() {
           })
         )}
       </View>
+      <BarcodeScannerModal
+        visible={scannerVisible}
+        onClose={function () { setScannerVisible(false); }}
+        onResult={function (food) { handleAddMeal(food); }}
+      />
     </ScrollView>
   );
 }
