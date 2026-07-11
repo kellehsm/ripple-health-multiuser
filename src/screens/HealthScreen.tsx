@@ -200,17 +200,9 @@ export function HealthScreen() {
       <View style={styles.grid}>
         <MetricCard label="Steps" value="8,412" icon="walk" colorKey="teal" />
         <MetricCard label="Sleep" value="7h 12m" icon="moon" colorKey="amber" />
-        <MetricCard label="Water" value={waterCount !== null ? waterCount + " / " + WATER_GOAL : "-- / " + WATER_GOAL} icon="water" colorKey="blue" />
+        <MetricCard label="Water" value={waterCount !== null ? waterCount + " / " + WATER_GOAL : "-- / " + WATER_GOAL} icon="water" colorKey="blue" onAction={handleLogWater} />
         <MetricCard label="Glucose" value={glucoseValue} icon="pulse" colorKey="pink" sublabel={glucoseSub} />
       </View>
-
-      <Pressable
-        onPress={handleLogWater}
-        style={[styles.waterButton, { backgroundColor: theme.blue.bg, borderColor: theme.blue.sub }]}
-      >
-        <Ionicons name="add" size={16} color={theme.blue.fg} />
-        <Text style={{ color: theme.blue.fg, fontSize: 13, fontWeight: "500" }}>+1 glass of water</Text>
-      </Pressable>
 
       {status && status.alerts && status.alerts.length > 0 ? (
         <View style={[styles.alertCard, { backgroundColor: theme.coral.bg }]}>
@@ -357,15 +349,6 @@ const styles = StyleSheet.create({
   legendRow: { flexDirection: "row", gap: 16, marginTop: 10 },
   legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  waterButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    borderRadius: 10,
-    borderWidth: 1,
-    paddingVertical: 10,
-  },
   hcButton: {
     borderWidth: 1,
     borderRadius: 10,
