@@ -86,6 +86,7 @@ export function LifeScreen() {
   const [loadingHobbies, setLoadingHobbies] = useState(true);
   const [hobbyListError, setHobbyListError] = useState<string | null>(null);
   const [hobbyStats, setHobbyStats] = useState<Record<string, HobbyStats>>({});
+  const [hobbyAmountInputs, setHobbyAmountInputs] = useState<Record<string, string>>({});
   const [hobbyName, setHobbyName] = useState("");
   const [creatingHobby, setCreatingHobby] = useState(false);
   const [createHobbyError, setCreateHobbyError] = useState<string | null>(null);
@@ -239,6 +240,13 @@ export function LifeScreen() {
     } catch (e: any) {
       setLogHobbyError((e as Error).message || "Failed to log hobby");
     }
+  }
+
+  async function handleManualHobbyLog(hobbyId: string) {
+    const n = parseFloat(hobbyAmountInputs[hobbyId] ?? "");
+    if (!n || n <= 0) return;
+    setHobbyAmountInputs((prev) => ({ ...prev, [hobbyId]: "" }));
+    await handleLogHobby(hobbyId, n);
   }
 
   const currentlyReading = books.filter((b) => b.status === "reading");
@@ -456,6 +464,19 @@ export function LifeScreen() {
                       </Pressable>
                     );
                   })}
+                </View>
+                <View style={styles.manualRow}>
+                  <TextInput
+                    placeholder={hobby.unit_label}
+                    keyboardType="numeric"
+                    value={hobbyAmountInputs[hobby.id] ?? ""}
+                    onChangeText={(v) => setHobbyAmountInputs((prev) => ({ ...prev, [hobby.id]: v }))}
+                    style={[styles.manualInput, { borderColor: theme.cardBorder, color: theme.textStrong }]}
+                    placeholderTextColor={theme.textSoft}
+                  />
+                  <Pressable style={[styles.logBtn, { backgroundColor: theme.coral.sub }]} onPress={() => handleManualHobbyLog(hobby.id)}>
+                    <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Log</Text>
+                  </Pressable>
                 </View>
                 {stats ? (
                   <View style={{ marginTop: 6 }}>
