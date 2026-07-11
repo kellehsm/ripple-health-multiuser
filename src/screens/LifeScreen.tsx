@@ -30,6 +30,31 @@ type Hobby = {
   unit_label: string;
 };
 
+type HobbyStats = {
+  this_week_total: number;
+  last_week_total: number;
+  change: number;
+};
+
+function formatAmount(amount: number, unit: string): string {
+  if (unit === "minutes") {
+    if (amount === 0) return "0 min";
+    const h = Math.floor(amount / 60);
+    const m = amount % 60;
+    if (h === 0) return m + " min";
+    if (m === 0) return h + "h";
+    return h + "h " + m + "m";
+  }
+  return amount + " " + unit;
+}
+
+function weekCompareText(stats: HobbyStats, unit: string): string {
+  if (stats.last_week_total === 0) return "first week tracking this";
+  if (stats.change === 0) return "same as last week";
+  const dir = stats.change > 0 ? "up" : "down";
+  return dir + " from " + formatAmount(stats.last_week_total, unit) + " last week";
+}
+
 type BookSearchResult = {
   title: string;
   author: string | null;
@@ -60,6 +85,7 @@ export function LifeScreen() {
   const [hobbies, setHobbies] = useState<Hobby[]>([]);
   const [loadingHobbies, setLoadingHobbies] = useState(true);
   const [hobbyListError, setHobbyListError] = useState<string | null>(null);
+  const [hobbyStats, setHobbyStats] = useState<Record<string, HobbyStats>>({});
   const [hobbyName, setHobbyName] = useState("");
   const [creatingHobby, setCreatingHobby] = useState(false);
   const [createHobbyError, setCreateHobbyError] = useState<string | null>(null);
@@ -85,20 +111,25 @@ export function LifeScreen() {
     }
   }, []);
 
-  const loadHobbies = useCallback(function () {
+  const loadHobbies = useCallback(async function () {
     setLoadingHobbies(true);
     setHobbyListError(null);
-    api
-      .hobbies(USER_ID)
-      .then(function (data: Hobby[]) {
-        setHobbies(Array.isArray(data) ? data : []);
-      })
-      .catch(function (e: Error) {
-        setHobbyListError(e.message || "Failed to load hobbies");
-      })
-      .finally(function () {
-        setLoadingHobbies(false);
-      });
+    try {
+      const data: Hobby[] = await api.hobbies(USER_ID);
+      const list = Array.isArray(data) ? data : [];
+      setHobbies(list);
+      const entries = await Promise.all(
+        list.map(async (h) => {
+          const s: HobbyStats = await api.hobbyStats(h.id);
+          return [h.id, s] as [string, HobbyStats];
+        })
+      );
+      setHobbyStats(Object.fromEntries(entries));
+    } catch (e: any) {
+      setHobbyListError((e as Error).message || "Failed to load hobbies");
+    } finally {
+      setLoadingHobbies(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -199,13 +230,15 @@ export function LifeScreen() {
       });
   }
 
-  function handleLogHobby(hobbyId: string, minutes: number) {
+  async function handleLogHobby(hobbyId: string, amount: number) {
     setLogHobbyError(null);
-    api
-      .logHobby(hobbyId, minutes, undefined, undefined)
-      .catch(function (e: Error) {
-        setLogHobbyError(e.message || "Failed to log hobby");
-      });
+    try {
+      await api.logHobby(hobbyId, amount, undefined, undefined);
+      const s: HobbyStats = await api.hobbyStats(hobbyId);
+      setHobbyStats((prev) => ({ ...prev, [hobbyId]: s }));
+    } catch (e: any) {
+      setLogHobbyError((e as Error).message || "Failed to log hobby");
+    }
   }
 
   const currentlyReading = books.filter((b) => b.status === "reading");
@@ -407,6 +440,7 @@ export function LifeScreen() {
           </Text>
         ) : (
           hobbies.map(function (hobby) {
+            const stats = hobbyStats[hobby.id];
             return (
               <View key={hobby.id} style={{ marginTop: 12 }}>
                 <Text style={{ color: theme.textStrong, fontSize: 14 }}>{hobby.name}</Text>
@@ -415,9 +449,7 @@ export function LifeScreen() {
                     return (
                       <Pressable
                         key={mins}
-                        onPress={function () {
-                          handleLogHobby(hobby.id, mins);
-                        }}
+                        onPress={function () { handleLogHobby(hobby.id, mins); }}
                         style={[styles.pageButton, { backgroundColor: theme.coral.bg }]}
                       >
                         <Text style={{ color: theme.coral.fg, fontSize: 12 }}>+{mins} min</Text>
@@ -425,6 +457,16 @@ export function LifeScreen() {
                     );
                   })}
                 </View>
+                {stats ? (
+                  <View style={{ marginTop: 6 }}>
+                    <Text style={{ color: theme.coral.sub, fontSize: 13, fontWeight: "500" }}>
+                      {formatAmount(stats.this_week_total, hobby.unit_label)} this week
+                    </Text>
+                    <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 2 }}>
+                      {weekCompareText(stats, hobby.unit_label)}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
             );
           })

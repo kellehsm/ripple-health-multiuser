@@ -45,6 +45,9 @@ export const api = {
   logHobby: function (hobbyId: string, amount: number, rating?: number, note?: string) {
     return request("/hobbies/" + hobbyId + "/logs", { method: "POST", body: JSON.stringify({ amount: amount, rating: rating, note: note }) });
   },
+  hobbyStats: function (hobbyId: string) {
+    return request("/hobbies/" + hobbyId + "/stats");
+  },
 
   glucoseToday: function (userId: string, date: string) {
     return request("/glucose?user_id=" + userId + "&date=" + date);
