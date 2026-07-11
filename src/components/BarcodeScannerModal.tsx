@@ -18,6 +18,7 @@ type FoodResult = {
   carbs_g: number | null;
   sugar_g: number | null;
   calories: number | null;
+  source_db?: string;
 };
 
 type Props = {
@@ -59,6 +60,7 @@ export function BarcodeScannerModal({ visible, onClose, onResult }: Props) {
           carbs_g: result.carbs_g ?? null,
           sugar_g: result.sugar_g ?? null,
           calories: result.calories ?? null,
+          source_db: result.source_db,
         };
         setLoading(false);
         handleClose();

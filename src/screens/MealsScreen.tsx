@@ -25,6 +25,7 @@ type FoodResult = {
   carbs_g: number | null;
   sugar_g: number | null;
   calories: number | null;
+  source_db?: string;
 };
 
 type Meal = {
@@ -35,6 +36,22 @@ type Meal = {
   sugar_g: number | null;
   calories: number | null;
   logged_at?: string;
+};
+
+type PendingFood = {
+  name: string;
+  carbs_g: number | null;
+  sugar_g: number | null;
+  calories: number | null;
+  source_food_id?: string;
+  source_db?: string;
+};
+
+type MacroValues = {
+  name: string;
+  carbs_g: number | null;
+  sugar_g: number | null;
+  calories: number | null;
 };
 
 type GlucoseReading = {
@@ -85,6 +102,108 @@ function formatNutrition(
   if (sugar_g != null) parts.push(sugar_g + "g sugar");
   if (calories != null) parts.push(calories + " cal");
   return parts.join(" · ");
+}
+
+function MacroEditForm({
+  initial,
+  saveLabel,
+  onSave,
+  onCancel,
+}: {
+  initial: MacroValues;
+  saveLabel: string;
+  onSave: (values: MacroValues) => void;
+  onCancel: () => void;
+}) {
+  const { theme } = useTheme();
+  const [name, setName] = useState(initial.name);
+  const [carbs, setCarbs] = useState(initial.carbs_g != null ? String(initial.carbs_g) : "");
+  const [sugar, setSugar] = useState(initial.sugar_g != null ? String(initial.sugar_g) : "");
+  const [cals, setCals] = useState(initial.calories != null ? String(initial.calories) : "");
+
+  function parseNum(s: string): number | null {
+    const t = s.trim();
+    if (!t) return null;
+    const n = parseFloat(t);
+    return isNaN(n) ? null : n;
+  }
+
+  function handleSave() {
+    if (!name.trim()) {
+      Alert.alert("Name required", "Please enter a meal name.");
+      return;
+    }
+    if (carbs.trim() && isNaN(parseFloat(carbs))) {
+      Alert.alert("Invalid value", "Carbs must be a number or blank.");
+      return;
+    }
+    if (sugar.trim() && isNaN(parseFloat(sugar))) {
+      Alert.alert("Invalid value", "Sugar must be a number or blank.");
+      return;
+    }
+    if (cals.trim() && isNaN(parseFloat(cals))) {
+      Alert.alert("Invalid value", "Calories must be a number or blank.");
+      return;
+    }
+    onSave({
+      name: name.trim(),
+      carbs_g: parseNum(carbs),
+      sugar_g: parseNum(sugar),
+      calories: parseNum(cals),
+    });
+  }
+
+  return (
+    <View style={styles.editForm}>
+      <TextInput
+        value={name}
+        onChangeText={setName}
+        placeholder="Food name"
+        placeholderTextColor={theme.textSoft}
+        style={[styles.input, { borderColor: theme.cardBorder, color: theme.textStrong }]}
+      />
+      <View style={styles.macroInputRow}>
+        <TextInput
+          value={carbs}
+          onChangeText={setCarbs}
+          placeholder="Carbs (g)"
+          placeholderTextColor={theme.textSoft}
+          keyboardType="decimal-pad"
+          style={[styles.macroInput, { borderColor: theme.cardBorder, color: theme.textStrong }]}
+        />
+        <TextInput
+          value={sugar}
+          onChangeText={setSugar}
+          placeholder="Sugar (g)"
+          placeholderTextColor={theme.textSoft}
+          keyboardType="decimal-pad"
+          style={[styles.macroInput, { borderColor: theme.cardBorder, color: theme.textStrong }]}
+        />
+        <TextInput
+          value={cals}
+          onChangeText={setCals}
+          placeholder="Calories"
+          placeholderTextColor={theme.textSoft}
+          keyboardType="decimal-pad"
+          style={[styles.macroInput, { borderColor: theme.cardBorder, color: theme.textStrong }]}
+        />
+      </View>
+      <View style={styles.editFormButtons}>
+        <Pressable
+          onPress={onCancel}
+          style={[styles.editFormCancel, { borderColor: theme.cardBorder }]}
+        >
+          <Text style={{ color: theme.textSoft, fontSize: 13 }}>Cancel</Text>
+        </Pressable>
+        <Pressable
+          onPress={handleSave}
+          style={[styles.actionButton, { backgroundColor: theme.amber.sub, flex: 1 }]}
+        >
+          <Text style={styles.actionButtonText}>{saveLabel}</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
 }
 
 function MiniGlucoseChart({
@@ -168,6 +287,9 @@ export function MealsScreen() {
 
   const [scannerVisible, setScannerVisible] = useState(false);
 
+  const [pendingFood, setPendingFood] = useState<PendingFood | null>(null);
+  const [editingMealId, setEditingMealId] = useState<string | null>(null);
+
   const [expandedMealId, setExpandedMealId] = useState<string | null>(null);
   const [glucoseData, setGlucoseData] = useState<Record<string, GlucoseReading[]>>({});
   const [loadingGlucose, setLoadingGlucose] = useState<Record<string, boolean>>({});
@@ -198,6 +320,7 @@ export function MealsScreen() {
     if (!searchQuery.trim()) return;
     setSearching(true);
     setSearchError(null);
+    setPendingFood(null);
     api
       .searchFood(searchQuery)
       .then(function (data: FoodResult[]) {
@@ -211,26 +334,53 @@ export function MealsScreen() {
       });
   }
 
-  function handleAddMeal(food: FoodResult) {
+  function handleSelectFood(food: FoodResult) {
+    setPendingFood({
+      name: food.name,
+      carbs_g: food.carbs_g,
+      sugar_g: food.sugar_g,
+      calories: food.calories,
+      source_food_id: food.source_food_id,
+      source_db: food.source_db,
+    });
+  }
+
+  function handleSavePending(values: MacroValues) {
+    if (!pendingFood) return;
     setSearchError(null);
     api
       .addMeal({
         user_id: USER_ID,
-        name: food.name,
         meal_type: mealType,
-        carbs_g: food.carbs_g,
-        sugar_g: food.sugar_g,
-        calories: food.calories,
-        source_db: "usda",
-        source_food_id: food.source_food_id,
+        source_food_id: pendingFood.source_food_id,
+        source_db: pendingFood.source_db ?? "manual",
+        ...values,
       })
       .then(function () {
+        setPendingFood(null);
         setSearchQuery("");
         setSearchResults([]);
         loadMeals();
       })
       .catch(function (e: Error) {
         setSearchError(e.message || "Failed to log meal");
+      });
+  }
+
+  function handleOpenEdit(meal: Meal) {
+    setEditingMealId(meal.id);
+    if (expandedMealId === meal.id) setExpandedMealId(null);
+  }
+
+  function handleSaveEdit(mealId: string, values: MacroValues) {
+    api
+      .updateMeal(mealId, values)
+      .then(function () {
+        setEditingMealId(null);
+        loadMeals();
+      })
+      .catch(function (e: Error) {
+        setMealsError(e.message || "Failed to update meal");
       });
   }
 
@@ -245,6 +395,7 @@ export function MealsScreen() {
             .deleteMeal(meal.id)
             .then(function () {
               if (expandedMealId === meal.id) setExpandedMealId(null);
+              if (editingMealId === meal.id) setEditingMealId(null);
               loadMeals();
             })
             .catch(function (e: Error) {
@@ -256,6 +407,7 @@ export function MealsScreen() {
   }
 
   function handleToggleGlucose(meal: Meal) {
+    if (editingMealId === meal.id) return;
     if (expandedMealId === meal.id) {
       setExpandedMealId(null);
       return;
@@ -381,15 +533,26 @@ export function MealsScreen() {
           </Pressable>
         </View>
 
-        <Pressable
-          onPress={function () { setScannerVisible(true); }}
-          style={[styles.barcodeButton, { borderColor: theme.cardBorder }]}
-        >
-          <Ionicons name="barcode-outline" size={18} color={theme.textSoft} />
-          <Text style={{ color: theme.textSoft, fontSize: 13, marginLeft: 6 }}>
-            Scan barcode
-          </Text>
-        </Pressable>
+        <View style={styles.belowSearchRow}>
+          <Pressable
+            onPress={function () { setScannerVisible(true); }}
+            style={[styles.barcodeButton, { borderColor: theme.cardBorder }]}
+          >
+            <Ionicons name="barcode-outline" size={18} color={theme.textSoft} />
+            <Text style={{ color: theme.textSoft, fontSize: 13, marginLeft: 6 }}>
+              Scan barcode
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={function () {
+              setPendingFood({ name: "", carbs_g: null, sugar_g: null, calories: null, source_db: "manual" });
+              setSearchResults([]);
+            }}
+            hitSlop={8}
+          >
+            <Text style={{ color: theme.textSoft, fontSize: 12 }}>+ Add manually</Text>
+          </Pressable>
+        </View>
 
         {searchError ? (
           <Text style={{ color: theme.coral.sub, fontSize: 12, marginTop: 6 }}>
@@ -397,7 +560,14 @@ export function MealsScreen() {
           </Text>
         ) : null}
 
-        {searchResults.length > 0 && (
+        {pendingFood ? (
+          <MacroEditForm
+            initial={pendingFood}
+            saveLabel="Log it"
+            onSave={handleSavePending}
+            onCancel={function () { setPendingFood(null); }}
+          />
+        ) : searchResults.length > 0 ? (
           <View style={{ marginTop: 12, gap: 6 }}>
             {searchResults.map(function (food, i) {
               const nutrition = formatNutrition(food.carbs_g, food.sugar_g, food.calories);
@@ -405,7 +575,7 @@ export function MealsScreen() {
                 <Pressable
                   key={food.source_food_id ?? String(i)}
                   onPress={function () {
-                    handleAddMeal(food);
+                    handleSelectFood(food);
                   }}
                   style={[styles.resultRow, { borderColor: theme.cardBorder }]}
                 >
@@ -422,12 +592,12 @@ export function MealsScreen() {
                       </Text>
                     ) : null}
                   </View>
-                  <Ionicons name="add-circle-outline" size={20} color={theme.amber.sub} />
+                  <Ionicons name="create-outline" size={18} color={theme.amber.sub} />
                 </Pressable>
               );
             })}
           </View>
-        )}
+        ) : null}
       </View>
 
       {/* B. Today's totals */}
@@ -464,6 +634,7 @@ export function MealsScreen() {
           meals.map(function (meal) {
             const nutrition = formatNutrition(meal.carbs_g, meal.sugar_g, meal.calories);
             const isExpanded = expandedMealId === meal.id;
+            const isEditing = editingMealId === meal.id;
             const readings = glucoseData[meal.id] ?? [];
             const isLoadingG = loadingGlucose[meal.id] ?? false;
             const gError = glucoseErrors[meal.id];
@@ -497,10 +668,21 @@ export function MealsScreen() {
                       ) : null}
                     </View>
                     <Ionicons
-                      name={isExpanded ? "chevron-up" : "pulse"}
+                      name={isExpanded && !isEditing ? "chevron-up" : "pulse"}
                       size={16}
                       color={theme.pink.sub}
                       style={{ marginLeft: 8 }}
+                    />
+                  </Pressable>
+                  <Pressable
+                    onPress={function () { handleOpenEdit(meal); }}
+                    style={styles.editButton}
+                    hitSlop={8}
+                  >
+                    <Ionicons
+                      name="pencil-outline"
+                      size={15}
+                      color={isEditing ? theme.amber.sub : theme.textSoft}
                     />
                   </Pressable>
                   <Pressable
@@ -514,7 +696,21 @@ export function MealsScreen() {
                   </Pressable>
                 </View>
 
-                {isExpanded && (
+                {isEditing ? (
+                  <View style={[styles.glucosePanel, { borderTopColor: theme.cardBorder }]}>
+                    <MacroEditForm
+                      initial={{
+                        name: meal.name,
+                        carbs_g: meal.carbs_g,
+                        sugar_g: meal.sugar_g,
+                        calories: meal.calories,
+                      }}
+                      saveLabel="Save"
+                      onSave={function (values) { handleSaveEdit(meal.id, values); }}
+                      onCancel={function () { setEditingMealId(null); }}
+                    />
+                  </View>
+                ) : isExpanded ? (
                   <View
                     style={[styles.glucosePanel, { borderTopColor: theme.cardBorder }]}
                   >
@@ -529,7 +725,7 @@ export function MealsScreen() {
                       />
                     )}
                   </View>
-                )}
+                ) : null}
               </View>
             );
           })
@@ -538,7 +734,7 @@ export function MealsScreen() {
       <BarcodeScannerModal
         visible={scannerVisible}
         onClose={function () { setScannerVisible(false); }}
-        onResult={function (food) { handleAddMeal(food); }}
+        onResult={function (food) { handleSelectFood(food); }}
       />
     </ScrollView>
   );
@@ -551,6 +747,12 @@ const styles = StyleSheet.create({
   chipRow: { flexDirection: "row", gap: 8, marginTop: 10, flexWrap: "wrap" },
   chip: { borderWidth: 1, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 },
   searchRow: { flexDirection: "row", gap: 8, marginTop: 10 },
+  belowSearchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 8,
+  },
   input: {
     flex: 1,
     borderWidth: 1,
@@ -573,7 +775,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    marginTop: 8,
   },
   resultRow: {
     flexDirection: "row",
@@ -581,6 +782,25 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderRadius: 10,
     padding: 10,
+    alignItems: "center",
+  },
+  editForm: { marginTop: 12, gap: 8 },
+  macroInputRow: { flexDirection: "row", gap: 6 },
+  macroInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    fontSize: 12,
+  },
+  editFormButtons: { flexDirection: "row", gap: 8 },
+  editFormCancel: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    justifyContent: "center",
     alignItems: "center",
   },
   mealRow: { borderTopWidth: 0.5, paddingTop: 12, marginTop: 12 },
@@ -593,6 +813,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   mealTypeChip: { borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
-  deleteButton: { padding: 4, marginLeft: 8 },
+  editButton: { padding: 4, marginLeft: 8 },
+  deleteButton: { padding: 4, marginLeft: 4 },
   glucosePanel: { borderTopWidth: 0.5, marginTop: 10, paddingTop: 10 },
 });

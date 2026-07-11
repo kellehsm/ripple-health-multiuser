@@ -65,6 +65,9 @@ export const api = {
   addMeal: function (payload) {
     return request("/meals", { method: "POST", body: JSON.stringify(payload) });
   },
+  updateMeal: function (mealId, payload) {
+    return request("/meals/" + mealId, { method: "PATCH", body: JSON.stringify(payload) });
+  },
   deleteMeal: function (mealId) {
     return request("/meals/" + mealId, { method: "DELETE" });
   },
