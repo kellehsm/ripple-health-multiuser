@@ -20,6 +20,8 @@ type Book = {
   cover_url: string | null;
   status: string;
   total_pages: number | null;
+  total_chapters: number | null;
+  current_chapter: number | null;
 };
 
 type Hobby = {
@@ -35,11 +37,20 @@ type BookSearchResult = {
   total_pages: number | null;
 };
 
+type Progress = {
+  pages_read_total: number;
+  total_pages: number | null;
+  percent_complete: number | null;
+};
+
 export function LifeScreen() {
   const { theme } = useTheme();
 
   const [books, setBooks] = useState<Book[]>([]);
   const [loadingBooks, setLoadingBooks] = useState(true);
+  const [progress, setProgress] = useState<Record<string, Progress>>({});
+  const [pageInputs, setPageInputs] = useState<Record<string, string>>({});
+  const [chapterInputs, setChapterInputs] = useState<Record<string, string>>({});
 
   const [searchText, setSearchText] = useState("");
   const [searchResults, setSearchResults] = useState<BookSearchResult[]>([]);
@@ -58,6 +69,14 @@ export function LifeScreen() {
     try {
       const data = await api.books(USER_ID);
       setBooks(data);
+      const reading = data.filter((b: Book) => b.status === "reading");
+      const entries = await Promise.all(
+        reading.map(async (b: Book) => {
+          const p = await api.bookProgress(b.id);
+          return [b.id, p] as [string, Progress];
+        })
+      );
+      setProgress(Object.fromEntries(entries));
     } catch (e) {
       console.error("Failed to load books", e);
     } finally {
@@ -117,12 +136,42 @@ export function LifeScreen() {
   }
 
   async function handleLogPages(bookId: string, pages: number) {
+    if (pages <= 0) return;
     try {
       await api.logPages(bookId, pages);
-      loadBooks();
+      const p = await api.bookProgress(bookId);
+      setProgress((prev) => ({ ...prev, [bookId]: p }));
     } catch (e) {
       console.error("Failed to log pages", e);
     }
+  }
+
+  async function handleManualPages(bookId: string) {
+    const n = parseInt(pageInputs[bookId] ?? "", 10);
+    if (!n || n <= 0) return;
+    await handleLogPages(bookId, n);
+    setPageInputs((prev) => ({ ...prev, [bookId]: "" }));
+  }
+
+  async function handleUpdateChapter(bookId: string, chapter: number) {
+    if (chapter <= 0) return;
+    try {
+      const updated = await api.updateBook(bookId, { current_chapter: chapter });
+      setBooks((prev) => prev.map((b) => b.id === bookId ? { ...b, current_chapter: updated.current_chapter } : b));
+    } catch (e) {
+      console.error("Failed to update chapter", e);
+    }
+  }
+
+  async function handleManualChapter(bookId: string) {
+    const n = parseInt(chapterInputs[bookId] ?? "", 10);
+    if (!n || n <= 0) return;
+    await handleUpdateChapter(bookId, n);
+    setChapterInputs((prev) => ({ ...prev, [bookId]: "" }));
+  }
+
+  async function handleIncrementChapter(book: Book) {
+    await handleUpdateChapter(book.id, (book.current_chapter ?? 0) + 1);
   }
 
   function handleCreateHobby() {
@@ -218,23 +267,84 @@ export function LifeScreen() {
             No books yet - search above to add one.
           </Text>
         ) : (
-          currentlyReading.map((book) => (
-            <View key={book.id} style={{ marginTop: 12 }}>
-              <Text style={{ color: theme.textStrong, fontSize: 14 }}>{book.title}</Text>
-              <Text style={{ color: theme.textSoft, fontSize: 12 }}>{book.author}</Text>
-              <View style={styles.pageButtonRow}>
-                {[10, 20, 30].map((n) => (
-                  <Pressable
-                    key={n}
-                    onPress={() => handleLogPages(book.id, n)}
-                    style={[styles.pageButton, { backgroundColor: theme.teal.bg }]}
-                  >
-                    <Text style={{ color: theme.teal.fg, fontSize: 12 }}>+{n} pages</Text>
-                  </Pressable>
-                ))}
+          currentlyReading.map((book) => {
+            const prog = progress[book.id];
+            const pagesTotal = prog?.pages_read_total ?? 0;
+            const totalPages = prog?.total_pages ?? null;
+            const pct = prog?.percent_complete ?? null;
+            return (
+              <View key={book.id} style={styles.bookRow}>
+                {book.cover_url ? (
+                  <Image source={{ uri: book.cover_url }} style={styles.coverThumb} />
+                ) : (
+                  <View style={[styles.coverThumb, { backgroundColor: theme.teal.bg }]} />
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: theme.textStrong, fontSize: 14, fontWeight: "600" }} numberOfLines={2}>{book.title}</Text>
+                  {book.author ? <Text style={{ color: theme.textSoft, fontSize: 12 }}>{book.author}</Text> : null}
+
+                  {totalPages ? (
+                    <>
+                      <View style={[styles.progressTrack, { backgroundColor: theme.teal.bg }]}>
+                        <View style={[styles.progressFill, { backgroundColor: theme.teal.bar, width: `${Math.min(pct ?? 0, 100)}%` }]} />
+                      </View>
+                      <Text style={[styles.progressText, { color: theme.textSoft }]}>{pagesTotal} of {totalPages} pages · {pct ?? 0}%</Text>
+                    </>
+                  ) : pagesTotal > 0 ? (
+                    <Text style={[styles.progressText, { color: theme.textSoft }]}>{pagesTotal} pages read</Text>
+                  ) : null}
+
+                  <View style={styles.pageButtonRow}>
+                    {[10, 20, 30].map((n) => (
+                      <Pressable key={n} onPress={() => handleLogPages(book.id, n)} style={[styles.pageButton, { backgroundColor: theme.teal.bg }]}>
+                        <Text style={{ color: theme.teal.fg, fontSize: 12 }}>+{n}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  <View style={styles.manualRow}>
+                    <TextInput
+                      placeholder="pages"
+                      keyboardType="numeric"
+                      value={pageInputs[book.id] ?? ""}
+                      onChangeText={(v) => setPageInputs((prev) => ({ ...prev, [book.id]: v }))}
+                      style={[styles.manualInput, { borderColor: theme.cardBorder, color: theme.textStrong }]}
+                      placeholderTextColor={theme.textSoft}
+                    />
+                    <Pressable style={[styles.logBtn, { backgroundColor: theme.teal.bar }]} onPress={() => handleManualPages(book.id)}>
+                      <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Log</Text>
+                    </Pressable>
+                  </View>
+
+                  {book.total_chapters != null && (
+                    <View style={styles.chapterSection}>
+                      <View style={[styles.progressTrack, { backgroundColor: theme.blue.bg }]}>
+                        <View style={[styles.progressFill, { backgroundColor: theme.blue.sub, width: `${Math.min(Math.round(((book.current_chapter ?? 0) / book.total_chapters) * 100), 100)}%` }]} />
+                      </View>
+                      <Text style={[styles.progressText, { color: theme.textSoft }]}>Chapter {book.current_chapter ?? 0} of {book.total_chapters}</Text>
+                      <View style={styles.pageButtonRow}>
+                        <Pressable onPress={() => handleIncrementChapter(book)} style={[styles.pageButton, { backgroundColor: theme.blue.bg }]}>
+                          <Text style={{ color: theme.blue.fg, fontSize: 12 }}>+1 chapter</Text>
+                        </Pressable>
+                      </View>
+                      <View style={styles.manualRow}>
+                        <TextInput
+                          placeholder="chapter #"
+                          keyboardType="numeric"
+                          value={chapterInputs[book.id] ?? ""}
+                          onChangeText={(v) => setChapterInputs((prev) => ({ ...prev, [book.id]: v }))}
+                          style={[styles.manualInput, { borderColor: theme.cardBorder, color: theme.textStrong }]}
+                          placeholderTextColor={theme.textSoft}
+                        />
+                        <Pressable style={[styles.logBtn, { backgroundColor: theme.blue.sub }]} onPress={() => handleManualChapter(book.id)}>
+                          <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Set</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  )}
+                </View>
               </View>
-            </View>
-          ))
+            );
+          })
         )}
       </View>
 
@@ -326,4 +436,12 @@ const styles = StyleSheet.create({
   coverThumb: { width: 36, height: 52, borderRadius: 4 },
   pageButtonRow: { flexDirection: "row", gap: 8, marginTop: 8 },
   pageButton: { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  bookRow: { flexDirection: "row", gap: 10, marginTop: 12 },
+  progressTrack: { height: 6, borderRadius: 6, overflow: "hidden", marginTop: 8 },
+  progressFill: { height: "100%" },
+  progressText: { fontSize: 11, marginTop: 4 },
+  manualRow: { flexDirection: "row", gap: 6, marginTop: 6 },
+  manualInput: { width: 72, borderWidth: 1, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5, fontSize: 13 },
+  logBtn: { borderRadius: 8, paddingHorizontal: 12, justifyContent: "center" },
+  chapterSection: { marginTop: 10 },
 });

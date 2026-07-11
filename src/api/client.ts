@@ -29,6 +29,9 @@ export const api = {
   logPages: function (bookId, pages_read) {
     return request("/books/" + bookId + "/logs", { method: "POST", body: JSON.stringify({ pages_read: pages_read }) });
   },
+  bookProgress: function (bookId) {
+    return request("/books/" + bookId + "/progress");
+  },
   updateBook: function (bookId, payload) {
     return request("/books/" + bookId, { method: "PATCH", body: JSON.stringify(payload) });
   },
