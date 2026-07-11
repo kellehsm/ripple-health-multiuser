@@ -29,7 +29,6 @@
       ]
     },
     "plugins": [
-      "react-native-health-connect",
       "expo-health-connect",
       [
         "expo-build-properties",
@@ -37,7 +36,8 @@
           "android": {
             "compileSdkVersion": 35,
             "targetSdkVersion": 35,
-            "minSdkVersion": 26
+            "minSdkVersion": 26,
+            "kotlinVersion": "1.9.24"
           }
         }
       ]
