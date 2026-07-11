@@ -92,6 +92,16 @@ export const api = {
     return request("/journal", { method: "POST", body: JSON.stringify({ user_id: userId, mood_score: mood_score, entry_text: entry_text }) });
   },
 
+  syncSteps: function (userId: string, date: string, count: number) {
+    return request("/health-connect/steps", { method: "POST", body: JSON.stringify({ user_id: userId, date, count }) });
+  },
+  syncSleep: function (userId: string, sessions: Array<{ start_time: string; end_time: string; quality_score: number | null }>) {
+    return request("/health-connect/sleep", { method: "POST", body: JSON.stringify({ user_id: userId, sessions }) });
+  },
+  syncHeartRate: function (userId: string, readings: Array<{ recorded_at: string; bpm: number }>) {
+    return request("/health-connect/heart-rate", { method: "POST", body: JSON.stringify({ user_id: userId, readings }) });
+  },
+
   getOrCreateWaterMetric: async function (userId: string) {
     const list = await request("/metrics?user_id=" + userId + "&name=water");
     if (list && list.length > 0) return list[0];

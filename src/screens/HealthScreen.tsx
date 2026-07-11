@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, Dimensions } from "react-native";
+import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, Dimensions, Platform } from "react-native";
 import Svg, { Polyline, Line, Text as SvgText } from "react-native-svg";
 import { useTheme } from "../theme/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
 import { MetricCard } from "../components/MetricCard";
 import { api } from "../api/client";
 import { USER_ID } from "../api/config";
+import { requestHealthPermissions, syncHealthData } from "../lib/healthConnect";
 
 type GlucoseReading = {
   recorded_at: string;
@@ -64,6 +65,8 @@ export function HealthScreen() {
   const [loading, setLoading] = useState(true);
   const [waterMetricId, setWaterMetricId] = useState<string | null>(null);
   const [waterCount, setWaterCount] = useState<number | null>(null);
+  const [hcSyncing, setHcSyncing] = useState(false);
+  const [hcResult, setHcResult] = useState<string | null>(null);
 
   const loadWater = useCallback(async function () {
     try {
@@ -84,6 +87,29 @@ export function HealthScreen() {
       setWaterCount(sumTodayLogs(Array.isArray(logs) ? logs : []));
     } catch (e) {
       console.error("Failed to log water", e);
+    }
+  }
+
+  async function handleHealthConnectSync() {
+    setHcSyncing(true);
+    setHcResult(null);
+    try {
+      const granted = await requestHealthPermissions();
+      if (!granted) {
+        setHcResult("Permission denied by Health Connect.");
+        return;
+      }
+      const result = await syncHealthData();
+      const parts: string[] = [];
+      if (result.steps !== null) parts.push(result.steps.toLocaleString() + " steps");
+      if (result.sleepHours !== null) parts.push(result.sleepHours + "h sleep");
+      if (result.heartRate !== null) parts.push(result.heartRate + " bpm");
+      if (result.errors.length > 0) parts.push("errors: " + result.errors.join(", "));
+      setHcResult(parts.length > 0 ? "Synced: " + parts.join(" · ") : "No new data found.");
+    } catch (e: any) {
+      setHcResult("Sync failed: " + (e?.message ?? "unknown error"));
+    } finally {
+      setHcSyncing(false);
     }
   }
 
@@ -296,6 +322,25 @@ export function HealthScreen() {
           </Text>
         ) : null}
       </View>
+
+      {Platform.OS === "android" ? (
+        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Health Connect</Text>
+          <Pressable
+            onPress={handleHealthConnectSync}
+            disabled={hcSyncing}
+            style={[styles.hcButton, { backgroundColor: theme.teal.bg, borderColor: theme.teal.sub }]}
+          >
+            {hcSyncing
+              ? <ActivityIndicator size="small" color={theme.teal.fg} />
+              : <Text style={{ color: theme.teal.fg, fontSize: 13, fontWeight: "500" }}>Sync from Health Connect</Text>
+            }
+          </Pressable>
+          {hcResult ? (
+            <Text style={{ color: theme.textSoft, fontSize: 12, marginTop: 8 }}>{hcResult}</Text>
+          ) : null}
+        </View>
+      ) : null}
     </ScrollView>
   );
 }
@@ -320,6 +365,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     paddingVertical: 10,
+  },
+  hcButton: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 10,
   },
   glucoseCurrentBox: {
     borderRadius: 14,
