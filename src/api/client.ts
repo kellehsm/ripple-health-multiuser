@@ -88,4 +88,22 @@ export const api = {
   logMood: function (userId: string, mood_score: number, entry_text?: string) {
     return request("/journal", { method: "POST", body: JSON.stringify({ user_id: userId, mood_score: mood_score, entry_text: entry_text }) });
   },
+
+  getOrCreateWaterMetric: async function (userId: string) {
+    const list = await request("/metrics?user_id=" + userId + "&name=water");
+    if (list && list.length > 0) return list[0];
+    return request("/metrics", {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId, name: "water", value_type: "number", unit: "glasses", icon: "water", color_key: "blue" }),
+    });
+  },
+  logWater: function (metricId: string) {
+    return request("/metrics/" + metricId + "/logs", {
+      method: "POST",
+      body: JSON.stringify({ value: 1, logged_at: new Date().toISOString() }),
+    });
+  },
+  todaysWaterCount: function (metricId: string) {
+    return request("/metrics/" + metricId + "/logs");
+  },
 };
