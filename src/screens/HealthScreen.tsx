@@ -6,6 +6,21 @@ import { MetricCard } from "../components/MetricCard";
 import { api } from "../api/client";
 import { USER_ID } from "../api/config";
 
+type GlucoseReading = {
+  recorded_at: string;
+  mg_dl: number;
+};
+
+type GlucoseStatus = {
+  hasData: boolean;
+  mg_dl: number | null;
+  arrow: string | null;
+  delta: number | null;
+  isStale: boolean;
+  minutesSinceReading: number | null;
+  alerts: string[];
+};
+
 const RANGE_OPTIONS = [3, 6, 12, 24];
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const CHART_WIDTH = SCREEN_WIDTH - 64;
@@ -14,13 +29,13 @@ const PAD_LEFT = 32;
 const PAD_BOTTOM = 20;
 const PAD_TOP = 14;
 
-function buildPoints(readings, windowStart, windowEnd, minVal, maxVal) {
+function buildPoints(readings: GlucoseReading[], windowStart: number, windowEnd: number, minVal: number, maxVal: number): string {
   const usableWidth = CHART_WIDTH - PAD_LEFT;
   const usableHeight = CHART_HEIGHT - PAD_TOP - PAD_BOTTOM;
   const windowMs = windowEnd - windowStart;
 
   return readings
-    .map(function (r) {
+    .map(function (r: GlucoseReading) {
       const t = new Date(r.recorded_at).getTime();
       const x = PAD_LEFT + ((t - windowStart) / windowMs) * usableWidth;
       const y = PAD_TOP + usableHeight - ((Number(r.mg_dl) - minVal) / (maxVal - minVal)) * usableHeight;
@@ -33,12 +48,12 @@ export function HealthScreen() {
   const themeCtx = useTheme();
   const theme = themeCtx.theme;
   const [rangeHours, setRangeHours] = useState(6);
-  const [todayReadings, setTodayReadings] = useState([]);
-  const [yesterdayReadings, setYesterdayReadings] = useState([]);
-  const [status, setStatus] = useState(null);
+  const [todayReadings, setTodayReadings] = useState<GlucoseReading[]>([]);
+  const [yesterdayReadings, setYesterdayReadings] = useState<GlucoseReading[]>([]);
+  const [status, setStatus] = useState<GlucoseStatus | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(function (hours) {
+  const load = useCallback(function (hours: number) {
     setLoading(true);
     const now = Date.now();
     const windowMs = hours * 60 * 60 * 1000;
@@ -62,7 +77,7 @@ export function HealthScreen() {
         setTodayReadings(Array.isArray(todayData) ? todayData : []);
         const yestArray = Array.isArray(yestData) ? yestData : [];
         setYesterdayReadings(
-          yestArray.map(function (r) {
+          yestArray.map(function (r: GlucoseReading) {
             return Object.assign({}, r, {
               recorded_at: new Date(new Date(r.recorded_at).getTime() + dayMs).toISOString(),
             });
@@ -103,6 +118,12 @@ export function HealthScreen() {
   const highY = PAD_TOP + chartInnerHeight - ((180 - minVal) / (maxVal - minVal)) * chartInnerHeight;
   const lowY = PAD_TOP + chartInnerHeight - ((70 - minVal) / (maxVal - minVal)) * chartInnerHeight;
 
+  const GRID_STEP = 20;
+  const gridValues: number[] = [];
+  for (let v = Math.ceil(minVal / GRID_STEP) * GRID_STEP; v <= maxVal; v += GRID_STEP) {
+    gridValues.push(v);
+  }
+
   const peak = todayReadings.length > 0
     ? Math.max.apply(null, todayReadings.map(function (r) { return Number(r.mg_dl); }))
     : null;
@@ -116,14 +137,14 @@ export function HealthScreen() {
     <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content}>
       <View style={styles.grid}>
         <MetricCard label="Steps" value="8,412" icon="walk" colorKey="teal" />
-        <MetricCard label="Sleep" value="7h 12m" icon="moon" colorKey="blue" />
-        <MetricCard label="Water" value="5 / 8" icon="water" colorKey="amber" />
+        <MetricCard label="Sleep" value="7h 12m" icon="moon" colorKey="amber" />
+        <MetricCard label="Water" value="5 / 8" icon="water" colorKey="blue" />
         <MetricCard label="Glucose" value={glucoseValue} icon="pulse" colorKey="pink" sublabel={glucoseSub} />
       </View>
 
       {status && status.alerts && status.alerts.length > 0 ? (
         <View style={[styles.alertCard, { backgroundColor: theme.coral.bg }]}>
-          {status.alerts.map(function (alert, i) {
+          {status.alerts.map(function (alert: string, i: number) {
             return (
               <Text key={i} style={{ color: theme.coral.fg, fontSize: 13 }}>
                 Alert: {alert}
@@ -165,6 +186,26 @@ export function HealthScreen() {
           })}
         </View>
 
+        {status && status.hasData ? (
+          <View style={[styles.glucoseCurrentBox, { backgroundColor: theme.red.bg }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.glucoseCurrentValue, { color: theme.red.fg }]}>
+                {status.mg_dl}{status.arrow ? " " + status.arrow : ""}
+              </Text>
+              {status.minutesSinceReading != null ? (
+                <Text style={{ color: theme.red.fg, fontSize: 12, opacity: 0.7, marginTop: 2 }}>
+                  as of {status.minutesSinceReading} min ago
+                </Text>
+              ) : null}
+            </View>
+            {status.delta != null ? (
+              <Text style={{ color: theme.red.fg, fontSize: 14, fontWeight: "500" }}>
+                {status.delta > 0 ? "+" : ""}{status.delta} from last
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
+
         {loading ? (
           <ActivityIndicator style={{ marginVertical: 30 }} />
         ) : todayReadings.length === 0 ? (
@@ -173,12 +214,15 @@ export function HealthScreen() {
           </Text>
         ) : (
           <Svg width={CHART_WIDTH} height={CHART_HEIGHT} style={{ marginTop: 12 }}>
-            <SvgText x={0} y={PAD_TOP + 6} fontSize={10} fill={theme.textSoft}>
-              {Math.round(maxVal)}
-            </SvgText>
-            <SvgText x={0} y={CHART_HEIGHT - PAD_BOTTOM} fontSize={10} fill={theme.textSoft}>
-              {Math.round(minVal)}
-            </SvgText>
+            {gridValues.map((v) => {
+              const gy = PAD_TOP + chartInnerHeight - ((v - minVal) / (maxVal - minVal)) * chartInnerHeight;
+              return (
+                <React.Fragment key={v}>
+                  <Line x1={PAD_LEFT} x2={CHART_WIDTH} y1={gy} y2={gy} stroke={theme.cardBorder} strokeDasharray="2,3" strokeWidth={0.5} />
+                  <SvgText x={PAD_LEFT - 4} y={gy + 4} fontSize={9} fill={theme.textSoft} textAnchor="end">{v}</SvgText>
+                </React.Fragment>
+              );
+            })}
 
             <Line x1={PAD_LEFT} x2={CHART_WIDTH} y1={highY} y2={highY} stroke={theme.coral.sub} strokeDasharray="3,3" strokeWidth={1} />
             <Line x1={PAD_LEFT} x2={CHART_WIDTH} y1={lowY} y2={lowY} stroke={theme.coral.sub} strokeDasharray="3,3" strokeWidth={1} />
@@ -224,4 +268,12 @@ const styles = StyleSheet.create({
   legendRow: { flexDirection: "row", gap: 16, marginTop: 10 },
   legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
+  glucoseCurrentBox: {
+    borderRadius: 14,
+    padding: 14,
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  glucoseCurrentValue: { fontSize: 24, fontWeight: "500" },
 });
