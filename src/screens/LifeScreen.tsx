@@ -41,6 +41,7 @@ type Progress = {
   pages_read_total: number;
   total_pages: number | null;
   percent_complete: number | null;
+  estimated_chapter: number | null;
 };
 
 export function LifeScreen() {
@@ -317,28 +318,37 @@ export function LifeScreen() {
 
                   {book.total_chapters != null && (
                     <View style={styles.chapterSection}>
-                      <View style={[styles.progressTrack, { backgroundColor: theme.blue.bg }]}>
-                        <View style={[styles.progressFill, { backgroundColor: theme.blue.sub, width: `${Math.min(Math.round(((book.current_chapter ?? 0) / book.total_chapters) * 100), 100)}%` }]} />
-                      </View>
-                      <Text style={[styles.progressText, { color: theme.textSoft }]}>Chapter {book.current_chapter ?? 0} of {book.total_chapters}</Text>
-                      <View style={styles.pageButtonRow}>
-                        <Pressable onPress={() => handleIncrementChapter(book)} style={[styles.pageButton, { backgroundColor: theme.blue.bg }]}>
-                          <Text style={{ color: theme.blue.fg, fontSize: 12 }}>+1 chapter</Text>
-                        </Pressable>
-                      </View>
-                      <View style={styles.manualRow}>
-                        <TextInput
-                          placeholder="chapter #"
-                          keyboardType="numeric"
-                          value={chapterInputs[book.id] ?? ""}
-                          onChangeText={(v) => setChapterInputs((prev) => ({ ...prev, [book.id]: v }))}
-                          style={[styles.manualInput, { borderColor: theme.cardBorder, color: theme.textStrong }]}
-                          placeholderTextColor={theme.textSoft}
-                        />
-                        <Pressable style={[styles.logBtn, { backgroundColor: theme.blue.sub }]} onPress={() => handleManualChapter(book.id)}>
-                          <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Set</Text>
-                        </Pressable>
-                      </View>
+                      {(() => {
+                        const estimated = prog?.estimated_chapter ?? null;
+                        const manual = book.current_chapter ?? 0;
+                        const displayChapter = estimated !== null ? Math.max(estimated, manual) : manual;
+                        const isEstimated = estimated !== null && estimated > manual;
+                        const pct = Math.min(Math.round((displayChapter / book.total_chapters) * 100), 100);
+                        return (
+                          <>
+                            <View style={[styles.progressTrack, { backgroundColor: theme.blue.bg }]}>
+                              <View style={[styles.progressFill, { backgroundColor: theme.blue.sub, width: `${pct}%` }]} />
+                            </View>
+                            <Text style={[styles.progressText, { color: theme.textSoft }]}>
+                              Chapter {displayChapter} of {book.total_chapters}
+                              {isEstimated ? " (estimated)" : ""}
+                            </Text>
+                            <View style={styles.manualRow}>
+                              <TextInput
+                                placeholder="chapter #"
+                                keyboardType="numeric"
+                                value={chapterInputs[book.id] ?? ""}
+                                onChangeText={(v) => setChapterInputs((prev) => ({ ...prev, [book.id]: v }))}
+                                style={[styles.manualInput, { borderColor: theme.cardBorder, color: theme.textStrong }]}
+                                placeholderTextColor={theme.textSoft}
+                              />
+                              <Pressable style={[styles.logBtn, { backgroundColor: theme.blue.sub }]} onPress={() => handleManualChapter(book.id)}>
+                                <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Set</Text>
+                              </Pressable>
+                            </View>
+                          </>
+                        );
+                      })()}
                     </View>
                   )}
                 </View>

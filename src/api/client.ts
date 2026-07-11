@@ -1,6 +1,6 @@
 const BASE_URL = "http://129.121.125.214:4000/api";
 
-async function request(path, options = {}) {
+async function request(path: string, options: RequestInit = {}): Promise<any> {
   const res = await fetch(BASE_URL + path, {
     headers: { "Content-Type": "application/json" },
     ...options,
@@ -10,83 +10,82 @@ async function request(path, options = {}) {
 }
 
 export const api = {
-  today: function (userId) {
+  today: function (userId: string) {
     return request("/summary/today?user_id=" + userId);
   },
-  pattern: function (userId, date) {
+  pattern: function (userId: string, date?: string) {
     return request("/summary/pattern?user_id=" + userId + (date ? "&date=" + date : ""));
   },
 
-  books: function (userId) {
+  books: function (userId: string) {
     return request("/books?user_id=" + userId);
   },
-  searchBooks: function (q) {
+  searchBooks: function (q: string) {
     return request("/books-search/search?q=" + encodeURIComponent(q));
   },
-  createBook: function (payload) {
+  createBook: function (payload: Record<string, unknown>) {
     return request("/books", { method: "POST", body: JSON.stringify(payload) });
   },
-  logPages: function (bookId, pages_read) {
+  logPages: function (bookId: string, pages_read: number) {
     return request("/books/" + bookId + "/logs", { method: "POST", body: JSON.stringify({ pages_read: pages_read }) });
   },
-  bookProgress: function (bookId) {
+  bookProgress: function (bookId: string) {
     return request("/books/" + bookId + "/progress");
   },
-  updateBook: function (bookId, payload) {
+  updateBook: function (bookId: string, payload: Record<string, unknown>) {
     return request("/books/" + bookId, { method: "PATCH", body: JSON.stringify(payload) });
   },
 
-  hobbies: function (userId) {
+  hobbies: function (userId: string) {
     return request("/hobbies?user_id=" + userId);
   },
-  createHobby: function (payload) {
+  createHobby: function (payload: Record<string, unknown>) {
     return request("/hobbies", { method: "POST", body: JSON.stringify(payload) });
   },
-  logHobby: function (hobbyId, amount, rating, note) {
+  logHobby: function (hobbyId: string, amount: number, rating?: number, note?: string) {
     return request("/hobbies/" + hobbyId + "/logs", { method: "POST", body: JSON.stringify({ amount: amount, rating: rating, note: note }) });
   },
 
-  glucoseToday: function (userId, date) {
+  glucoseToday: function (userId: string, date: string) {
     return request("/glucose?user_id=" + userId + "&date=" + date);
   },
-  glucoseRange: function (userId, start, end) {
+  glucoseRange: function (userId: string, start: string, end: string) {
     return request("/glucose?user_id=" + userId + "&start=" + encodeURIComponent(start) + "&end=" + encodeURIComponent(end));
   },
-  glucoseStatus: function (userId) {
+  glucoseStatus: function (userId: string) {
     return request("/glucose/status?user_id=" + userId);
   },
 
-  searchFood: function (q) {
+  searchFood: function (q: string) {
     return request("/food/search?q=" + encodeURIComponent(q));
   },
-  lookupBarcode: function (code) {
+  lookupBarcode: function (code: string) {
     return request("/food/barcode/" + code);
   },
-  meals: function (userId, date) {
+  meals: function (userId: string, date: string) {
     return request("/meals?user_id=" + userId + "&date=" + date);
   },
-  addMeal: function (payload) {
+  addMeal: function (payload: Record<string, unknown>) {
     return request("/meals", { method: "POST", body: JSON.stringify(payload) });
   },
-  updateMeal: function (mealId, payload) {
+  updateMeal: function (mealId: string, payload: Record<string, unknown>) {
     return request("/meals/" + mealId, { method: "PATCH", body: JSON.stringify(payload) });
   },
-  deleteMeal: function (mealId) {
+  deleteMeal: function (mealId: string) {
     return request("/meals/" + mealId, { method: "DELETE" });
   },
-  mealGlucoseResponse: function (mealId) {
+  mealGlucoseResponse: function (mealId: string) {
     return request("/meals/" + mealId + "/glucose-response");
   },
 
-  spending: function (userId, since) {
+  spending: function (userId: string, since?: string) {
     return request("/spending?user_id=" + userId + (since ? "&since=" + since : ""));
   },
-  addSpending: function (payload) {
+  addSpending: function (payload: Record<string, unknown>) {
     return request("/spending", { method: "POST", body: JSON.stringify(payload) });
   },
 
-  logMood: function (userId, mood_score, entry_text) {
+  logMood: function (userId: string, mood_score: number, entry_text?: string) {
     return request("/journal", { method: "POST", body: JSON.stringify({ user_id: userId, mood_score: mood_score, entry_text: entry_text }) });
   },
 };
-

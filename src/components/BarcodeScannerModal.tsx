@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   headerText: { color: "#fff", fontSize: 17, fontWeight: "600" },
   camera: { flex: 1 },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     top: 100,
     justifyContent: "center",
     alignItems: "center",
