@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "wellness-fresh",
-    "slug": "wellness-fresh",
+    "slug": "kel",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -20,11 +20,19 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "permissions": ["android.permission.CAMERA"]
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "output": "single",
       "favicon": "./assets/images/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "79655cf6-8278-4dea-bd65-4a1944346473"
+      }
+    },
+    "owner": "kellehs"
   }
 }
