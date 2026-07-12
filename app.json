@@ -25,11 +25,15 @@
         "android.permission.CAMERA",
         "android.permission.health.READ_STEPS",
         "android.permission.health.READ_SLEEP",
-        "android.permission.health.READ_HEART_RATE"
+        "android.permission.health.READ_HEART_RATE",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC"
       ]
     },
     "plugins": [
       "expo-health-connect",
+      "@notifee/react-native",
+      "./plugins/withForegroundServiceType",
       [
         "expo-network-security-config",
         {

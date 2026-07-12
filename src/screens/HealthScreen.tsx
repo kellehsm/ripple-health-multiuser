@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, Dimensions, Platform } from "react-native";
+import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, Dimensions, Platform, Alert } from "react-native";
 import Svg, { Polyline, Line, Text as SvgText } from "react-native-svg";
 import { useTheme } from "../theme/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
@@ -7,6 +7,12 @@ import { MetricCard } from "../components/MetricCard";
 import { api } from "../api/client";
 import { USER_ID } from "../api/config";
 import { requestHealthPermissions, syncHealthData } from "../lib/healthConnect";
+import {
+  startForegroundService,
+  stopForegroundService,
+  isForegroundServiceRunning,
+} from "../lib/foregroundService";
+import * as IntentLauncher from "expo-intent-launcher";
 
 type GlucoseReading = {
   recorded_at: string;
@@ -76,6 +82,7 @@ export function HealthScreen() {
   const [sleepDisplay, setSleepDisplay] = useState<string | null>(null);
   const [hcSyncing, setHcSyncing] = useState(false);
   const [hcResult, setHcResult] = useState<string | null>(null);
+  const [liveTracking, setLiveTracking] = useState(false);
 
   const loadStepsAndSleep = useCallback(async function () {
     const today = new Date().toISOString().split("T")[0];
@@ -117,6 +124,34 @@ export function HealthScreen() {
     } catch (e) {
       console.error("Failed to log water", e);
     }
+  }
+
+  async function handleToggleLiveTracking() {
+    try {
+      if (liveTracking) {
+        await stopForegroundService();
+        setLiveTracking(false);
+      } else {
+        const granted = await requestHealthPermissions();
+        if (!granted) {
+          Alert.alert("Permission required", "Health Connect permission is needed for live tracking.");
+          return;
+        }
+        await startForegroundService();
+        setLiveTracking(true);
+      }
+    } catch (e: any) {
+      Alert.alert("Error", e?.message ?? "Failed to toggle live tracking.");
+    }
+  }
+
+  function handleBatteryOptimization() {
+    IntentLauncher.startActivityAsync(
+      "android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+      { data: "package:com.kellehs.wellness" }
+    ).catch(() => {
+      Alert.alert("Unavailable", "Could not open battery settings on this device.");
+    });
   }
 
   async function handleHealthConnectSync() {
@@ -195,6 +230,9 @@ export function HealthScreen() {
 
   useEffect(function () { loadWater(); }, [loadWater]);
   useEffect(function () { loadStepsAndSleep(); }, [loadStepsAndSleep]);
+  useEffect(function () {
+    isForegroundServiceRunning().then(setLiveTracking).catch(() => {});
+  }, []);
 
   const now = Date.now();
   const windowStart = now - rangeHours * 60 * 60 * 1000;
@@ -361,6 +399,28 @@ export function HealthScreen() {
           </Pressable>
           {hcResult ? (
             <Text style={{ color: theme.textSoft, fontSize: 12, marginTop: 8 }}>{hcResult}</Text>
+          ) : null}
+
+          <Pressable
+            onPress={handleToggleLiveTracking}
+            style={[styles.hcButton, {
+              backgroundColor: liveTracking ? theme.coral.bg : theme.blue.bg,
+              borderColor: liveTracking ? theme.coral.sub : theme.blue.sub,
+              marginTop: 10,
+            }]}
+          >
+            <Text style={{ color: liveTracking ? theme.coral.fg : theme.blue.fg, fontSize: 13, fontWeight: "500" }}>
+              {liveTracking ? "Stop live tracking" : "Start live tracking"}
+            </Text>
+          </Pressable>
+
+          {liveTracking ? (
+            <Pressable
+              onPress={handleBatteryOptimization}
+              style={[styles.hcButton, { backgroundColor: theme.page, borderColor: theme.cardBorder, marginTop: 8 }]}
+            >
+              <Text style={{ color: theme.textSoft, fontSize: 12 }}>Enable always-on tracking (battery exemption)</Text>
+            </Pressable>
           ) : null}
         </View>
       ) : null}
