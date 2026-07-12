@@ -17,6 +17,8 @@ import * as IntentLauncher from "expo-intent-launcher";
 import notifee, { AuthorizationStatus } from "@notifee/react-native";
 import * as Notifications from "expo-notifications";
 import { SchedulableTriggerInputTypes } from "expo-notifications";
+import { useFocusEffect } from "@react-navigation/core";
+import { getGrantedPermissions } from "react-native-health-connect";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { USER_ID } from "../api/config";
@@ -65,6 +67,8 @@ export function SettingsScreen() {
   const [dexcomRegion, setDexcomRegion] = useState<"us" | "ous">("us");
   const [trackingEnabled, setTrackingEnabled] = useState(false);
   const [notifGranted, setNotifGranted] = useState<boolean | null>(null);
+  const [batteryGranted, setBatteryGranted] = useState<boolean | null>(null);
+  const [hcGranted, setHcGranted] = useState<boolean | null>(null);
   const [trackingBusy, setTrackingBusy] = useState(false);
 
   const defaultEnd = new Date().toISOString().slice(0, 10);
@@ -88,13 +92,37 @@ export function SettingsScreen() {
 
   useEffect(function () { load(); }, [load]);
 
-  useEffect(function () {
+  const checkPermissions = useCallback(async function () {
     if (Platform.OS !== "android") return;
-    isForegroundServiceRunning().then(setTrackingEnabled).catch(() => {});
-    notifee.getNotificationSettings().then((s) => {
-      setNotifGranted(s.authorizationStatus === AuthorizationStatus.AUTHORIZED);
-    }).catch(() => {});
+    try {
+      const running = await isForegroundServiceRunning();
+      setTrackingEnabled(running);
+    } catch (_) {}
+    try {
+      const notifSettings = await Notifications.getPermissionsAsync();
+      const granted = notifSettings.granted;
+      setNotifGranted(granted);
+    } catch (_) {}
+    try {
+      const batteryOptOn = await notifee.isBatteryOptimizationEnabled();
+      setBatteryGranted(!batteryOptOn);
+    } catch (_) {}
+    try {
+      const granted = await getGrantedPermissions();
+      const hasSteps = granted.some((p: any) => p.recordType === "Steps" && p.accessType === "read");
+      const hasSleep = granted.some((p: any) => p.recordType === "SleepSession" && p.accessType === "read");
+      const hasHR = granted.some((p: any) => p.recordType === "HeartRate" && p.accessType === "read");
+      setHcGranted(hasSteps && hasSleep && hasHR);
+    } catch (_) {
+      setHcGranted(false);
+    }
   }, []);
+
+  useEffect(function () { checkPermissions(); }, [checkPermissions]);
+
+  useFocusEffect(useCallback(function () {
+    checkPermissions();
+  }, [checkPermissions]));
 
   async function handleTrackingToggle(value: boolean) {
     if (!value) {
@@ -107,11 +135,14 @@ export function SettingsScreen() {
 
     setTrackingBusy(true);
     try {
-      // Step 1: notification permission
-      const settings = await notifee.requestPermission();
-      const granted = settings.authorizationStatus === AuthorizationStatus.AUTHORIZED;
-      setNotifGranted(granted);
-      if (!granted) {
+      // Step 1: notification permission — only request if not already granted
+      let notifOk = notifGranted;
+      if (!notifOk) {
+        const result = await notifee.requestPermission();
+        notifOk = result.authorizationStatus === AuthorizationStatus.AUTHORIZED;
+        setNotifGranted(notifOk);
+      }
+      if (!notifOk) {
         Alert.alert(
           "Notification permission required",
           "Without this permission the persistent notification can't appear. Open notification settings to enable it.",
@@ -133,20 +164,27 @@ export function SettingsScreen() {
         return;
       }
 
-      // Step 2: battery optimization exemption
-      await IntentLauncher.startActivityAsync(
-        "android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
-        { data: "package:com.kellehs.wellness" }
-      ).catch(() => {});
+      // Step 2: battery optimization — only prompt if not already exempted
+      if (!batteryGranted) {
+        await IntentLauncher.startActivityAsync(
+          "android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+          { data: "package:com.kellehs.wellness" }
+        ).catch(() => {});
+        const batteryOptOn = await notifee.isBatteryOptimizationEnabled().catch(() => true);
+        setBatteryGranted(!batteryOptOn);
+      }
 
-      // Step 3: Health Connect permissions
-      const hcGranted = await requestHealthPermissions();
+      // Step 3: Health Connect — only request if not already granted
       if (!hcGranted) {
-        Alert.alert(
-          "Health Connect permissions needed",
-          "Grant Health Connect permissions so the notification can show live health data.",
-          [{ text: "OK" }]
-        );
+        const granted = await requestHealthPermissions();
+        setHcGranted(granted);
+        if (!granted) {
+          Alert.alert(
+            "Health Connect permissions needed",
+            "Grant Health Connect permissions so the notification can show live health data.",
+            [{ text: "OK" }]
+          );
+        }
       }
 
       // Start service regardless of HC result — glucose data can still show without HC
@@ -340,8 +378,16 @@ export function SettingsScreen() {
               status={notifGranted === null ? "unknown" : notifGranted ? "granted" : "denied"}
               theme={theme}
             />
-            <StatusRow label="Battery optimization" status="manual" theme={theme} />
-            <StatusRow label="Health Connect" status="manual" theme={theme} />
+            <StatusRow
+              label="Battery optimization exempt"
+              status={batteryGranted === null ? "unknown" : batteryGranted ? "granted" : "denied"}
+              theme={theme}
+            />
+            <StatusRow
+              label="Health Connect"
+              status={hcGranted === null ? "unknown" : hcGranted ? "granted" : "denied"}
+              theme={theme}
+            />
           </View>
 
           {notifGranted === false ? (
