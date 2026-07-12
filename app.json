@@ -32,7 +32,6 @@
     },
     "plugins": [
       "expo-health-connect",
-      "@notifee/react-native",
       "./plugins/withForegroundServiceType",
       [
         "expo-network-security-config",
