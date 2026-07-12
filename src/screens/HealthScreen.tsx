@@ -48,6 +48,13 @@ function buildPoints(readings: GlucoseReading[], windowStart: number, windowEnd:
 
 const WATER_GOAL = 8;
 
+function formatSleepDuration(start: string, end: string): string {
+  const totalMins = Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000);
+  const h = Math.floor(totalMins / 60);
+  const m = totalMins % 60;
+  return m > 0 ? h + "h " + m + "m" : h + "h";
+}
+
 function sumTodayLogs(logs: Array<{ logged_at: string; value: number }>): number {
   const today = new Date().toDateString();
   return logs
@@ -65,8 +72,30 @@ export function HealthScreen() {
   const [loading, setLoading] = useState(true);
   const [waterMetricId, setWaterMetricId] = useState<string | null>(null);
   const [waterCount, setWaterCount] = useState<number | null>(null);
+  const [stepsCount, setStepsCount] = useState<number | null>(null);
+  const [sleepDisplay, setSleepDisplay] = useState<string | null>(null);
   const [hcSyncing, setHcSyncing] = useState(false);
   const [hcResult, setHcResult] = useState<string | null>(null);
+
+  const loadStepsAndSleep = useCallback(async function () {
+    const today = new Date().toISOString().split("T")[0];
+    try {
+      const s = await api.stepsToday(USER_ID, today);
+      setStepsCount(s?.steps ?? null);
+    } catch (e) {
+      console.error("Failed to load steps", e);
+    }
+    try {
+      const session = await api.sleepToday(USER_ID, today);
+      if (session?.start_time && session?.end_time) {
+        setSleepDisplay(formatSleepDuration(session.start_time, session.end_time));
+      } else {
+        setSleepDisplay(null);
+      }
+    } catch (e) {
+      console.error("Failed to load sleep", e);
+    }
+  }, []);
 
   const loadWater = useCallback(async function () {
     try {
@@ -106,6 +135,7 @@ export function HealthScreen() {
       if (result.heartRate !== null) parts.push(result.heartRate + " bpm");
       if (result.errors.length > 0) parts.push("errors: " + result.errors.join(", "));
       setHcResult(parts.length > 0 ? "Synced: " + parts.join(" · ") : "No new data found.");
+      await loadStepsAndSleep();
     } catch (e: any) {
       setHcResult("Sync failed: " + (e?.message ?? "unknown error"));
     } finally {
@@ -164,6 +194,7 @@ export function HealthScreen() {
   }, [load, rangeHours]);
 
   useEffect(function () { loadWater(); }, [loadWater]);
+  useEffect(function () { loadStepsAndSleep(); }, [loadStepsAndSleep]);
 
   const now = Date.now();
   const windowStart = now - rangeHours * 60 * 60 * 1000;
@@ -198,8 +229,8 @@ export function HealthScreen() {
   return (
     <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content}>
       <View style={styles.grid}>
-        <MetricCard label="Steps" value="8,412" icon="walk" colorKey="teal" />
-        <MetricCard label="Sleep" value="7h 12m" icon="moon" colorKey="amber" />
+        <MetricCard label="Steps" value={stepsCount !== null ? stepsCount.toLocaleString() : "--"} icon="walk" colorKey="teal" />
+        <MetricCard label="Sleep" value={sleepDisplay ?? "--"} icon="moon" colorKey="amber" />
         <MetricCard label="Water" value={waterCount !== null ? waterCount + " / " + WATER_GOAL : "-- / " + WATER_GOAL} icon="water" colorKey="blue" onAction={handleLogWater} />
         <MetricCard label="Glucose" value={glucoseValue} icon="pulse" colorKey="pink" sublabel={glucoseSub} />
       </View>

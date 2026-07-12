@@ -88,12 +88,25 @@ export const api = {
     return request("/spending", { method: "POST", body: JSON.stringify(payload) });
   },
 
+  deleteBook: function (bookId: string) {
+    return request("/books/" + bookId, { method: "DELETE" });
+  },
+  deleteHobby: function (hobbyId: string) {
+    return request("/hobbies/" + hobbyId, { method: "DELETE" });
+  },
+
   logMood: function (userId: string, mood_score: number, entry_text?: string) {
     return request("/journal", { method: "POST", body: JSON.stringify({ user_id: userId, mood_score: mood_score, entry_text: entry_text }) });
   },
 
+  stepsToday: function (userId: string, date: string) {
+    return request("/health-connect/steps?user_id=" + userId + "&date=" + date);
+  },
   syncSteps: function (userId: string, date: string, count: number) {
     return request("/health-connect/steps", { method: "POST", body: JSON.stringify({ user_id: userId, date, count }) });
+  },
+  sleepToday: function (userId: string, date: string) {
+    return request("/health-connect/sleep?user_id=" + userId + "&date=" + date);
   },
   syncSleep: function (userId: string, sessions: Array<{ start_time: string; end_time: string; quality_score: number | null }>) {
     return request("/health-connect/sleep", { method: "POST", body: JSON.stringify({ user_id: userId, sessions }) });

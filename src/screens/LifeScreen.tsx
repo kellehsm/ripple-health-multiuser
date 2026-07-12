@@ -8,7 +8,9 @@ import {
   Image,
   StyleSheet,
   ActivityIndicator,
+  Alert,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { USER_ID } from "../api/config";
@@ -182,6 +184,40 @@ export function LifeScreen() {
     setPageInputs((prev) => ({ ...prev, [bookId]: "" }));
   }
 
+  function handleDeleteBook(bookId: string, title: string) {
+    Alert.alert("Delete book", "Remove "" + title + "" and all its reading logs?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete", style: "destructive",
+        onPress: async () => {
+          try {
+            await api.deleteBook(bookId);
+            loadBooks();
+          } catch (e) {
+            console.error("Failed to delete book", e);
+          }
+        },
+      },
+    ]);
+  }
+
+  function handleDeleteHobby(hobbyId: string, name: string) {
+    Alert.alert("Delete hobby", "Remove "" + name + "" and all its logs?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete", style: "destructive",
+        onPress: async () => {
+          try {
+            await api.deleteHobby(hobbyId);
+            loadHobbies();
+          } catch (e) {
+            console.error("Failed to delete hobby", e);
+          }
+        },
+      },
+    ]);
+  }
+
   function handleCreateHobby() {
     if (!hobbyName.trim()) return;
     setCreatingHobby(true);
@@ -297,7 +333,12 @@ export function LifeScreen() {
                   <View style={[styles.coverThumb, { backgroundColor: theme.teal.bg }]} />
                 )}
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: theme.textStrong, fontSize: 14, fontWeight: "600" }} numberOfLines={2}>{book.title}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
+                    <Text style={{ color: theme.textStrong, fontSize: 14, fontWeight: "600", flex: 1 }} numberOfLines={2}>{book.title}</Text>
+                    <Pressable onPress={() => handleDeleteBook(book.id, book.title)} hitSlop={8} style={{ marginLeft: 8 }}>
+                      <Ionicons name="trash-outline" size={16} color={theme.textSoft} />
+                    </Pressable>
+                  </View>
                   {book.author ? <Text style={{ color: theme.textSoft, fontSize: 12 }}>{book.author}</Text> : null}
 
                   {totalPages ? (
@@ -391,7 +432,12 @@ export function LifeScreen() {
             const stats = hobbyStats[hobby.id];
             return (
               <View key={hobby.id} style={{ marginTop: 12 }}>
-                <Text style={{ color: theme.textStrong, fontSize: 14 }}>{hobby.name}</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                  <Text style={{ color: theme.textStrong, fontSize: 14 }}>{hobby.name}</Text>
+                  <Pressable onPress={() => handleDeleteHobby(hobby.id, hobby.name)} hitSlop={8}>
+                    <Ionicons name="trash-outline" size={16} color={theme.textSoft} />
+                  </Pressable>
+                </View>
                 <View style={styles.pageButtonRow}>
                   {[15, 30, 60].map(function (mins) {
                     return (
