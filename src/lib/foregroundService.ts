@@ -14,9 +14,19 @@ async function ensureChannel() {
   });
 }
 
+// Returns hex color for the notification accent based on glucose trend arrow.
+// Rising arrows → red (↑ ↑↑), falling → blue (↓ ↓↓), steady/unknown → green.
+function trendColor(arrow: string | null): string {
+  if (!arrow) return "#1D9E75";
+  if (arrow.includes("↑")) return "#D85A30";
+  if (arrow.includes("↓")) return "#378ADD";
+  return "#1D9E75";
+}
+
 async function syncAndUpdateNotification(notificationId: string) {
   let stepsText = "-- steps";
   let glucoseText = "--";
+  let arrow: string | null = null;
 
   try {
     await initialize();
@@ -46,8 +56,9 @@ async function syncAndUpdateNotification(notificationId: string) {
   try {
     const status = await api.glucoseStatus(USER_ID);
     if (status?.hasData && status?.mg_dl != null) {
+      arrow = status.arrow ?? null;
       glucoseText =
-        status.mg_dl + " mg/dL" + (status.arrow ? " " + status.arrow : "");
+        status.mg_dl + " mg/dL" + (arrow ? " " + arrow : "");
     }
   } catch (e) {
     console.error("FG service glucose error", e);
@@ -63,6 +74,7 @@ async function syncAndUpdateNotification(notificationId: string) {
       ongoing: true,
       importance: AndroidImportance.LOW,
       pressAction: { id: "default" },
+      color: trendColor(arrow),
     },
   });
 }
