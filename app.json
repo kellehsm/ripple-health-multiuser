@@ -32,6 +32,7 @@
     },
     "plugins": [
       "expo-health-connect",
+      "expo-notifications",
       "./plugins/withForegroundServiceType",
       [
         "expo-network-security-config",

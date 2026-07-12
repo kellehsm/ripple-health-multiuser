@@ -319,40 +319,43 @@ export function HealthScreen() {
   return (
     <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content}>
       <View style={styles.grid}>
-        <MetricCard
-          label="Steps"
-          value={stepsCount !== null ? stepsCount.toLocaleString() : "--"}
-          icon="walk"
-          colorKey="teal"
-          sublabel={stepsWeekTotal !== null ? stepsWeekTotal.toLocaleString() + " this week" : undefined}
-        />
-        <MetricCard
-          label="Sleep"
-          value={sleepDisplay ?? "--"}
-          icon="moon"
-          colorKey="amber"
-          sublabel={sleepStatLine ?? undefined}
-        />
-        <MetricCard
-          label="Water"
-          value={waterCount !== null ? waterCount + " / " + WATER_GOAL : "-- / " + WATER_GOAL}
-          icon="water"
-          colorKey="blue"
-          onAction={handleLogWater}
-          sublabel={waterStatLine ?? undefined}
-        />
+        <View style={styles.halfCell}>
+          <MetricCard
+            label="Steps"
+            value={stepsCount !== null ? stepsCount.toLocaleString() : "--"}
+            icon="walk"
+            colorKey="teal"
+            sublabel={stepsWeekTotal !== null ? stepsWeekTotal.toLocaleString() + " this week" : undefined}
+          />
+        </View>
+        <View style={styles.halfCell}>
+          <MetricCard
+            label="Sleep"
+            value={sleepDisplay ?? "--"}
+            icon="moon"
+            colorKey="amber"
+            sublabel={sleepStatLine ?? undefined}
+          />
+        </View>
+        <View style={styles.halfCell}>
+          <MetricCard
+            label="Water"
+            value={waterCount !== null ? waterCount + " / " + WATER_GOAL : "-- / " + WATER_GOAL}
+            icon="water"
+            colorKey="blue"
+            onAction={handleLogWater}
+            sublabel={waterStatLine ?? undefined}
+          />
+        </View>
+        <View style={styles.halfCell}>
+          <MetricCard
+            label="Heart Rate"
+            value={hrReadings.length > 0 ? hrReadings[hrReadings.length - 1].bpm + " bpm" : "--"}
+            icon="heart-circle"
+            colorKey="red"
+          />
+        </View>
         <MetricCard label="Glucose" value={glucoseValue} icon="pulse" colorKey="pink" sublabel={glucoseSub} />
-        {(() => {
-          const latestHr = hrReadings.length > 0 ? hrReadings[hrReadings.length - 1].bpm : null;
-          return (
-            <MetricCard
-              label="Heart Rate"
-              value={latestHr !== null ? latestHr + " bpm" : "--"}
-              icon="heart-circle"
-              colorKey="red"
-            />
-          );
-        })()}
       </View>
 
       {status && status.alerts && status.alerts.length > 0 ? (
@@ -579,6 +582,7 @@ export function HealthScreen() {
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  halfCell: { flex: 1, minWidth: 130 },
   card: { borderRadius: 14, borderWidth: 0.5, padding: 16, marginTop: 4 },
   cardHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   cardTitle: { fontSize: 14, fontWeight: "500" },

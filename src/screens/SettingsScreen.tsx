@@ -9,12 +9,23 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Platform,
 } from "react-native";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
+import * as IntentLauncher from "expo-intent-launcher";
+import notifee, { AuthorizationStatus } from "@notifee/react-native";
+import * as Notifications from "expo-notifications";
+import { SchedulableTriggerInputTypes } from "expo-notifications";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { USER_ID } from "../api/config";
+import { requestHealthPermissions } from "../lib/healthConnect";
+import {
+  startForegroundService,
+  stopForegroundService,
+  isForegroundServiceRunning,
+} from "../lib/foregroundService";
 
 const WEEK_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -31,7 +42,18 @@ type Settings = {
     share_region?: string;
     share_password_set?: boolean;
   };
+  mood_reminders?: {
+    enabled?: boolean;
+    periods?: { morning?: boolean; afternoon?: boolean; evening?: boolean; night?: boolean };
+  };
 };
+
+const REMINDER_PERIODS: { key: string; label: string; hour: number; minute: number }[] = [
+  { key: "morning", label: "Morning", hour: 9, minute: 0 },
+  { key: "afternoon", label: "Afternoon", hour: 14, minute: 0 },
+  { key: "evening", label: "Evening", hour: 19, minute: 0 },
+  { key: "night", label: "Night", hour: 22, minute: 0 },
+];
 
 export function SettingsScreen() {
   const { theme } = useTheme();
@@ -41,6 +63,9 @@ export function SettingsScreen() {
   const [dexcomAccountId, setDexcomAccountId] = useState("");
   const [dexcomPassword, setDexcomPassword] = useState("");
   const [dexcomRegion, setDexcomRegion] = useState<"us" | "ous">("us");
+  const [trackingEnabled, setTrackingEnabled] = useState(false);
+  const [notifGranted, setNotifGranted] = useState<boolean | null>(null);
+  const [trackingBusy, setTrackingBusy] = useState(false);
 
   const defaultEnd = new Date().toISOString().slice(0, 10);
   const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -62,6 +87,149 @@ export function SettingsScreen() {
   }, []);
 
   useEffect(function () { load(); }, [load]);
+
+  useEffect(function () {
+    if (Platform.OS !== "android") return;
+    isForegroundServiceRunning().then(setTrackingEnabled).catch(() => {});
+    notifee.getNotificationSettings().then((s) => {
+      setNotifGranted(s.authorizationStatus === AuthorizationStatus.AUTHORIZED);
+    }).catch(() => {});
+  }, []);
+
+  async function handleTrackingToggle(value: boolean) {
+    if (!value) {
+      try {
+        await stopForegroundService();
+      } catch (_) {}
+      setTrackingEnabled(false);
+      return;
+    }
+
+    setTrackingBusy(true);
+    try {
+      // Step 1: notification permission
+      const settings = await notifee.requestPermission();
+      const granted = settings.authorizationStatus === AuthorizationStatus.AUTHORIZED;
+      setNotifGranted(granted);
+      if (!granted) {
+        Alert.alert(
+          "Notification permission required",
+          "Without this permission the persistent notification can't appear. Open notification settings to enable it.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Open settings",
+              onPress: () => {
+                IntentLauncher.startActivityAsync(
+                  "android.settings.APP_NOTIFICATION_SETTINGS",
+                  { extra: { "android.provider.extra.APP_PACKAGE": "com.kellehs.wellness" } }
+                ).catch(() => IntentLauncher.startActivityAsync("android.settings.APPLICATION_DETAILS_SETTINGS", {
+                  data: "package:com.kellehs.wellness",
+                }));
+              },
+            },
+          ]
+        );
+        return;
+      }
+
+      // Step 2: battery optimization exemption
+      await IntentLauncher.startActivityAsync(
+        "android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+        { data: "package:com.kellehs.wellness" }
+      ).catch(() => {});
+
+      // Step 3: Health Connect permissions
+      const hcGranted = await requestHealthPermissions();
+      if (!hcGranted) {
+        Alert.alert(
+          "Health Connect permissions needed",
+          "Grant Health Connect permissions so the notification can show live health data.",
+          [{ text: "OK" }]
+        );
+      }
+
+      // Start service regardless of HC result — glucose data can still show without HC
+      await startForegroundService();
+      setTrackingEnabled(true);
+    } catch (e: any) {
+      Alert.alert("Error", e?.message ?? "Failed to start tracking.");
+    } finally {
+      setTrackingBusy(false);
+    }
+  }
+
+  async function scheduleMoodReminder(periodKey: string, hour: number, minute: number) {
+    await Notifications.scheduleNotificationAsync({
+      identifier: "mood-reminder-" + periodKey,
+      content: {
+        title: "How are you feeling?",
+        body: "Log your " + periodKey + " mood check-in.",
+        data: { period: periodKey },
+      },
+      trigger: {
+        type: SchedulableTriggerInputTypes.DAILY,
+        hour,
+        minute,
+      },
+    });
+  }
+
+  async function cancelMoodReminder(periodKey: string) {
+    await Notifications.cancelScheduledNotificationAsync("mood-reminder-" + periodKey).catch(() => {});
+  }
+
+  async function applyMoodReminderSchedule(
+    enabled: boolean,
+    periods: Record<string, boolean>
+  ) {
+    for (const p of REMINDER_PERIODS) {
+      if (enabled && periods[p.key] !== false) {
+        await scheduleMoodReminder(p.key, p.hour, p.minute);
+      } else {
+        await cancelMoodReminder(p.key);
+      }
+    }
+  }
+
+  async function handleMoodReminderMasterToggle(value: boolean) {
+    if (value && !notifGranted) {
+      Alert.alert(
+        "Notification permission required",
+        "Enable the Always-on Tracking toggle first to grant notification permission.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+    const periods = settings.mood_reminders?.periods ?? {};
+    const updated = {
+      mood_reminders: { ...(settings.mood_reminders ?? {}), enabled: value },
+    };
+    setSettings((prev) => ({ ...prev, ...updated }));
+    await save(updated);
+    await applyMoodReminderSchedule(value, periods as Record<string, boolean>);
+  }
+
+  async function handleMoodReminderPeriodToggle(periodKey: string, value: boolean) {
+    const masterEnabled = settings.mood_reminders?.enabled === true;
+    const updatedPeriods = {
+      ...(settings.mood_reminders?.periods ?? {}),
+      [periodKey]: value,
+    };
+    const updated = {
+      mood_reminders: { ...(settings.mood_reminders ?? {}), periods: updatedPeriods },
+    };
+    setSettings((prev) => ({ ...prev, ...updated }));
+    await save(updated);
+    const p = REMINDER_PERIODS.find((r) => r.key === periodKey);
+    if (p) {
+      if (masterEnabled && value) {
+        await scheduleMoodReminder(p.key, p.hour, p.minute);
+      } else {
+        await cancelMoodReminder(p.key);
+      }
+    }
+  }
 
   async function handleExportReport() {
     setExporting(true);
@@ -143,6 +311,89 @@ export function SettingsScreen() {
 
   return (
     <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content}>
+      {/* Always-on tracking notification */}
+      {Platform.OS === "android" ? (
+        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Always-on Tracking</Text>
+          <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
+            Shows a persistent notification with live glucose and steps. Keeps syncing in the background.
+          </Text>
+
+          <View style={styles.toggleRow}>
+            <Text style={{ color: theme.textStrong, flex: 1 }}>Always-on tracking notification</Text>
+            {trackingBusy
+              ? <ActivityIndicator size="small" color={theme.teal.bar} />
+              : (
+                <Switch
+                  value={trackingEnabled}
+                  onValueChange={handleTrackingToggle}
+                  trackColor={{ false: theme.cardBorder, true: theme.teal.bar }}
+                  thumbColor="#fff"
+                />
+              )
+            }
+          </View>
+
+          <View style={[styles.statusBox, { backgroundColor: theme.page, borderColor: theme.cardBorder }]}>
+            <StatusRow
+              label="Notification permission"
+              status={notifGranted === null ? "unknown" : notifGranted ? "granted" : "denied"}
+              theme={theme}
+            />
+            <StatusRow label="Battery optimization" status="manual" theme={theme} />
+            <StatusRow label="Health Connect" status="manual" theme={theme} />
+          </View>
+
+          {notifGranted === false ? (
+            <Pressable
+              onPress={() => {
+                IntentLauncher.startActivityAsync(
+                  "android.settings.APP_NOTIFICATION_SETTINGS",
+                  { extra: { "android.provider.extra.APP_PACKAGE": "com.kellehs.wellness" } }
+                ).catch(() => IntentLauncher.startActivityAsync("android.settings.APPLICATION_DETAILS_SETTINGS", {
+                  data: "package:com.kellehs.wellness",
+                }));
+              }}
+              style={[styles.saveButton, { backgroundColor: theme.coral.bg, borderColor: theme.coral.sub }]}
+            >
+              <Text style={{ color: theme.coral.fg, fontWeight: "500" }}>Open notification settings</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
+
+      {/* Mood check-in reminders */}
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Mood Check-in Reminders</Text>
+        <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
+          Daily reminders to log your mood for each time-of-day period.
+        </Text>
+        <ToggleRow
+          label="Reminders enabled"
+          value={settings.mood_reminders?.enabled === true}
+          onChange={handleMoodReminderMasterToggle}
+          theme={theme}
+        />
+        {settings.mood_reminders?.enabled === true ? (
+          <View style={{ gap: 0, marginTop: 4 }}>
+            {REMINDER_PERIODS.map((p) => (
+              <ToggleRow
+                key={p.key}
+                label={p.label + " (" + (p.hour > 12 ? p.hour - 12 : p.hour) + (p.minute > 0 ? ":" + String(p.minute).padStart(2, "0") : "") + (p.hour >= 12 ? " PM" : " AM") + ")"}
+                value={(settings.mood_reminders?.periods as any)?.[p.key] !== false}
+                onChange={(v) => handleMoodReminderPeriodToggle(p.key, v)}
+                theme={theme}
+              />
+            ))}
+          </View>
+        ) : null}
+        {notifGranted === false ? (
+          <Text style={{ color: theme.textSoft, fontSize: 12, marginTop: 4 }}>
+            Notification permission not granted — enable Always-on Tracking first.
+          </Text>
+        ) : null}
+      </View>
+
       {/* Week start preferences */}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Week Start Day</Text>
@@ -313,6 +564,27 @@ export function SettingsScreen() {
   );
 }
 
+function StatusRow({
+  label,
+  status,
+  theme,
+}: {
+  label: string;
+  status: "granted" | "denied" | "unknown" | "manual";
+  theme: any;
+}) {
+  const dot = status === "granted" ? "●" : status === "denied" ? "●" : "○";
+  const color = status === "granted" ? theme.teal.fg : status === "denied" ? theme.coral.fg : theme.textSoft;
+  const note = status === "granted" ? "Granted" : status === "denied" ? "Denied" : "Tap toggle to request";
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 3 }}>
+      <Text style={{ color, fontSize: 10 }}>{dot}</Text>
+      <Text style={{ color: theme.textStrong, flex: 1, fontSize: 13 }}>{label}</Text>
+      <Text style={{ color, fontSize: 12 }}>{note}</Text>
+    </View>
+  );
+}
+
 function ToggleRow({
   label,
   value,
@@ -367,4 +639,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   savingIndicator: { alignSelf: "flex-end" },
+  statusBox: {
+    borderWidth: 0.5,
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 8,
+    gap: 2,
+  },
 });

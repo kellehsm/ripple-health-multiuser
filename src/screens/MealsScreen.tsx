@@ -450,7 +450,7 @@ export function MealsScreen() {
           })
             ? Math.round(
                 meals.reduce(function (s, m) {
-                  return s + (m.carbs_g ?? 0);
+                  return s + (Number(m.carbs_g) || 0);
                 }, 0)
               )
             : null,
@@ -459,7 +459,7 @@ export function MealsScreen() {
           })
             ? Math.round(
                 meals.reduce(function (s, m) {
-                  return s + (m.sugar_g ?? 0);
+                  return s + (Number(m.sugar_g) || 0);
                 }, 0)
               )
             : null,
@@ -468,7 +468,7 @@ export function MealsScreen() {
           })
             ? Math.round(
                 meals.reduce(function (s, m) {
-                  return s + (m.calories ?? 0);
+                  return s + (Number(m.calories) || 0);
                 }, 0)
               )
             : null,

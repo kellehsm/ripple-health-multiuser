@@ -98,6 +98,15 @@ export const api = {
   logMood: function (userId: string, mood_score: number, entry_text?: string) {
     return request("/journal", { method: "POST", body: JSON.stringify({ user_id: userId, mood_score: mood_score, entry_text: entry_text }) });
   },
+  upsertPeriodMood: function (userId: string, mood_score: number, period: string, mood_label?: string, entry_text?: string) {
+    return request("/journal", { method: "POST", body: JSON.stringify({ user_id: userId, mood_score, period, mood_label, entry_text, entry_type: "period" }) });
+  },
+  logMoodMoment: function (userId: string, mood_score: number, mood_label?: string, entry_text?: string) {
+    return request("/journal", { method: "POST", body: JSON.stringify({ user_id: userId, mood_score, mood_label, entry_text, entry_type: "moment" }) });
+  },
+  dayView: function (userId: string, date: string) {
+    return request("/summary/day?user_id=" + userId + "&date=" + date);
+  },
   journalToday: function (userId: string) {
     return request("/journal/today?user_id=" + userId);
   },
@@ -140,6 +149,9 @@ export const api = {
   },
   reportUrl: function (userId: string, start: string, end: string): string {
     return BASE_URL + "/export/doctor-report?user_id=" + userId + "&start=" + encodeURIComponent(start) + "&end=" + encodeURIComponent(end);
+  },
+  weeklyDigest: function (userId: string) {
+    return request("/summary/weekly-digest?user_id=" + userId);
   },
   getSettings: function (userId: string) {
     return request("/settings?user_id=" + userId);

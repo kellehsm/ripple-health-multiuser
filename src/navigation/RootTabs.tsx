@@ -83,7 +83,7 @@ function TabNavigator() {
                   width: 52,
                   height: 52,
                   borderRadius: 26,
-                  backgroundColor: theme.teal.bar,
+                  backgroundColor: "#888",
                   alignItems: "center",
                   justifyContent: "center",
                   marginTop: -18,
@@ -105,7 +105,7 @@ function TabNavigator() {
         name="Life"
         component={LifeScreen}
         options={{
-          title: "Reading & Habits",
+          title: "Habits",
           tabBarIcon: ({ focused }) => (
             <Ionicons name="book" size={22} color={focused ? theme.teal.sub : theme.textSoft} />
           ),
@@ -116,7 +116,7 @@ function TabNavigator() {
         component={FinanceScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <Ionicons name="wallet" size={22} color={focused ? theme.brown.sub : theme.textSoft} />
+            <Ionicons name="wallet" size={22} color={focused ? theme.blue.sub : theme.textSoft} />
           ),
         }}
       />
