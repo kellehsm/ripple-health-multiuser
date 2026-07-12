@@ -98,6 +98,12 @@ export const api = {
   logMood: function (userId: string, mood_score: number, entry_text?: string) {
     return request("/journal", { method: "POST", body: JSON.stringify({ user_id: userId, mood_score: mood_score, entry_text: entry_text }) });
   },
+  journalToday: function (userId: string) {
+    return request("/journal/today?user_id=" + userId);
+  },
+  weeklyMoodSummary: function (userId: string) {
+    return request("/journal/weekly-summary?user_id=" + userId);
+  },
 
   stepsToday: function (userId: string, date: string) {
     return request("/health-connect/steps?user_id=" + userId + "&date=" + date);
