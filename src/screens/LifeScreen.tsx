@@ -185,7 +185,7 @@ export function LifeScreen() {
   }
 
   function handleDeleteBook(bookId: string, title: string) {
-    Alert.alert("Delete book", "Remove "" + title + "" and all its reading logs?", [
+    Alert.alert("Delete book", 'Remove "' + title + '" and all its reading logs?', [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete", style: "destructive",
@@ -202,7 +202,7 @@ export function LifeScreen() {
   }
 
   function handleDeleteHobby(hobbyId: string, name: string) {
-    Alert.alert("Delete hobby", "Remove "" + name + "" and all its logs?", [
+    Alert.alert("Delete hobby", 'Remove "' + name + '" and all its logs?', [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete", style: "destructive",
