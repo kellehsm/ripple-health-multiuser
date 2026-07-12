@@ -1,56 +1,61 @@
-# Welcome to your Expo app 👋
+# Ripple Health
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+> Every choice sends ripples. Ripple Health shows you where they go.
 
-## Get started
+Most wellness apps track one thing in isolation — your steps, your calories, your budget. But life doesn't work in silos. A stressful week at work bleeds into late-night takeout orders, which hits your bank account, which adds more stress. Ripple Health is built on the premise that these patterns are connected, and that seeing them together is what actually changes behavior.
 
-1. Install dependencies
+The app pulls together five dimensions of daily life into a single view so the links between them become visible over time.
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
+## What it tracks
 
-   ```bash
-   npx expo start
-   ```
+**Health** — Steps, sleep, and heart rate synced from Android Health Connect. Continuous glucose data pulled from Dexcom. The baseline picture of how your body is actually doing day to day.
 
-In the output, you'll find options to open the app in a
+**Meals** — Barcode scanning and food search for logging what you eat. Meal entries are cross-referenced against glucose readings to surface how specific foods affect your blood sugar in the hours after eating.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+**Life** — Mood logging, hobby time, and book progress. The stuff that signals whether life feels good or just busy — and whether the answer correlates with what you ate or how you slept.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+**Finance** — Spending logs with category breakdowns. Impulsive spending and stress eating often show up on the same days. Seeing both in one place makes that pattern hard to ignore.
 
-## Get a fresh project
+**Home** — A daily overview that aggregates signals from all four tabs: glucose trend, step count, mood, water intake, and spending — so you start each day with the full picture rather than fragments.
 
-When you're ready, run:
+---
 
-```bash
-npm run reset-project
+## The idea
+
+The dots have always been there. Most people already know, somewhere in the back of their mind, that they eat worse when they're tired, spend more when they're stressed, and move less when they're stuck inside. Ripple Health just makes those connections explicit and consistent enough to act on.
+
+---
+
+## Stack
+
+- **React Native** (Expo SDK 57) with TypeScript
+- **Android Health Connect** via `expo-health-connect` for biometric data
+- **Dexcom API** integration for real-time CGM glucose data
+- **Node.js / Express** backend (`/wellness-app`) with PostgreSQL
+- **EAS Build** for Android APK distribution
+- **Caddy** reverse proxy with automatic TLS on `app.kels.gg`
+
+---
+
+## Project structure
+
+```
+src/
+  screens/       # HealthScreen, MealsScreen, LifeScreen, FinanceScreen, OverviewScreen
+  components/    # MetricCard, BarcodeScannerModal
+  api/           # Typed API client pointing at app.kels.gg/api
+  lib/           # Health Connect sync logic
+  theme/         # Shared colors, spacing, typography
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+---
 
-### Other setup steps
+## Building
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Requires an EAS account. Builds are triggered via:
 
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+npx eas-cli@latest build --platform android --profile preview --non-interactive
+```
