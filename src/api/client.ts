@@ -108,11 +108,32 @@ export const api = {
   sleepToday: function (userId: string, date: string) {
     return request("/health-connect/sleep?user_id=" + userId + "&date=" + date);
   },
+  sleepStats: function (userId: string) {
+    return request("/health-connect/sleep/stats?user_id=" + userId);
+  },
   syncSleep: function (userId: string, sessions: Array<{ start_time: string; end_time: string; quality_score: number | null }>) {
     return request("/health-connect/sleep", { method: "POST", body: JSON.stringify({ user_id: userId, sessions }) });
   },
   syncHeartRate: function (userId: string, readings: Array<{ recorded_at: string; bpm: number }>) {
     return request("/health-connect/heart-rate", { method: "POST", body: JSON.stringify({ user_id: userId, readings }) });
+  },
+
+  getStepsMetric: function (userId: string) {
+    return request("/metrics?user_id=" + userId + "&name=steps");
+  },
+
+  waterStats: function (metricId: string) {
+    return request("/metrics/" + metricId + "/stats");
+  },
+  stepsWeeklyTotal: function (metricId: string, weekStartDay?: number) {
+    const qs = weekStartDay !== undefined ? "?week_start_day=" + weekStartDay : "";
+    return request("/metrics/" + metricId + "/weekly-total" + qs);
+  },
+  getSettings: function (userId: string) {
+    return request("/settings?user_id=" + userId);
+  },
+  patchSettings: function (userId: string, patch: Record<string, unknown>) {
+    return request("/settings", { method: "PATCH", body: JSON.stringify({ user_id: userId, ...patch }) });
   },
 
   getOrCreateWaterMetric: async function (userId: string) {

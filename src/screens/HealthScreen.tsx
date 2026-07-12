@@ -78,8 +78,11 @@ export function HealthScreen() {
   const [loading, setLoading] = useState(true);
   const [waterMetricId, setWaterMetricId] = useState<string | null>(null);
   const [waterCount, setWaterCount] = useState<number | null>(null);
+  const [waterStatLine, setWaterStatLine] = useState<string | null>(null);
   const [stepsCount, setStepsCount] = useState<number | null>(null);
+  const [stepsWeekTotal, setStepsWeekTotal] = useState<number | null>(null);
   const [sleepDisplay, setSleepDisplay] = useState<string | null>(null);
+  const [sleepStatLine, setSleepStatLine] = useState<string | null>(null);
   const [hcSyncing, setHcSyncing] = useState(false);
   const [hcResult, setHcResult] = useState<string | null>(null);
   const [liveTracking, setLiveTracking] = useState(false);
@@ -93,6 +96,13 @@ export function HealthScreen() {
       console.error("Failed to load steps", e);
     }
     try {
+      const stepsList = await api.getStepsMetric(USER_ID);
+      if (stepsList && stepsList.length > 0) {
+        const weekly = await api.stepsWeeklyTotal(stepsList[0].id);
+        setStepsWeekTotal(weekly?.week_total ?? null);
+      }
+    } catch (_) {}
+    try {
       const session = await api.sleepToday(USER_ID, today);
       if (session?.start_time && session?.end_time) {
         setSleepDisplay(formatSleepDuration(session.start_time, session.end_time));
@@ -102,6 +112,19 @@ export function HealthScreen() {
     } catch (e) {
       console.error("Failed to load sleep", e);
     }
+    try {
+      const stats = await api.sleepStats(USER_ID);
+      const fmt = (s: number) => {
+        const h = Math.floor(s / 3600);
+        const m = Math.floor((s % 3600) / 60);
+        return m > 0 ? h + "h " + m + "m" : h + "h";
+      };
+      const yest = stats?.yesterday_seconds > 0 ? fmt(stats.yesterday_seconds) : "--";
+      const avg = stats?.seven_day_average_seconds > 0 ? fmt(stats.seven_day_average_seconds) : "--";
+      setSleepStatLine("Yesterday: " + yest + " · 7d avg: " + avg);
+    } catch (e) {
+      console.error("Failed to load sleep stats", e);
+    }
   }, []);
 
   const loadWater = useCallback(async function () {
@@ -110,6 +133,12 @@ export function HealthScreen() {
       setWaterMetricId(metric.id);
       const logs = await api.todaysWaterCount(metric.id);
       setWaterCount(sumTodayLogs(Array.isArray(logs) ? logs : []));
+      try {
+        const stats = await api.waterStats(metric.id);
+        const yest = stats?.yesterday_total > 0 ? stats.yesterday_total + " glasses" : "--";
+        const avg = stats?.seven_day_average > 0 ? Math.round(stats.seven_day_average) + " glasses" : "--";
+        setWaterStatLine("Yesterday: " + yest + " · 7d avg: " + avg);
+      } catch (_) {}
     } catch (e) {
       console.error("Failed to load water data", e);
     }
@@ -267,9 +296,28 @@ export function HealthScreen() {
   return (
     <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content}>
       <View style={styles.grid}>
-        <MetricCard label="Steps" value={stepsCount !== null ? stepsCount.toLocaleString() : "--"} icon="walk" colorKey="teal" />
-        <MetricCard label="Sleep" value={sleepDisplay ?? "--"} icon="moon" colorKey="amber" />
-        <MetricCard label="Water" value={waterCount !== null ? waterCount + " / " + WATER_GOAL : "-- / " + WATER_GOAL} icon="water" colorKey="blue" onAction={handleLogWater} />
+        <MetricCard
+          label="Steps"
+          value={stepsCount !== null ? stepsCount.toLocaleString() : "--"}
+          icon="walk"
+          colorKey="teal"
+          sublabel={stepsWeekTotal !== null ? stepsWeekTotal.toLocaleString() + " this week" : undefined}
+        />
+        <MetricCard
+          label="Sleep"
+          value={sleepDisplay ?? "--"}
+          icon="moon"
+          colorKey="amber"
+          sublabel={sleepStatLine ?? undefined}
+        />
+        <MetricCard
+          label="Water"
+          value={waterCount !== null ? waterCount + " / " + WATER_GOAL : "-- / " + WATER_GOAL}
+          icon="water"
+          colorKey="blue"
+          onAction={handleLogWater}
+          sublabel={waterStatLine ?? undefined}
+        />
         <MetricCard label="Glucose" value={glucoseValue} icon="pulse" colorKey="pink" sublabel={glucoseSub} />
       </View>
 
