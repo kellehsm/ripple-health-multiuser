@@ -20,8 +20,6 @@ type Book = {
   cover_url: string | null;
   status: string;
   total_pages: number | null;
-  total_chapters: number | null;
-  current_chapter: number | null;
 };
 
 type Hobby = {
@@ -66,7 +64,6 @@ type Progress = {
   pages_read_total: number;
   total_pages: number | null;
   percent_complete: number | null;
-  estimated_chapter: number | null;
 };
 
 export function LifeScreen() {
@@ -76,7 +73,6 @@ export function LifeScreen() {
   const [loadingBooks, setLoadingBooks] = useState(true);
   const [progress, setProgress] = useState<Record<string, Progress>>({});
   const [pageInputs, setPageInputs] = useState<Record<string, string>>({});
-  const [chapterInputs, setChapterInputs] = useState<Record<string, string>>({});
 
   const [searchText, setSearchText] = useState("");
   const [searchResults, setSearchResults] = useState<BookSearchResult[]>([]);
@@ -184,27 +180,6 @@ export function LifeScreen() {
     if (!n || n <= 0) return;
     await handleLogPages(bookId, n);
     setPageInputs((prev) => ({ ...prev, [bookId]: "" }));
-  }
-
-  async function handleUpdateChapter(bookId: string, chapter: number) {
-    if (chapter <= 0) return;
-    try {
-      const updated = await api.updateBook(bookId, { current_chapter: chapter });
-      setBooks((prev) => prev.map((b) => b.id === bookId ? { ...b, current_chapter: updated.current_chapter } : b));
-    } catch (e) {
-      console.error("Failed to update chapter", e);
-    }
-  }
-
-  async function handleManualChapter(bookId: string) {
-    const n = parseInt(chapterInputs[bookId] ?? "", 10);
-    if (!n || n <= 0) return;
-    await handleUpdateChapter(bookId, n);
-    setChapterInputs((prev) => ({ ...prev, [bookId]: "" }));
-  }
-
-  async function handleIncrementChapter(book: Book) {
-    await handleUpdateChapter(book.id, (book.current_chapter ?? 0) + 1);
   }
 
   function handleCreateHobby() {
@@ -357,41 +332,6 @@ export function LifeScreen() {
                     </Pressable>
                   </View>
 
-                  {book.total_chapters != null && (
-                    <View style={styles.chapterSection}>
-                      {(() => {
-                        const estimated = prog?.estimated_chapter ?? null;
-                        const manual = book.current_chapter ?? 0;
-                        const displayChapter = estimated !== null ? Math.max(estimated, manual) : manual;
-                        const isEstimated = estimated !== null && estimated > manual;
-                        const pct = Math.min(Math.round((displayChapter / book.total_chapters) * 100), 100);
-                        return (
-                          <>
-                            <View style={[styles.progressTrack, { backgroundColor: theme.blue.bg }]}>
-                              <View style={[styles.progressFill, { backgroundColor: theme.blue.sub, width: `${pct}%` }]} />
-                            </View>
-                            <Text style={[styles.progressText, { color: theme.textSoft }]}>
-                              Chapter {displayChapter} of {book.total_chapters}
-                              {isEstimated ? " (estimated)" : ""}
-                            </Text>
-                            <View style={styles.manualRow}>
-                              <TextInput
-                                placeholder="chapter #"
-                                keyboardType="numeric"
-                                value={chapterInputs[book.id] ?? ""}
-                                onChangeText={(v) => setChapterInputs((prev) => ({ ...prev, [book.id]: v }))}
-                                style={[styles.manualInput, { borderColor: theme.cardBorder, color: theme.textStrong }]}
-                                placeholderTextColor={theme.textSoft}
-                              />
-                              <Pressable style={[styles.logBtn, { backgroundColor: theme.blue.sub }]} onPress={() => handleManualChapter(book.id)}>
-                                <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Set</Text>
-                              </Pressable>
-                            </View>
-                          </>
-                        );
-                      })()}
-                    </View>
-                  )}
                 </View>
               </View>
             );
@@ -516,5 +456,4 @@ const styles = StyleSheet.create({
   manualRow: { flexDirection: "row", gap: 6, marginTop: 6 },
   manualInput: { width: 72, borderWidth: 1, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5, fontSize: 13 },
   logBtn: { borderRadius: 8, paddingHorizontal: 12, justifyContent: "center" },
-  chapterSection: { marginTop: 10 },
 });
