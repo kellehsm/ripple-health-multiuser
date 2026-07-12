@@ -31,6 +31,12 @@
     "plugins": [
       "expo-health-connect",
       [
+        "expo-network-security-config",
+        {
+          "networkSecurityConfigPath": "./assets/network_security_config.xml"
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "android": {
