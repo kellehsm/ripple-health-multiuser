@@ -1,4 +1,4 @@
-const BASE_URL = "http://129.121.125.214:4000/api";
+const BASE_URL = "https://app.kels.gg/api";
 
 async function request(path: string, options: RequestInit = {}): Promise<any> {
   const res = await fetch(BASE_URL + path, {
