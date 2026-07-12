@@ -19,6 +19,11 @@ type GlucoseReading = {
   mg_dl: number;
 };
 
+type HRReading = {
+  recorded_at: string;
+  bpm: number;
+};
+
 type GlucoseStatus = {
   hasData: boolean;
   mg_dl: number | null;
@@ -83,6 +88,9 @@ export function HealthScreen() {
   const [stepsWeekTotal, setStepsWeekTotal] = useState<number | null>(null);
   const [sleepDisplay, setSleepDisplay] = useState<string | null>(null);
   const [sleepStatLine, setSleepStatLine] = useState<string | null>(null);
+  const [hrRangeHours, setHrRangeHours] = useState(6);
+  const [hrReadings, setHrReadings] = useState<HRReading[]>([]);
+  const [hrLoading, setHrLoading] = useState(false);
   const [hcSyncing, setHcSyncing] = useState(false);
   const [hcResult, setHcResult] = useState<string | null>(null);
   const [liveTracking, setLiveTracking] = useState(false);
@@ -141,6 +149,20 @@ export function HealthScreen() {
       } catch (_) {}
     } catch (e) {
       console.error("Failed to load water data", e);
+    }
+  }, []);
+
+  const loadHeartRate = useCallback(async function (hours: number) {
+    setHrLoading(true);
+    try {
+      const now = new Date();
+      const start = new Date(now.getTime() - hours * 60 * 60 * 1000);
+      const readings = await api.heartRateRange(USER_ID, start.toISOString(), now.toISOString());
+      setHrReadings(Array.isArray(readings) ? readings : []);
+    } catch (e) {
+      console.error("Failed to load heart rate", e);
+    } finally {
+      setHrLoading(false);
     }
   }, []);
 
@@ -262,6 +284,7 @@ export function HealthScreen() {
   useEffect(function () {
     isForegroundServiceRunning().then(setLiveTracking).catch(() => {});
   }, []);
+  useEffect(function () { loadHeartRate(hrRangeHours); }, [loadHeartRate, hrRangeHours]);
 
   const now = Date.now();
   const windowStart = now - rangeHours * 60 * 60 * 1000;
@@ -319,6 +342,17 @@ export function HealthScreen() {
           sublabel={waterStatLine ?? undefined}
         />
         <MetricCard label="Glucose" value={glucoseValue} icon="pulse" colorKey="pink" sublabel={glucoseSub} />
+        {(() => {
+          const latestHr = hrReadings.length > 0 ? hrReadings[hrReadings.length - 1].bpm : null;
+          return (
+            <MetricCard
+              label="Heart Rate"
+              value={latestHr !== null ? latestHr + " bpm" : "--"}
+              icon="heart-circle"
+              colorKey="red"
+            />
+          );
+        })()}
       </View>
 
       {status && status.alerts && status.alerts.length > 0 ? (
@@ -431,6 +465,72 @@ export function HealthScreen() {
           </Text>
         ) : null}
       </View>
+
+      {/* Heart Rate chart */}
+      {(() => {
+        const hrValues = hrReadings.map((r) => r.bpm);
+        const hrMin = hrValues.length ? Math.min(...hrValues) - 5 : 40;
+        const hrMax = hrValues.length ? Math.max(...hrValues) + 5 : 120;
+        const hrRange = hrMax - hrMin || 1;
+        const now = Date.now();
+        const hrWindowStart = now - hrRangeHours * 60 * 60 * 1000;
+        const hrWindowMs = hrRangeHours * 60 * 60 * 1000;
+        const usableW = CHART_WIDTH - PAD_LEFT;
+        const usableH = CHART_HEIGHT - PAD_TOP - PAD_BOTTOM;
+        const hrPoints = hrReadings.map(function (r) {
+          const t = new Date(r.recorded_at).getTime();
+          const x = PAD_LEFT + ((t - hrWindowStart) / hrWindowMs) * usableW;
+          const y = PAD_TOP + usableH - ((r.bpm - hrMin) / hrRange) * usableH;
+          return x + "," + y;
+        }).join(" ");
+        const restingBpm = hrValues.length ? Math.min(...hrValues) : null;
+        const peakBpm = hrValues.length ? Math.max(...hrValues) : null;
+        const HR_RANGE_OPTIONS = [3, 6, 12, 24];
+        return (
+          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+            <View style={styles.cardHeaderRow}>
+              <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Heart Rate</Text>
+              {peakBpm !== null ? (
+                <Text style={{ color: theme.red.sub, fontSize: 13 }}>peak {peakBpm} bpm</Text>
+              ) : null}
+            </View>
+            {restingBpm !== null ? (
+              <Text style={{ color: theme.textSoft, fontSize: 12, marginBottom: 2 }}>
+                Resting: {restingBpm} bpm
+              </Text>
+            ) : null}
+            <View style={styles.rangeRow}>
+              {HR_RANGE_OPTIONS.map(function (hrs) {
+                return (
+                  <Pressable
+                    key={hrs}
+                    onPress={function () { setHrRangeHours(hrs); }}
+                    style={[styles.rangeButton, {
+                      backgroundColor: hrRangeHours === hrs ? theme.red.sub : theme.page,
+                      borderColor: theme.cardBorder,
+                    }]}
+                  >
+                    <Text style={{ color: hrRangeHours === hrs ? "#fff" : theme.textSoft, fontSize: 12 }}>
+                      {hrs}h
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {hrLoading ? (
+              <ActivityIndicator style={{ marginVertical: 30 }} />
+            ) : hrReadings.length === 0 ? (
+              <Text style={{ color: theme.textSoft, fontSize: 12, marginTop: 10 }}>
+                No heart rate data in this window.
+              </Text>
+            ) : (
+              <Svg width={CHART_WIDTH} height={CHART_HEIGHT} style={{ marginTop: 12 }}>
+                <Polyline points={hrPoints} fill="none" stroke={theme.red.sub} strokeWidth={2} />
+              </Svg>
+            )}
+          </View>
+        );
+      })()}
 
       {Platform.OS === "android" ? (
         <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>

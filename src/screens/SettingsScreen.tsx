@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { USER_ID } from "../api/config";
@@ -40,6 +42,12 @@ export function SettingsScreen() {
   const [dexcomPassword, setDexcomPassword] = useState("");
   const [dexcomRegion, setDexcomRegion] = useState<"us" | "ous">("us");
 
+  const defaultEnd = new Date().toISOString().slice(0, 10);
+  const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const [exportStart, setExportStart] = useState(defaultStart);
+  const [exportEnd, setExportEnd] = useState(defaultEnd);
+  const [exporting, setExporting] = useState(false);
+
   const load = useCallback(async function () {
     try {
       const s = await api.getSettings(USER_ID);
@@ -54,6 +62,27 @@ export function SettingsScreen() {
   }, []);
 
   useEffect(function () { load(); }, [load]);
+
+  async function handleExportReport() {
+    setExporting(true);
+    try {
+      const startIso = new Date(exportStart).toISOString();
+      const endIso = new Date(exportEnd + "T23:59:59").toISOString();
+      const url = api.reportUrl(USER_ID, startIso, endIso);
+      const localUri = (FileSystem.cacheDirectory ?? "") + "ripple-health-report.pdf";
+      const { uri } = await FileSystem.downloadAsync(url, localUri);
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: "Share health report" });
+      } else {
+        Alert.alert("Saved", "Report saved to: " + uri);
+      }
+    } catch (e: any) {
+      Alert.alert("Export failed", e?.message ?? "Unknown error");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   async function save(patch: Record<string, unknown>) {
     setSaving(true);
@@ -243,12 +272,42 @@ export function SettingsScreen() {
         </Pressable>
       </View>
 
-      {/* Export (placeholder for future PDF export spec) */}
+      {/* Doctor PDF export */}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
-        <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Export</Text>
+        <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Export Health Report</Text>
         <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
-          Health report export will appear here.
+          Generates a PDF with glucose trends and meal timing — useful to bring to a doctor's appointment.
         </Text>
+        <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>Start date</Text>
+        <TextInput
+          value={exportStart}
+          onChangeText={setExportStart}
+          placeholder="YYYY-MM-DD"
+          placeholderTextColor={theme.textSoft}
+          autoCapitalize="none"
+          autoCorrect={false}
+          style={[styles.textInput, { color: theme.textStrong, borderColor: theme.cardBorder, backgroundColor: theme.page }]}
+        />
+        <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>End date</Text>
+        <TextInput
+          value={exportEnd}
+          onChangeText={setExportEnd}
+          placeholder="YYYY-MM-DD"
+          placeholderTextColor={theme.textSoft}
+          autoCapitalize="none"
+          autoCorrect={false}
+          style={[styles.textInput, { color: theme.textStrong, borderColor: theme.cardBorder, backgroundColor: theme.page }]}
+        />
+        <Pressable
+          onPress={handleExportReport}
+          disabled={exporting}
+          style={[styles.saveButton, { backgroundColor: theme.teal.bg, borderColor: theme.teal.sub, opacity: exporting ? 0.6 : 1 }]}
+        >
+          {exporting
+            ? <ActivityIndicator size="small" color={theme.teal.fg} />
+            : <Text style={{ color: theme.teal.fg, fontWeight: "500" }}>Generate &amp; share PDF</Text>
+          }
+        </Pressable>
       </View>
     </ScrollView>
   );

@@ -135,6 +135,12 @@ export const api = {
     const qs = weekStartDay !== undefined ? "?week_start_day=" + weekStartDay : "";
     return request("/metrics/" + metricId + "/weekly-total" + qs);
   },
+  heartRateRange: function (userId: string, start: string, end: string) {
+    return request("/heart-rate?user_id=" + userId + "&start=" + encodeURIComponent(start) + "&end=" + encodeURIComponent(end));
+  },
+  reportUrl: function (userId: string, start: string, end: string): string {
+    return BASE_URL + "/export/doctor-report?user_id=" + userId + "&start=" + encodeURIComponent(start) + "&end=" + encodeURIComponent(end);
+  },
   getSettings: function (userId: string) {
     return request("/settings?user_id=" + userId);
   },
