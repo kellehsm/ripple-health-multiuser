@@ -37,6 +37,8 @@ type GlucoseStatus = {
 const RANGE_OPTIONS = [3, 6, 12, 24];
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const CHART_WIDTH = SCREEN_WIDTH - 64;
+const CARD_GAP = 10;
+const HALF_CARD_WIDTH = (SCREEN_WIDTH - 32 - CARD_GAP) / 2;
 const CHART_HEIGHT = 200;
 const PAD_LEFT = 32;
 const PAD_BOTTOM = 20;
@@ -355,7 +357,9 @@ export function HealthScreen() {
             colorKey="red"
           />
         </View>
-        <MetricCard label="Glucose" value={glucoseValue} icon="pulse" colorKey="pink" sublabel={glucoseSub} />
+        <View style={styles.fullCell}>
+          <MetricCard label="Glucose" value={glucoseValue} icon="pulse" colorKey="pink" sublabel={glucoseSub} />
+        </View>
       </View>
 
       {status && status.alerts && status.alerts.length > 0 ? (
@@ -581,8 +585,9 @@ export function HealthScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  halfCell: { flex: 1, minWidth: 130 },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: CARD_GAP },
+  halfCell: { width: HALF_CARD_WIDTH },
+  fullCell: { width: "100%" },
   card: { borderRadius: 14, borderWidth: 0.5, padding: 16, marginTop: 4 },
   cardHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   cardTitle: { fontSize: 14, fontWeight: "500" },
