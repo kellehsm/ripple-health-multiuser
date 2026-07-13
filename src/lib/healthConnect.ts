@@ -42,21 +42,33 @@ export async function syncHealthData(): Promise<SyncResult> {
   let sleepHours: number | null = null;
   let heartRate: number | null = null;
 
-  // Steps
+  // Steps — read past 8 days so any week-start setting has full data
   try {
+    const eightDaysAgo = new Date(now);
+    eightDaysAgo.setDate(eightDaysAgo.getDate() - 7);
+    eightDaysAgo.setHours(0, 0, 0, 0);
+
     const result = await readRecords("Steps", {
       timeRangeFilter: {
         operator: "between",
-        startTime: startOfDay.toISOString(),
+        startTime: eightDaysAgo.toISOString(),
         endTime: now.toISOString(),
       },
     });
-    const total = (result.records as any[]).reduce((sum, r) => sum + (r.count ?? 0), 0);
-    if (total > 0) {
-      const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-      await api.syncSteps(USER_ID, localDate, total);
-      steps = total;
+
+    // Group step intervals by local date and sum
+    const byDate: Record<string, number> = {};
+    for (const r of result.records as any[]) {
+      const d = new Date(r.startTime);
+      const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      byDate[localDate] = (byDate[localDate] ?? 0) + (r.count ?? 0);
     }
+
+    const todayLocal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    for (const [date, count] of Object.entries(byDate)) {
+      if (count > 0) await api.syncSteps(USER_ID, date, count);
+    }
+    steps = byDate[todayLocal] ?? null;
   } catch (e: any) {
     errors.push("Steps: " + (e?.message ?? "unknown error"));
   }
