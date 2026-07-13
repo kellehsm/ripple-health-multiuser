@@ -104,7 +104,8 @@ export function HealthScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const loadStepsAndSleep = useCallback(async function () {
-    const today = new Date().toISOString().split("T")[0];
+    const _now = new Date();
+    const today = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, "0")}-${String(_now.getDate()).padStart(2, "0")}`;
     try {
       const s = await api.stepsToday(USER_ID, today);
       setStepsCount(s?.steps ?? null);

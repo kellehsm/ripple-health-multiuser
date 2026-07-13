@@ -53,7 +53,8 @@ export async function syncHealthData(): Promise<SyncResult> {
     });
     const total = (result.records as any[]).reduce((sum, r) => sum + (r.count ?? 0), 0);
     if (total > 0) {
-      await api.syncSteps(USER_ID, now.toISOString().split("T")[0], total);
+      const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      await api.syncSteps(USER_ID, localDate, total);
       steps = total;
     }
   } catch (e: any) {
