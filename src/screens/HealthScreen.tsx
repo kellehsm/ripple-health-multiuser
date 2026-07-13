@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, Dimensions, Platform, Alert } from "react-native";
-import Svg, { Polyline, Line, Text as SvgText } from "react-native-svg";
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, Dimensions, Platform, Alert, Modal, PanResponder } from "react-native";
+import Svg, { Polyline, Line, Text as SvgText, Rect } from "react-native-svg";
 import { useTheme } from "../theme/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
 import { MetricCard } from "../components/MetricCard";
@@ -36,6 +36,7 @@ type GlucoseStatus = {
 
 const RANGE_OPTIONS = [3, 6, 12, 24];
 const SCREEN_WIDTH = Dimensions.get("window").width;
+const SCREEN_HEIGHT = Dimensions.get("window").height;
 const CHART_WIDTH = SCREEN_WIDTH - 64;
 const CARD_GAP = 10;
 const HALF_CARD_WIDTH = (SCREEN_WIDTH - 32 - CARD_GAP) / 2;
@@ -88,6 +89,9 @@ export function HealthScreen() {
   const [waterStatLine, setWaterStatLine] = useState<string | null>(null);
   const [stepsCount, setStepsCount] = useState<number | null>(null);
   const [stepsWeekTotal, setStepsWeekTotal] = useState<number | null>(null);
+  const [stepsMetricId, setStepsMetricId] = useState<string | null>(null);
+  const [weekStepsStart, setWeekStepsStart] = useState(1);
+  const [stepsSheetVisible, setStepsSheetVisible] = useState(false);
   const [sleepDisplay, setSleepDisplay] = useState<string | null>(null);
   const [sleepStatLine, setSleepStatLine] = useState<string | null>(null);
   const [hrRangeHours, setHrRangeHours] = useState(6);
@@ -108,7 +112,11 @@ export function HealthScreen() {
     try {
       const stepsList = await api.getStepsMetric(USER_ID);
       if (stepsList && stepsList.length > 0) {
-        const weekly = await api.stepsWeeklyTotal(stepsList[0].id);
+        setStepsMetricId(stepsList[0].id);
+        const settings = await api.getSettings(USER_ID).catch(() => null);
+        const wsd = settings?.week_start?.steps ?? 1;
+        setWeekStepsStart(wsd);
+        const weekly = await api.stepsWeeklyTotal(stepsList[0].id, wsd);
         setStepsWeekTotal(weekly?.week_total ?? null);
       }
     } catch (_) {}
@@ -321,7 +329,7 @@ export function HealthScreen() {
   return (
     <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content}>
       <View style={styles.grid}>
-        <View style={styles.halfCell}>
+        <Pressable style={styles.halfCell} onPress={() => stepsMetricId && setStepsSheetVisible(true)}>
           <MetricCard
             label="Steps"
             value={stepsCount !== null ? stepsCount.toLocaleString() : "--"}
@@ -329,7 +337,7 @@ export function HealthScreen() {
             colorKey="teal"
             sublabel={stepsWeekTotal !== null ? stepsWeekTotal.toLocaleString() + " this week" : undefined}
           />
-        </View>
+        </Pressable>
         <View style={styles.halfCell}>
           <MetricCard
             label="Sleep"
@@ -579,6 +587,15 @@ export function HealthScreen() {
           ) : null}
         </View>
       ) : null}
+
+      {stepsMetricId ? (
+        <StepsDetailSheet
+          visible={stepsSheetVisible}
+          onClose={() => setStepsSheetVisible(false)}
+          metricId={stepsMetricId}
+          weekStartDay={weekStepsStart}
+        />
+      ) : null}
     </ScrollView>
   );
 }
@@ -613,4 +630,184 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   glucoseCurrentValue: { fontSize: 24, fontWeight: "500" },
+});
+
+// ── Steps detail sheet ────────────────────────────────────────────────────────
+
+type BreakdownDay = { date: string; day_label: string; total: number; is_today: boolean };
+
+function formatStepCount(n: number): string {
+  if (n >= 10000) return Math.round(n / 1000) + "k";
+  if (n >= 1000) return (n / 1000).toFixed(1) + "k";
+  return String(n);
+}
+
+function StepsDetailSheet({
+  visible,
+  onClose,
+  metricId,
+  weekStartDay,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  metricId: string;
+  weekStartDay: number;
+}) {
+  const { theme } = useTheme();
+  const [days, setDays] = useState<BreakdownDay[]>([]);
+  const [lastWeekTotal, setLastWeekTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const onCloseRef = useRef(onClose);
+  useEffect(function () { onCloseRef.current = onClose; }, [onClose]);
+
+  const pan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: function (_, gs) {
+        return gs.dy > 8 && Math.abs(gs.dy) > Math.abs(gs.dx);
+      },
+      onPanResponderRelease: function (_, gs) {
+        if (gs.dy > 60) onCloseRef.current();
+      },
+    })
+  ).current;
+
+  useEffect(function () {
+    if (!visible || !metricId) return;
+    setLoading(true);
+    api.metricDailyBreakdown(metricId, weekStartDay)
+      .then(function (data) {
+        setDays(data.days ?? []);
+        setLastWeekTotal(data.last_week_total ?? 0);
+      })
+      .catch(function () {})
+      .finally(function () { setLoading(false); });
+  }, [visible, metricId, weekStartDay]);
+
+  const weekTotal = days.reduce(function (s, d) { return s + d.total; }, 0);
+  const daysWithData = days.filter(function (d) { return d.total > 0; });
+  const dailyAvg = daysWithData.length > 0 ? Math.round(weekTotal / daysWithData.length) : 0;
+  const bestDay = days.reduce<BreakdownDay | null>(function (best, d) {
+    return (!best || d.total > best.total) ? d : best;
+  }, null);
+  const lastWeekDiff = lastWeekTotal > 0
+    ? Math.round(((weekTotal - lastWeekTotal) / lastWeekTotal) * 100)
+    : null;
+
+  const BAR_W = SCREEN_WIDTH - 40;
+  const BAR_H = 140;
+  const LABEL_H = 18;
+  const PLOT_H = BAR_H - LABEL_H;
+  const maxVal = Math.max(...days.map(function (d) { return d.total; }), 1);
+  const slotW = days.length > 0 ? BAR_W / days.length : BAR_W;
+  const barW = Math.min(slotW * 0.6, 36);
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={sheetStyles.overlay}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <View style={[sheetStyles.sheet, { backgroundColor: theme.card }]}>
+          <View style={sheetStyles.handleArea} {...pan.panHandlers}>
+            <View style={[sheetStyles.handle, { backgroundColor: theme.cardBorder }]} />
+          </View>
+
+          <Text style={[sheetStyles.title, { color: theme.textStrong }]}>Steps This Week</Text>
+
+          {loading ? (
+            <ActivityIndicator style={{ marginVertical: 40 }} color={theme.teal.bar} />
+          ) : (
+            <>
+              <View style={sheetStyles.statsRow}>
+                <View style={sheetStyles.statCell}>
+                  <Text style={[sheetStyles.statVal, { color: theme.teal.bar }]}>
+                    {weekTotal.toLocaleString()}
+                  </Text>
+                  <Text style={[sheetStyles.statLbl, { color: theme.textSoft }]}>This week</Text>
+                </View>
+                <View style={sheetStyles.statCell}>
+                  <Text style={[sheetStyles.statVal, { color: theme.textStrong }]}>
+                    {dailyAvg.toLocaleString()}
+                  </Text>
+                  <Text style={[sheetStyles.statLbl, { color: theme.textSoft }]}>Daily avg</Text>
+                </View>
+                {bestDay && bestDay.total > 0 ? (
+                  <View style={sheetStyles.statCell}>
+                    <Text style={[sheetStyles.statVal, { color: theme.textStrong }]}>
+                      {formatStepCount(bestDay.total)}
+                    </Text>
+                    <Text style={[sheetStyles.statLbl, { color: theme.textSoft }]}>
+                      Best ({bestDay.day_label})
+                    </Text>
+                  </View>
+                ) : null}
+                {lastWeekDiff !== null ? (
+                  <View style={sheetStyles.statCell}>
+                    <Text style={[sheetStyles.statVal, { color: lastWeekDiff >= 0 ? theme.teal.bar : theme.coral.sub }]}>
+                      {lastWeekDiff >= 0 ? "+" : ""}{lastWeekDiff}%
+                    </Text>
+                    <Text style={[sheetStyles.statLbl, { color: theme.textSoft }]}>vs last week</Text>
+                  </View>
+                ) : null}
+              </View>
+
+              {days.length > 0 ? (
+                <Svg width={BAR_W} height={BAR_H} style={sheetStyles.chart}>
+                  {days.map(function (day, i) {
+                    const barH = day.total > 0 ? Math.max((day.total / maxVal) * PLOT_H, 4) : 0;
+                    const x = i * slotW + (slotW - barW) / 2;
+                    const y = PLOT_H - barH;
+                    return (
+                      <React.Fragment key={day.date}>
+                        {barH > 0 ? (
+                          <Rect x={x} y={y} width={barW} height={barH} rx={4}
+                            fill={day.is_today ? theme.teal.bar : theme.teal.bg} />
+                        ) : null}
+                        {day.total > 0 ? (
+                          <SvgText x={x + barW / 2} y={Math.max(y - 3, 9)} fontSize={9}
+                            fill={theme.textSoft} textAnchor="middle">
+                            {formatStepCount(day.total)}
+                          </SvgText>
+                        ) : null}
+                        <SvgText x={x + barW / 2} y={BAR_H - 2} fontSize={10}
+                          fill={day.is_today ? theme.teal.bar : theme.textSoft}
+                          textAnchor="middle"
+                          fontWeight={day.is_today ? "600" : "normal"}>
+                          {day.day_label}
+                        </SvgText>
+                      </React.Fragment>
+                    );
+                  })}
+                </Svg>
+              ) : (
+                <Text style={[sheetStyles.empty, { color: theme.textSoft }]}>
+                  No steps logged this week yet.
+                </Text>
+              )}
+
+              {lastWeekTotal > 0 ? (
+                <Text style={[sheetStyles.lastWeek, { color: theme.textSoft }]}>
+                  Last week: {lastWeekTotal.toLocaleString()} steps
+                </Text>
+              ) : null}
+            </>
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const sheetStyles = StyleSheet.create({
+  overlay: { flex: 1, justifyContent: "flex-end" },
+  sheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingTop: 0 },
+  handleArea: { alignItems: "center", paddingVertical: 12 },
+  handle: { width: 36, height: 4, borderRadius: 2 },
+  title: { fontSize: 16, fontWeight: "600", marginBottom: 14 },
+  statsRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 4 },
+  statCell: { flex: 1, minWidth: 70 },
+  statVal: { fontSize: 17, fontWeight: "600" },
+  statLbl: { fontSize: 11, marginTop: 1 },
+  chart: { marginTop: 12 },
+  empty: { fontSize: 13, textAlign: "center", marginVertical: 30 },
+  lastWeek: { fontSize: 12, textAlign: "center", marginTop: 10, marginBottom: 4 },
 });

@@ -144,6 +144,9 @@ export const api = {
     const qs = weekStartDay !== undefined ? "?week_start_day=" + weekStartDay : "";
     return request("/metrics/" + metricId + "/weekly-total" + qs);
   },
+  metricDailyBreakdown: function (metricId: string, weekStartDay: number, agg: string = "max") {
+    return request("/metrics/" + metricId + "/daily-breakdown?week_start_day=" + weekStartDay + "&agg=" + agg);
+  },
   heartRateRange: function (userId: string, start: string, end: string) {
     return request("/heart-rate?user_id=" + userId + "&start=" + encodeURIComponent(start) + "&end=" + encodeURIComponent(end));
   },

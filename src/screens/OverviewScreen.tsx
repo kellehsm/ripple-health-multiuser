@@ -75,11 +75,11 @@ const BUCKET_LABEL: Record<Bucket, string> = {
 };
 
 const MOOD_OPTIONS = [
-  { score: 5, label: "Great", colorKey: "green" as const },
-  { score: 4, label: "Good",  colorKey: "teal"  as const },
-  { score: 3, label: "Okay",  colorKey: "amber" as const },
-  { score: 2, label: "Low",   colorKey: "coral" as const },
-  { score: 1, label: "Bad",   colorKey: "red"   as const },
+  { score: 5, label: "Great", emoji: "😃", colorKey: "green" as const },
+  { score: 4, label: "Good",  emoji: "🙂", colorKey: "teal"  as const },
+  { score: 3, label: "Okay",  emoji: "😐", colorKey: "amber" as const },
+  { score: 2, label: "Low",   emoji: "😕", colorKey: "coral" as const },
+  { score: 1, label: "Bad",   emoji: "😣", colorKey: "red"   as const },
 ];
 
 const TOD_BG: Record<string, string> = {
@@ -414,7 +414,8 @@ export function OverviewScreen() {
                       { backgroundColor: selected ? c.bg : theme.page, borderColor: selected ? c.sub : theme.cardBorder },
                     ]}
                   >
-                    <Text style={{ color: selected ? c.fg : theme.textSoft, fontSize: 13, fontWeight: selected ? "600" : "400" }}>
+                    <Text style={{ fontSize: 22, marginBottom: 2 }}>{opt.emoji}</Text>
+                    <Text style={{ color: selected ? c.fg : theme.textSoft, fontSize: 12, fontWeight: selected ? "600" : "400" }}>
                       {opt.label}
                     </Text>
                   </Pressable>
@@ -717,7 +718,7 @@ const styles = StyleSheet.create({
   periodChip: { flex: 1, borderWidth: 1, borderRadius: 10, paddingVertical: 8, alignItems: "center", gap: 2 },
   pickerBox: { marginTop: 10, borderWidth: 0.5, borderRadius: 12, padding: 12 },
   moodOptionsRow: { flexDirection: "row", gap: 6, flexWrap: "wrap", marginBottom: 10 },
-  moodOption: { flex: 1, minWidth: 60, borderWidth: 1, borderRadius: 10, paddingVertical: 8, alignItems: "center" },
+  moodOption: { flex: 1, minWidth: 60, borderWidth: 1, borderRadius: 10, paddingVertical: 10, alignItems: "center" },
   noteInput: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 13, marginBottom: 10 },
   pickerActions: { flexDirection: "row", gap: 8, justifyContent: "flex-end" },
   cancelBtn: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7 },
