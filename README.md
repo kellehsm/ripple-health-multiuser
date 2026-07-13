@@ -1,6 +1,6 @@
 # Ripple Health
 
-> Every choice sends ripples. This app shows you where they go.
+> Every choice sends ripples. Ripple Health shows you where they go.
 
 Ripple Health is a personal wellness app built around a single question: **how does everything I do affect my blood sugar, my sleep, and how I feel?**
 
