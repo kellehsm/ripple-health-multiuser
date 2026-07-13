@@ -9,13 +9,13 @@ const sharp = require('/usr/lib/node_modules/sharp-cli/node_modules/sharp');
 // Droplet: pointed top, rounded bottom, centered at (512, 512), ~280px wide, 360px tall
 // The droplet path: tip at top-center, curves out to sides, rounds at bottom
 
-const CREAM = '#FBFAF7';
-const TEAL  = '#1D9E75';
-const CORAL = '#D85A30';
-const BLUE  = '#378ADD';
-const AMBER = '#EF9F27';
-const WHITE = '#FFFFFF';
-const BLACK = '#111111';
+const CREAM  = '#FBFAF7';
+const TEAL   = '#3FA0A6';   // top-left: activity / steps
+const CORAL  = '#E8654E';   // top-right: food / meals
+const PURPLE = '#7B3FBF';   // bottom-left: finance
+const BERRY  = '#A62A50';   // bottom-right: glucose / HR
+const WHITE  = '#FFFFFF';
+const BLACK  = '#111111';
 
 // Droplet: shifted down 57px vs old design so bounding box (y=227–797) centers at y=512 in the tile
 const DROPLET = `M 512 227 C 512 227, 652 377, 672 547 C 692 717, 610 797, 512 797 C 414 797, 332 717, 352 547 C 372 377, 512 227, 512 227 Z`;
@@ -47,10 +47,10 @@ function iconSVG(bg) {
 
   <!-- four colour quadrants, clipped to droplet -->
   <g clip-path="url(#drop)">
-    <rect x="0"   y="0"   width="512" height="512" fill="${TEAL}"  clip-path="url(#topLeft)"/>
-    <rect x="512" y="0"   width="512" height="512" fill="${CORAL}" clip-path="url(#topRight)"/>
-    <rect x="0"   y="512" width="512" height="512" fill="${BLUE}"  clip-path="url(#bottomLeft)"/>
-    <rect x="512" y="512" width="512" height="512" fill="${AMBER}" clip-path="url(#bottomRight)"/>
+    <rect x="0"   y="0"   width="512" height="512" fill="${TEAL}"   clip-path="url(#topLeft)"/>
+    <rect x="512" y="0"   width="512" height="512" fill="${CORAL}"  clip-path="url(#topRight)"/>
+    <rect x="0"   y="512" width="512" height="512" fill="${PURPLE}" clip-path="url(#bottomLeft)"/>
+    <rect x="512" y="512" width="512" height="512" fill="${BERRY}"  clip-path="url(#bottomRight)"/>
   </g>
 
   <!-- droplet outline -->

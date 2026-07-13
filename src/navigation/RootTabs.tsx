@@ -54,7 +54,7 @@ function TabNavigator() {
         component={HealthScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <Ionicons name="heart" size={22} color={focused ? theme.red.sub : theme.textSoft} />
+            <Ionicons name="heart" size={22} color={focused ? theme.berry.sub : theme.textSoft} />
           ),
         }}
       />
@@ -63,7 +63,7 @@ function TabNavigator() {
         component={MealsScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <Ionicons name="restaurant" size={22} color={focused ? theme.amber.sub : theme.textSoft} />
+            <Ionicons name="restaurant" size={22} color={focused ? theme.coral.sub : theme.textSoft} />
           ),
         }}
       />
@@ -131,7 +131,7 @@ function TabNavigator() {
         component={FinanceScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <Ionicons name="wallet" size={22} color={focused ? theme.blue.sub : theme.textSoft} />
+            <Ionicons name="wallet" size={22} color={focused ? theme.purple.sub : theme.textSoft} />
           ),
         }}
       />

@@ -406,7 +406,7 @@ export function LifeScreen() {
             placeholderTextColor={theme.textSoft}
           />
           <Pressable
-            style={[styles.addButton, { backgroundColor: theme.coral.sub }]}
+            style={[styles.addButton, { backgroundColor: theme.teal.sub }]}
             onPress={handleCreateHobby}
           >
             {creatingHobby ? (
@@ -418,19 +418,19 @@ export function LifeScreen() {
         </View>
 
         {createHobbyError ? (
-          <Text style={{ color: theme.coral.sub, fontSize: 12, marginTop: 6 }}>
+          <Text style={{ color: theme.teal.sub, fontSize: 12, marginTop: 6 }}>
             {createHobbyError}
           </Text>
         ) : null}
 
         {logHobbyError ? (
-          <Text style={{ color: theme.coral.sub, fontSize: 12, marginTop: 6 }}>
+          <Text style={{ color: theme.teal.sub, fontSize: 12, marginTop: 6 }}>
             {logHobbyError}
           </Text>
         ) : null}
 
         {hobbyListError ? (
-          <Text style={{ color: theme.coral.sub, fontSize: 12, marginTop: 6 }}>
+          <Text style={{ color: theme.teal.sub, fontSize: 12, marginTop: 6 }}>
             {hobbyListError}
           </Text>
         ) : null}
@@ -458,9 +458,9 @@ export function LifeScreen() {
                       <Pressable
                         key={mins}
                         onPress={function () { handleLogHobby(hobby.id, mins); }}
-                        style={[styles.pageButton, { backgroundColor: theme.coral.bg }]}
+                        style={[styles.pageButton, { backgroundColor: theme.teal.bg }]}
                       >
-                        <Text style={{ color: theme.coral.fg, fontSize: 12 }}>+{mins} min</Text>
+                        <Text style={{ color: theme.teal.fg, fontSize: 12 }}>+{mins} min</Text>
                       </Pressable>
                     );
                   })}
@@ -474,13 +474,13 @@ export function LifeScreen() {
                     style={[styles.manualInput, { borderColor: theme.cardBorder, color: theme.textStrong }]}
                     placeholderTextColor={theme.textSoft}
                   />
-                  <Pressable style={[styles.logBtn, { backgroundColor: theme.coral.sub }]} onPress={() => handleManualHobbyLog(hobby.id)}>
+                  <Pressable style={[styles.logBtn, { backgroundColor: theme.teal.sub }]} onPress={() => handleManualHobbyLog(hobby.id)}>
                     <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Log</Text>
                   </Pressable>
                 </View>
                 {stats ? (
                   <View style={{ marginTop: 6 }}>
-                    <Text style={{ color: theme.coral.sub, fontSize: 13, fontWeight: "500" }}>
+                    <Text style={{ color: theme.teal.sub, fontSize: 13, fontWeight: "500" }}>
                       {formatAmount(stats.this_week_total, hobby.unit_label)} this week
                     </Text>
                     <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 2 }}>

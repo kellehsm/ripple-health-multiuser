@@ -104,9 +104,9 @@ export function HistoryScreen() {
               {["", "morning", "afternoon", "evening", "night"].map(b => (
                 <Pressable key={b || "any"}
                   onPress={() => setGlBucket(b)}
-                  style={[styles.bucketChip, { backgroundColor: glBucket === b ? theme.pink.bg : theme.page, borderColor: glBucket === b ? theme.pink.sub : theme.cardBorder }]}
+                  style={[styles.bucketChip, { backgroundColor: glBucket === b ? theme.berry.bg : theme.page, borderColor: glBucket === b ? theme.berry.sub : theme.cardBorder }]}
                 >
-                  <Text style={{ color: glBucket === b ? theme.pink.fg : theme.textSoft, fontSize: 12 }}>
+                  <Text style={{ color: glBucket === b ? theme.berry.fg : theme.textSoft, fontSize: 12 }}>
                     {b || "Any"}
                   </Text>
                 </Pressable>
@@ -203,7 +203,7 @@ export function HistoryScreen() {
               {mode === "glucose" && (
                 <>
                   <Text style={[styles.resultDate, { color: theme.textSoft }]}>{formatDate(r.date)}</Text>
-                  <Text style={{ color: theme.pink.sub, fontWeight: "500" }}>avg {r.avg_mg_dl} mg/dL</Text>
+                  <Text style={{ color: theme.berry.sub, fontWeight: "500" }}>avg {r.avg_mg_dl} mg/dL</Text>
                   <Text style={{ color: theme.textSoft, fontSize: 12 }}>peak {r.max_mg_dl} · {r.reading_count} readings</Text>
                 </>
               )}
@@ -224,7 +224,7 @@ export function HistoryScreen() {
               {mode === "spending" && (
                 <>
                   <Text style={[styles.resultDate, { color: theme.textSoft }]}>{formatDate(r.logged_at)}</Text>
-                  <Text style={{ color: theme.blue.sub, fontWeight: "500" }}>${Number(r.amount).toFixed(2)}</Text>
+                  <Text style={{ color: theme.purple.sub, fontWeight: "500" }}>${Number(r.amount).toFixed(2)}</Text>
                   {r.category && <Text style={{ color: theme.textSoft, fontSize: 12 }}>{r.category}</Text>}
                 </>
               )}

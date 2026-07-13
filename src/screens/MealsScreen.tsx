@@ -199,7 +199,7 @@ function MacroEditForm({
         </Pressable>
         <Pressable
           onPress={handleSave}
-          style={[styles.actionButton, { backgroundColor: theme.amber.sub, flex: 1 }]}
+          style={[styles.actionButton, { backgroundColor: theme.coral.sub, flex: 1 }]}
         >
           <Text style={styles.actionButtonText}>{saveLabel}</Text>
         </Pressable>
@@ -266,7 +266,7 @@ function MiniGlucoseChart({
           >
             {Math.round(minVal)}
           </SvgText>
-          <Polyline points={points} fill="none" stroke={theme.pink.sub} strokeWidth={2} />
+          <Polyline points={points} fill="none" stroke={theme.berry.sub} strokeWidth={2} />
         </Svg>
       )}
       <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 4 }}>{summaryText}</Text>
@@ -506,14 +506,14 @@ export function MealsScreen() {
                 style={[
                   styles.chip,
                   {
-                    backgroundColor: selected ? theme.amber.bg : theme.page,
-                    borderColor: selected ? theme.amber.sub : theme.cardBorder,
+                    backgroundColor: selected ? theme.coral.bg : theme.page,
+                    borderColor: selected ? theme.coral.sub : theme.cardBorder,
                   },
                 ]}
               >
                 <Text
                   style={{
-                    color: selected ? theme.amber.fg : theme.textSoft,
+                    color: selected ? theme.coral.fg : theme.textSoft,
                     fontSize: 12,
                     fontWeight: selected ? "600" : "400",
                   }}
@@ -535,7 +535,7 @@ export function MealsScreen() {
             placeholderTextColor={theme.textSoft}
           />
           <Pressable
-            style={[styles.actionButton, { backgroundColor: theme.amber.sub }]}
+            style={[styles.actionButton, { backgroundColor: theme.coral.sub }]}
             onPress={handleSearch}
           >
             {searching ? (
@@ -605,7 +605,7 @@ export function MealsScreen() {
                       </Text>
                     ) : null}
                   </View>
-                  <Ionicons name="create-outline" size={18} color={theme.amber.sub} />
+                  <Ionicons name="create-outline" size={18} color={theme.coral.sub} />
                 </Pressable>
               );
             })}
@@ -620,7 +620,7 @@ export function MealsScreen() {
         >
           <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Today's totals</Text>
           <Text
-            style={{ color: theme.amber.fg, fontSize: 15, fontWeight: "500", marginTop: 8 }}
+            style={{ color: theme.coral.fg, fontSize: 15, fontWeight: "500", marginTop: 8 }}
           >
             {formatNutrition(totals.carbs, totals.sugar, totals.calories)}
           </Text>
@@ -667,9 +667,9 @@ export function MealsScreen() {
                           {meal.name}
                         </Text>
                         <View
-                          style={[styles.mealTypeChip, { backgroundColor: theme.amber.bg }]}
+                          style={[styles.mealTypeChip, { backgroundColor: theme.coral.bg }]}
                         >
-                          <Text style={{ color: theme.amber.fg, fontSize: 10 }}>
+                          <Text style={{ color: theme.coral.fg, fontSize: 10 }}>
                             {meal.meal_type}
                           </Text>
                         </View>
@@ -683,7 +683,7 @@ export function MealsScreen() {
                     <Ionicons
                       name={isExpanded && !isEditing ? "chevron-up" : "pulse"}
                       size={16}
-                      color={theme.pink.sub}
+                      color={theme.berry.sub}
                       style={{ marginLeft: 8 }}
                     />
                   </Pressable>
@@ -695,7 +695,7 @@ export function MealsScreen() {
                     <Ionicons
                       name="pencil-outline"
                       size={15}
-                      color={isEditing ? theme.amber.sub : theme.textSoft}
+                      color={isEditing ? theme.coral.sub : theme.textSoft}
                     />
                   </Pressable>
                   <Pressable

@@ -19,9 +19,9 @@ export function FinanceScreen() {
     >
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Spending this week</Text>
-        <Text style={{ color: theme.green.sub, fontSize: 12, marginTop: 4 }}>$212 of $300 budget</Text>
-        <View style={[styles.progressTrack, { backgroundColor: theme.green.bg }]}>
-          <View style={[styles.progressFill, { backgroundColor: theme.green.sub, width: "70%" }]} />
+        <Text style={{ color: theme.purple.sub, fontSize: 12, marginTop: 4 }}>$212 of $300 budget</Text>
+        <View style={[styles.progressTrack, { backgroundColor: theme.purple.bg }]}>
+          <View style={[styles.progressFill, { backgroundColor: theme.purple.sub, width: "70%" }]} />
         </View>
       </View>
 

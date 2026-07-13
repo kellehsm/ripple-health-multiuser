@@ -382,19 +382,19 @@ export function HealthScreen() {
             label="Heart Rate"
             value={hrReadings.length > 0 ? hrReadings[hrReadings.length - 1].bpm + " bpm" : "--"}
             icon="heart-circle"
-            colorKey="red"
+            colorKey="berry"
           />
         </View>
         <View style={styles.fullCell}>
-          <MetricCard label="Glucose" value={glucoseValue} icon="pulse" colorKey="pink" sublabel={glucoseSub} />
+          <MetricCard label="Glucose" value={glucoseValue} icon="pulse" colorKey="berry" sublabel={glucoseSub} />
         </View>
       </View>
 
       {status && status.alerts && status.alerts.length > 0 ? (
-        <View style={[styles.alertCard, { backgroundColor: theme.coral.bg }]}>
+        <View style={[styles.alertCard, { backgroundColor: theme.red.bg }]}>
           {status.alerts.map(function (alert: string, i: number) {
             return (
-              <Text key={i} style={{ color: theme.coral.fg, fontSize: 13 }}>
+              <Text key={i} style={{ color: theme.red.fg, fontSize: 13 }}>
                 Alert: {alert}
               </Text>
             );
@@ -435,19 +435,19 @@ export function HealthScreen() {
         </View>
 
         {status && status.hasData ? (
-          <View style={[styles.glucoseCurrentBox, { backgroundColor: theme.red.bg }]}>
+          <View style={[styles.glucoseCurrentBox, { backgroundColor: theme.berry.bg }]}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.glucoseCurrentValue, { color: theme.red.fg }]}>
+              <Text style={[styles.glucoseCurrentValue, { color: theme.berry.fg }]}>
                 {status.mg_dl}{status.arrow ? " " + status.arrow : ""}
               </Text>
               {status.minutesSinceReading != null ? (
-                <Text style={{ color: theme.red.fg, fontSize: 12, opacity: 0.7, marginTop: 2 }}>
+                <Text style={{ color: theme.berry.fg, fontSize: 12, opacity: 0.7, marginTop: 2 }}>
                   as of {status.minutesSinceReading} min ago
                 </Text>
               ) : null}
             </View>
             {status.delta != null ? (
-              <Text style={{ color: theme.red.fg, fontSize: 14, fontWeight: "500" }}>
+              <Text style={{ color: theme.berry.fg, fontSize: 14, fontWeight: "500" }}>
                 {status.delta > 0 ? "+" : ""}{status.delta} from last
               </Text>
             ) : null}
@@ -472,20 +472,20 @@ export function HealthScreen() {
               );
             })}
 
-            <Line x1={PAD_LEFT} x2={CHART_WIDTH} y1={highY} y2={highY} stroke={theme.coral.sub} strokeDasharray="3,3" strokeWidth={1} />
-            <Line x1={PAD_LEFT} x2={CHART_WIDTH} y1={lowY} y2={lowY} stroke={theme.coral.sub} strokeDasharray="3,3" strokeWidth={1} />
+            <Line x1={PAD_LEFT} x2={CHART_WIDTH} y1={highY} y2={highY} stroke={theme.red.sub} strokeDasharray="3,3" strokeWidth={1} />
+            <Line x1={PAD_LEFT} x2={CHART_WIDTH} y1={lowY} y2={lowY} stroke={theme.red.sub} strokeDasharray="3,3" strokeWidth={1} />
 
             {yesterdayPoints.length > 0 ? (
               <Polyline points={yesterdayPoints} fill="none" stroke={theme.textSoft} strokeWidth={2} opacity={0.35} />
             ) : null}
 
-            <Polyline points={todayPoints} fill="none" stroke={theme.teal.bar} strokeWidth={2.5} />
+            <Polyline points={todayPoints} fill="none" stroke={theme.berry.bar} strokeWidth={2.5} />
           </Svg>
         )}
 
         <View style={styles.legendRow}>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: theme.teal.bar }]} />
+            <View style={[styles.legendDot, { backgroundColor: theme.berry.bar }]} />
             <Text style={{ color: theme.textSoft, fontSize: 11 }}>Today</Text>
           </View>
           <View style={styles.legendItem}>
@@ -526,7 +526,7 @@ export function HealthScreen() {
             <View style={styles.cardHeaderRow}>
               <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Heart Rate</Text>
               {peakBpm !== null ? (
-                <Text style={{ color: theme.red.sub, fontSize: 13 }}>peak {peakBpm} bpm</Text>
+                <Text style={{ color: theme.berry.sub, fontSize: 13 }}>peak {peakBpm} bpm</Text>
               ) : null}
             </View>
             {restingBpm !== null ? (
@@ -560,7 +560,7 @@ export function HealthScreen() {
               </Text>
             ) : (
               <Svg width={CHART_WIDTH} height={CHART_HEIGHT} style={{ marginTop: 12 }}>
-                <Polyline points={hrPoints} fill="none" stroke={theme.red.sub} strokeWidth={2} />
+                <Polyline points={hrPoints} fill="none" stroke={theme.berry.sub} strokeWidth={2} />
               </Svg>
             )}
           </View>

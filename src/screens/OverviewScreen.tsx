@@ -77,11 +77,11 @@ const BUCKET_LABEL: Record<Bucket, string> = {
 };
 
 const MOOD_OPTIONS = [
-  { score: 5, label: "Great", emoji: "😃", colorKey: "green" as const },
-  { score: 4, label: "Good",  emoji: "🙂", colorKey: "teal"  as const },
-  { score: 3, label: "Okay",  emoji: "😐", colorKey: "amber" as const },
-  { score: 2, label: "Low",   emoji: "😕", colorKey: "coral" as const },
-  { score: 1, label: "Bad",   emoji: "😣", colorKey: "red"   as const },
+  { score: 5, label: "Great", emoji: "😃", colorKey: "violet" as const },
+  { score: 4, label: "Good",  emoji: "🙂", colorKey: "teal"   as const },
+  { score: 3, label: "Okay",  emoji: "😐", colorKey: "blue"   as const },
+  { score: 2, label: "Low",   emoji: "😕", colorKey: "coral"  as const },
+  { score: 1, label: "Bad",   emoji: "😣", colorKey: "red"    as const },
 ];
 
 const TOD_BG: Record<string, string> = {
@@ -409,7 +409,7 @@ export function OverviewScreen() {
       })()}
 
       {streak >= 3 ? (
-        <Text style={[styles.streakBadge, { color: theme.amber.sub }]}>
+        <Text style={[styles.streakBadge, { color: theme.teal.sub }]}>
           🔥 {streak} day streak
         </Text>
       ) : null}
@@ -635,11 +635,11 @@ export function OverviewScreen() {
           </Text>
           <View style={styles.legendRow}>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: theme.coral.sub }]} />
+              <View style={[styles.legendDot, { backgroundColor: theme.violet.sub }]} />
               <Text style={{ color: theme.textSoft, fontSize: 11 }}>Mood (1–5)</Text>
             </View>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: correlation === "sleep" ? theme.blue.sub : theme.green.sub }]} />
+              <View style={[styles.legendDot, { backgroundColor: correlation === "sleep" ? theme.amber.sub : theme.purple.sub }]} />
               <Text style={{ color: theme.textSoft, fontSize: 11 }}>
                 {correlation === "sleep" ? "Sleep (hrs)" : "Spending ($)"}
               </Text>
@@ -659,11 +659,11 @@ export function OverviewScreen() {
               const groupX = i * STEP;
               const moodX = groupX + STEP / 2 - BAR_W - 1;
               const compX = groupX + STEP / 2 + 1;
-              const compColor = correlation === "sleep" ? theme.blue.sub : theme.green.sub;
+              const compColor = correlation === "sleep" ? theme.amber.sub : theme.purple.sub;
               return (
                 <React.Fragment key={day.date}>
                   {mH > 0
-                    ? <Rect x={moodX} y={CORR_H - mH} width={BAR_W} height={mH} fill={theme.coral.sub} rx={3} />
+                    ? <Rect x={moodX} y={CORR_H - mH} width={BAR_W} height={mH} fill={theme.violet.sub} rx={3} />
                     : <Rect x={moodX} y={CORR_H - 2} width={BAR_W} height={2} fill={theme.cardBorder} rx={1} />}
                   {cH > 0
                     ? <Rect x={compX} y={CORR_H - cH} width={BAR_W} height={cH} fill={compColor} rx={3} />
@@ -692,18 +692,18 @@ export function OverviewScreen() {
                 y={highBandY}
                 width={CHART_W - PAD_L}
                 height={lowBandY - highBandY}
-                fill={theme.teal.bg}
+                fill={theme.berry.bg}
                 opacity={0.35}
               />
-              {/* Range boundary lines */}
-              <Line x1={PAD_L} x2={CHART_W} y1={highBandY} y2={highBandY} stroke={theme.teal.sub} strokeDasharray="3,3" strokeWidth={0.5} opacity={0.6} />
-              <Line x1={PAD_L} x2={CHART_W} y1={lowBandY} y2={lowBandY} stroke={theme.teal.sub} strokeDasharray="3,3" strokeWidth={0.5} opacity={0.6} />
+              {/* Range boundary lines (alert thresholds) */}
+              <Line x1={PAD_L} x2={CHART_W} y1={highBandY} y2={highBandY} stroke={theme.red.sub} strokeDasharray="3,3" strokeWidth={0.5} opacity={0.6} />
+              <Line x1={PAD_L} x2={CHART_W} y1={lowBandY} y2={lowBandY} stroke={theme.red.sub} strokeDasharray="3,3" strokeWidth={0.5} opacity={0.6} />
               {/* Y axis labels */}
               <SvgText x={PAD_L - 3} y={highBandY + 4} fontSize={8} fill={theme.textSoft} textAnchor="end">180</SvgText>
               <SvgText x={PAD_L - 3} y={lowBandY + 4} fontSize={8} fill={theme.textSoft} textAnchor="end">70</SvgText>
               {/* Glucose line */}
               {glucosePoints ? (
-                <Polyline points={glucosePoints} fill="none" stroke={theme.teal.bar} strokeWidth={2} />
+                <Polyline points={glucosePoints} fill="none" stroke={theme.berry.bar} strokeWidth={2} />
               ) : null}
               {/* Event markers */}
               {dayEvents.map(function (ev, i) {
@@ -713,13 +713,13 @@ export function OverviewScreen() {
                 const gVal = interpolateGlucose(dayGlucose, t);
                 const y = gVal !== null ? glucoseY(gVal, minVal, maxVal) : PAD_T + usableH;
                 const isMoment = ev.type === "mood" && ev.entry_type === "moment";
-                const color = ev.type === "meal" ? theme.amber.sub
-                  : ev.type === "spend" ? theme.green.sub
-                  : theme.coral.sub;
+                const color = ev.type === "meal" ? theme.coral.sub
+                  : ev.type === "spend" ? theme.purple.sub
+                  : theme.violet.sub;
                 return (
                   <React.Fragment key={i}>
                     {isMoment ? (
-                      <Circle cx={x} cy={y} r={6} fill={theme.page} stroke={theme.coral.sub} strokeWidth={2} />
+                      <Circle cx={x} cy={y} r={6} fill={theme.page} stroke={theme.violet.sub} strokeWidth={2} />
                     ) : (
                       <Circle cx={x} cy={y} r={5} fill={color} opacity={0.9} />
                     )}
@@ -734,27 +734,27 @@ export function OverviewScreen() {
             {/* Legend */}
             <View style={styles.legendRow}>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: theme.teal.bar }]} />
+                <View style={[styles.legendDot, { backgroundColor: theme.berry.bar }]} />
                 <Text style={{ color: theme.textSoft, fontSize: 10 }}>Glucose</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: theme.amber.sub }]} />
+                <View style={[styles.legendDot, { backgroundColor: theme.coral.sub }]} />
                 <Text style={{ color: theme.textSoft, fontSize: 10 }}>Meal</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: theme.coral.sub }]} />
+                <View style={[styles.legendDot, { backgroundColor: theme.violet.sub }]} />
                 <Text style={{ color: theme.textSoft, fontSize: 10 }}>Mood</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: theme.green.sub }]} />
+                <View style={[styles.legendDot, { backgroundColor: theme.purple.sub }]} />
                 <Text style={{ color: theme.textSoft, fontSize: 10 }}>Spend</Text>
               </View>
             </View>
 
             {/* Single-day callout */}
             {callout ? (
-              <View style={[styles.calloutBox, { backgroundColor: theme.amber.bg, borderColor: theme.amber.sub }]}>
-                <Text style={{ color: theme.amber.fg, fontSize: 12 }}>{callout}</Text>
+              <View style={[styles.calloutBox, { backgroundColor: theme.coral.bg, borderColor: theme.coral.sub }]}>
+                <Text style={{ color: theme.coral.fg, fontSize: 12 }}>{callout}</Text>
               </View>
             ) : null}
           </>
