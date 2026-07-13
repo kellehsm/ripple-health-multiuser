@@ -15,21 +15,13 @@ const CORAL = '#D85A30';
 const BLUE  = '#378ADD';
 const AMBER = '#EF9F27';
 const WHITE = '#FFFFFF';
+const BLACK = '#111111';
 
-// Droplet: tip at (512, 170), widens, rounded bottom center at (512, 730)
-// Width ~280 at equator (y=512), radius at bottom ~160
-const DROPLET = `
-  M 512 170
-  C 512 170, 652 320, 672 490
-  C 692 660, 610 740, 512 740
-  C 414 740, 332 660, 352 490
-  C 372 320, 512 170, 512 170
-  Z
-`.trim().replace(/\s+/g, ' ');
+// Droplet: shifted down 57px vs old design so bounding box (y=227–797) centers at y=512 in the tile
+const DROPLET = `M 512 227 C 512 227, 652 377, 672 547 C 692 717, 610 797, 512 797 C 414 797, 332 717, 352 547 C 372 377, 512 227, 512 227 Z`;
 
-// Pulse line: horizontal across center of droplet, with an ECG spike
-// Entry ~370, flat to 440, spike up to 360 at 480, down to 620 at 510, back to 512 at 540, flat to 654
-const PULSE = `M 362 512 L 440 512 L 465 512 L 480 390 L 510 634 L 530 512 L 654 512`;
+// Pulse horizontal stays at y=512 (quadrant boundary / tile center); spike tips shifted +57 with droplet
+const PULSE = `M 362 512 L 440 512 L 465 512 L 480 447 L 510 691 L 530 512 L 654 512`;
 
 function iconSVG(bg) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024">
@@ -61,8 +53,11 @@ function iconSVG(bg) {
     <rect x="512" y="512" width="512" height="512" fill="${AMBER}" clip-path="url(#bottomRight)"/>
   </g>
 
+  <!-- droplet outline -->
+  <path d="${DROPLET}" fill="none" stroke="${BLACK}" stroke-width="4"/>
+
   <!-- pulse line over the droplet -->
-  <path d="${PULSE}" fill="none" stroke="${WHITE}" stroke-width="22"
+  <path d="${PULSE}" fill="none" stroke="${BLACK}" stroke-width="22"
         stroke-linecap="round" stroke-linejoin="round"
         clip-path="url(#drop)"/>
 </svg>`;
@@ -75,8 +70,8 @@ function monoSVG() {
       <path d="${DROPLET}"/>
     </clipPath>
   </defs>
-  <!-- solid dark droplet -->
-  <path d="${DROPLET}" fill="#1A1A1A"/>
+  <!-- solid dark droplet with outline -->
+  <path d="${DROPLET}" fill="#1A1A1A" stroke="${BLACK}" stroke-width="4"/>
   <!-- pulse line cutout rendered as white on dark -->
   <path d="${PULSE}" fill="none" stroke="${WHITE}" stroke-width="22"
         stroke-linecap="round" stroke-linejoin="round"
