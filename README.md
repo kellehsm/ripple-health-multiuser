@@ -19,8 +19,7 @@ I have continuous glucose data — a real-time window into how my body responds 
 - **What I'm doing** — hobbies, creative work, social time, reading; the texture of a day matters
 - **Financial stress** — spending patterns track closely with stress eating and low-energy days in ways I wanted to make visible
 
-The goal isn't optimization for its own sake. It's understanding — seeing the actual shape of cause and effect in my own life, not averages from a study population.
-
+The goal is understanding and  seeing the actual shape of cause and effect in my own life.
 ---
 
 ## Screenshots
