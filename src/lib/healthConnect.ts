@@ -42,10 +42,10 @@ export async function syncHealthData(): Promise<SyncResult> {
   let sleepHours: number | null = null;
   let heartRate: number | null = null;
 
-  // Steps — read past 8 days so any week-start setting has full data
+  // Steps — read past 30 days so historical weeks are fully populated
   try {
     const eightDaysAgo = new Date(now);
-    eightDaysAgo.setDate(eightDaysAgo.getDate() - 7);
+    eightDaysAgo.setDate(eightDaysAgo.getDate() - 30);
     eightDaysAgo.setHours(0, 0, 0, 0);
 
     const result = await readRecords("Steps", {
