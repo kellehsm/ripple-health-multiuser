@@ -34,6 +34,7 @@
       "expo-health-connect",
       "expo-notifications",
       "./plugins/withForegroundServiceType",
+      "./plugins/withAndroidWidget",
       [
         "expo-network-security-config",
         {
