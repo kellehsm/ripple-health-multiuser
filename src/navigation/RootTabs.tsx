@@ -12,6 +12,7 @@ import { FinanceScreen } from "../screens/FinanceScreen";
 import { LifeScreen } from "../screens/LifeScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
 import { HistoryScreen } from "../screens/HistoryScreen";
+import { StepsDetailScreen } from "../screens/StepsDetailScreen";
 import { useTheme } from "../theme/ThemeContext";
 
 const Tab = createBottomTabNavigator();
@@ -153,6 +154,7 @@ export function RootTabs() {
         <Stack.Screen name="Tabs" component={TabNavigator} options={{ headerShown: false }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: "Settings" }} />
         <Stack.Screen name="History" component={HistoryScreen} options={{ title: "History" }} />
+        <Stack.Screen name="StepsDetail" component={StepsDetailScreen} options={{ title: "Steps" }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
