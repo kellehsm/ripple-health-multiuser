@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Ripple Health",
-    "slug": "kel",
+    "slug": "ripple-health",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -58,9 +58,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "79655cf6-8278-4dea-bd65-4a1944346473"
+        "projectId": "db5bae1a-d8dd-4c26-84e7-7711669de2e8"
       }
     },
-    "owner": "kellehs"
+    "owner": "kels_gg"
   }
 }
