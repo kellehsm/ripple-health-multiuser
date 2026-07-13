@@ -11,6 +11,7 @@ import { MealsScreen } from "../screens/MealsScreen";
 import { FinanceScreen } from "../screens/FinanceScreen";
 import { LifeScreen } from "../screens/LifeScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
+import { HistoryScreen } from "../screens/HistoryScreen";
 import { useTheme } from "../theme/ThemeContext";
 
 const Tab = createBottomTabNavigator();
@@ -68,7 +69,20 @@ function TabNavigator() {
       <Tab.Screen
         name="Home"
         component={OverviewScreen}
-        options={{
+        options={({ navigation }) => ({
+          headerRight: () => (
+            <View style={{ flexDirection: "row", gap: 16, marginRight: 16, alignItems: "center" }}>
+              <Pressable onPress={() => (navigation as any).getParent()?.navigate("History")}>
+                <Ionicons name="search" size={20} color={theme.textStrong} />
+              </Pressable>
+              <Pressable onPress={() => (navigation as any).getParent()?.navigate("Settings")}>
+                <Ionicons name="settings-outline" size={20} color={theme.textStrong} />
+              </Pressable>
+              <Pressable onPress={toggle}>
+                <Ionicons name={mode === "light" ? "moon" : "sunny"} size={20} color={theme.textStrong} />
+              </Pressable>
+            </View>
+          ),
           tabBarIcon: () => null,
           tabBarLabel: () => null,
           tabBarButton: (props) => (
@@ -99,7 +113,7 @@ function TabNavigator() {
               <Text style={{ color: theme.textSoft, fontSize: 10, marginTop: 3 }}>Home</Text>
             </Pressable>
           ),
-        }}
+        })}
       />
       <Tab.Screen
         name="Life"
@@ -138,6 +152,7 @@ export function RootTabs() {
       >
         <Stack.Screen name="Tabs" component={TabNavigator} options={{ headerShown: false }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: "Settings" }} />
+        <Stack.Screen name="History" component={HistoryScreen} options={{ title: "History" }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

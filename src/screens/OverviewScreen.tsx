@@ -8,7 +8,9 @@ import {
   StyleSheet,
   ActivityIndicator,
   Dimensions,
+  RefreshControl,
 } from "react-native";
+import * as Haptics from "expo-haptics";
 import Svg, { Rect, Text as SvgText, Polyline, Line, Circle, Path } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
@@ -203,6 +205,39 @@ const EVENT_COLORS: Record<string, string> = {
   mood: "#A5401F", spend: "#6F4518", meal: "#8A5A0C", glucose_spike: "#A32D2D",
 };
 
+function buildGlanceSummary(
+  patternEvents: PatternEvent[],
+  dayGlucose: GlucoseReading[],
+  todayEntries: JournalEntry[],
+): string {
+  const clauses: string[] = [];
+
+  const mealCount = patternEvents.filter(e => e.type === "meal").length;
+  if (mealCount > 0) clauses.push(mealCount + (mealCount === 1 ? " meal logged" : " meals logged"));
+
+  const moodCount = todayEntries.filter(e => e.entry_type !== "moment").length;
+  if (moodCount > 0) clauses.push(moodCount === 1 ? "mood checked in" : moodCount + " mood check-ins");
+
+  if (dayGlucose.length >= 3) {
+    const inRange = dayGlucose.filter(r => r.mg_dl >= 70 && r.mg_dl <= 180).length;
+    const pct = inRange / dayGlucose.length;
+    if (pct >= 0.8) clauses.push("glucose mostly in range");
+    else if (pct < 0.4) clauses.push("glucose running high");
+  }
+
+  const spendEvents = patternEvents.filter(e => e.type === "spend");
+  if (spendEvents.length > 0) {
+    let total = 0;
+    for (const e of spendEvents) {
+      const m = e.label.match(/\$(\d+(?:\.\d+)?)/);
+      if (m) total += parseFloat(m[1]);
+    }
+    if (total > 0) clauses.push("$" + Math.round(total) + " spent");
+  }
+
+  return clauses.slice(0, 4).join(" · ");
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function OverviewScreen() {
@@ -224,21 +259,26 @@ export function OverviewScreen() {
 
   const [correlation, setCorrelation] = useState<"sleep" | "spend">("sleep");
   const [showAllEvents, setShowAllEvents] = useState(false);
+  const [streak, setStreak] = useState(0);
+  const [recapDismissed, setRecapDismissed] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async function () {
     try {
       const today = new Date().toISOString().split("T")[0];
-      const [entries, weekly, pattern, dig, day] = await Promise.all([
+      const [entries, weekly, pattern, dig, day, streakData] = await Promise.all([
         api.journalToday(USER_ID),
         api.weeklyMoodSummary(USER_ID),
         api.pattern(USER_ID),
         api.weeklyDigest(USER_ID),
         api.dayView(USER_ID, today),
+        api.streaks(USER_ID),
       ]);
       setTodayEntries(Array.isArray(entries) ? entries : []);
       setWeeklyData(Array.isArray(weekly) ? weekly : []);
       setPatternEvents(Array.isArray(pattern) ? pattern : []);
       setDigest(dig ?? null);
+      setStreak(Number(streakData?.meal_streak ?? 0));
       if (day) {
         setDayGlucose(Array.isArray(day.glucose) ? day.glucose : []);
         setDayEvents(Array.isArray(day.events) ? day.events : []);
@@ -249,6 +289,11 @@ export function OverviewScreen() {
       setLoading(false);
     }
   }, []);
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    try { await load(); } finally { setRefreshing(false); }
+  }
 
   useEffect(function () { load(); }, [load]);
 
@@ -272,6 +317,7 @@ export function OverviewScreen() {
     if (!pendingLabel || !activePicker) return;
     const score = MOOD_OPTIONS.find((m) => m.label === pendingLabel)?.score;
     if (!score) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSubmitting(true);
     try {
       if (activePicker === "moment") {
@@ -342,11 +388,62 @@ export function OverviewScreen() {
     );
   }
 
+  const isWeekStart = new Date().getDay() === 1;
+  const showRecap = isWeekStart && !recapDismissed && digest !== null;
+
   return (
-    <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={{ backgroundColor: theme.page }}
+      contentContainerStyle={styles.content}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
+    >
       <Text style={[styles.greeting, { color: theme.textStrong }]}>
         {greetingPrefix()}, Kelly
       </Text>
+
+      {(() => {
+        const summary = buildGlanceSummary(patternEvents, dayGlucose, todayEntries);
+        return summary ? (
+          <Text style={[styles.glanceSummary, { color: theme.textSoft }]}>{summary}</Text>
+        ) : null;
+      })()}
+
+      {streak >= 3 ? (
+        <Text style={[styles.streakBadge, { color: theme.amber.sub }]}>
+          🔥 {streak} day streak
+        </Text>
+      ) : null}
+
+      {showRecap && digest ? (
+        <View style={[styles.card, { backgroundColor: theme.teal.bg, borderColor: theme.teal.sub }]}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <Text style={[styles.cardTitle, { color: theme.teal.fg }]}>Your week</Text>
+            <Pressable onPress={() => setRecapDismissed(true)}>
+              <Ionicons name="close" size={16} color={theme.teal.fg} />
+            </Pressable>
+          </View>
+          {digest.steps.this_week > 0 ? (
+            <Text style={{ color: theme.teal.fg, fontSize: 13 }}>
+              {digest.steps.this_week.toLocaleString()} steps
+              {digest.steps.last_week > 0 ? (
+                digest.steps.this_week >= digest.steps.last_week
+                  ? " · up from last week"
+                  : " · slightly fewer than last week"
+              ) : ""}
+            </Text>
+          ) : null}
+          {digest.hobbies.this_week_sessions > 0 ? (
+            <Text style={{ color: theme.teal.fg, fontSize: 13, marginTop: 3 }}>
+              {digest.hobbies.this_week_sessions} hobby session{digest.hobbies.this_week_sessions === 1 ? "" : "s"}
+            </Text>
+          ) : null}
+          {digest.meal_flags.length > 0 ? (
+            <Text style={{ color: theme.teal.fg, fontSize: 12, marginTop: 3, opacity: 0.8 }}>
+              {digest.meal_flags.length} meal note{digest.meal_flags.length === 1 ? "" : "s"} worth reviewing
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
 
       {/* ── Mood check-in card ── */}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
@@ -710,6 +807,8 @@ const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   greeting: { fontSize: 20, fontWeight: "600", marginBottom: 4 },
+  glanceSummary: { fontSize: 13, marginBottom: 12, marginTop: 2 },
+  streakBadge: { fontSize: 13, marginBottom: 8 },
   card: { borderRadius: 14, borderWidth: 0.5, padding: 16 },
   cardTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
   cardTitle: { fontSize: 14, fontWeight: "500" },

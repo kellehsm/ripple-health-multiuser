@@ -76,6 +76,7 @@ export function SettingsScreen() {
   const [exportStart, setExportStart] = useState(defaultStart);
   const [exportEnd, setExportEnd] = useState(defaultEnd);
   const [exporting, setExporting] = useState(false);
+  const [exportingAll, setExportingAll] = useState(false);
 
   const load = useCallback(async function () {
     try {
@@ -287,6 +288,26 @@ export function SettingsScreen() {
       Alert.alert("Export failed", e?.message ?? "Unknown error");
     } finally {
       setExporting(false);
+    }
+  }
+
+  async function handleExportAll() {
+    setExportingAll(true);
+    try {
+      const url = api.exportAllUrl(USER_ID);
+      const date = new Date().toISOString().slice(0, 10);
+      const localUri = (FileSystem.cacheDirectory ?? "") + "ripple-backup-" + date + ".json";
+      const { uri } = await FileSystem.downloadAsync(url, localUri);
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(uri, { mimeType: "application/json", dialogTitle: "Save data backup" });
+      } else {
+        Alert.alert("Saved", "Backup saved to: " + uri);
+      }
+    } catch (e: any) {
+      Alert.alert("Export failed", e?.message ?? "Unknown error");
+    } finally {
+      setExportingAll(false);
     }
   }
 
@@ -603,6 +624,23 @@ export function SettingsScreen() {
           {exporting
             ? <ActivityIndicator size="small" color={theme.teal.fg} />
             : <Text style={{ color: theme.teal.fg, fontWeight: "500" }}>Generate &amp; share PDF</Text>
+          }
+        </Pressable>
+      </View>
+
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Export My Data</Text>
+        <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
+          Full backup of all your data as JSON — glucose, meals, mood, spending, books, hobbies, sleep, and heart rate.
+        </Text>
+        <Pressable
+          onPress={handleExportAll}
+          disabled={exportingAll}
+          style={[styles.saveButton, { backgroundColor: theme.teal.bg, borderColor: theme.teal.sub, opacity: exportingAll ? 0.6 : 1 }]}
+        >
+          {exportingAll
+            ? <ActivityIndicator size="small" color={theme.teal.fg} />
+            : <Text style={{ color: theme.teal.fg, fontWeight: "500" }}>Download full backup</Text>
           }
         </Pressable>
       </View>

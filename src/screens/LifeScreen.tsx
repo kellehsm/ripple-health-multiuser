@@ -9,7 +9,9 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  RefreshControl,
 } from "react-native";
+import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
@@ -85,6 +87,7 @@ export function LifeScreen() {
   const [hobbyListError, setHobbyListError] = useState<string | null>(null);
   const [hobbyStats, setHobbyStats] = useState<Record<string, HobbyStats>>({});
   const [hobbyAmountInputs, setHobbyAmountInputs] = useState<Record<string, string>>({});
+  const [refreshing, setRefreshing] = useState(false);
   const [hobbyName, setHobbyName] = useState("");
   const [creatingHobby, setCreatingHobby] = useState(false);
   const [createHobbyError, setCreateHobbyError] = useState<string | null>(null);
@@ -136,6 +139,11 @@ export function LifeScreen() {
     loadHobbies();
   }, [loadBooks, loadHobbies]);
 
+  async function handleRefresh() {
+    setRefreshing(true);
+    try { await Promise.all([loadBooks(), loadHobbies()]); } finally { setRefreshing(false); }
+  }
+
   async function handleSearch() {
     if (!searchText.trim()) return;
     setSearching(true);
@@ -168,6 +176,7 @@ export function LifeScreen() {
 
   async function handleLogPages(bookId: string, pages: number) {
     if (pages <= 0) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       await api.logPages(bookId, pages);
       const p = await api.bookProgress(bookId);
@@ -243,6 +252,7 @@ export function LifeScreen() {
   }
 
   async function handleLogHobby(hobbyId: string, amount: number) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLogHobbyError(null);
     try {
       await api.logHobby(hobbyId, amount, undefined, undefined);
@@ -263,7 +273,11 @@ export function LifeScreen() {
   const currentlyReading = books.filter((b) => b.status === "reading");
 
   return (
-    <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={{ backgroundColor: theme.page }}
+      contentContainerStyle={styles.content}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
+    >
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Add a book</Text>
         <View style={styles.searchRow}>

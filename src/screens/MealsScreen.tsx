@@ -9,7 +9,9 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  RefreshControl,
 } from "react-native";
+import * as Haptics from "expo-haptics";
 import Svg, { Polyline, Text as SvgText } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
@@ -290,6 +292,7 @@ export function MealsScreen() {
   const [pendingFood, setPendingFood] = useState<PendingFood | null>(null);
   const [editingMealId, setEditingMealId] = useState<string | null>(null);
 
+  const [refreshing, setRefreshing] = useState(false);
   const [expandedMealId, setExpandedMealId] = useState<string | null>(null);
   const [glucoseData, setGlucoseData] = useState<Record<string, GlucoseReading[]>>({});
   const [loadingGlucose, setLoadingGlucose] = useState<Record<string, boolean>>({});
@@ -345,8 +348,14 @@ export function MealsScreen() {
     });
   }
 
+  async function handleRefresh() {
+    setRefreshing(true);
+    try { await loadMeals(); } finally { setRefreshing(false); }
+  }
+
   function handleSavePending(values: MacroValues) {
     if (!pendingFood) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSearchError(null);
     api
       .addMeal({
@@ -476,7 +485,11 @@ export function MealsScreen() {
       : null;
 
   return (
-    <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={{ backgroundColor: theme.page }}
+      contentContainerStyle={styles.content}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
+    >
       {/* A. Log a meal */}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Log a meal</Text>

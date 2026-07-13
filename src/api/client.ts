@@ -156,6 +156,28 @@ export const api = {
   weeklyDigest: function (userId: string) {
     return request("/summary/weekly-digest?user_id=" + userId);
   },
+  streaks: function (userId: string) {
+    return request("/summary/streaks?user_id=" + userId);
+  },
+  searchGlucose: function (userId: string, params: { threshold?: number; bucket?: string; start?: string; end?: string } = {}) {
+    const qs = new URLSearchParams({ user_id: userId, ...Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])) });
+    return request("/search/glucose?" + qs.toString());
+  },
+  searchMeals: function (userId: string, params: { q?: string; min_carbs?: number; start?: string; end?: string } = {}) {
+    const qs = new URLSearchParams({ user_id: userId, ...Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])) });
+    return request("/search/meals?" + qs.toString());
+  },
+  searchMood: function (userId: string, params: { min_score?: number; max_score?: number; start?: string; end?: string } = {}) {
+    const qs = new URLSearchParams({ user_id: userId, ...Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])) });
+    return request("/search/mood?" + qs.toString());
+  },
+  searchSpending: function (userId: string, params: { min_amount?: number; category?: string; start?: string; end?: string } = {}) {
+    const qs = new URLSearchParams({ user_id: userId, ...Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])) });
+    return request("/search/spending?" + qs.toString());
+  },
+  exportAllUrl: function (userId: string): string {
+    return BASE_URL + "/export/all?user_id=" + userId;
+  },
   getSettings: function (userId: string) {
     return request("/settings?user_id=" + userId);
   },

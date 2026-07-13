@@ -1,0 +1,252 @@
+import React, { useState } from "react";
+import {
+  ScrollView, View, Text, TextInput, Pressable,
+  StyleSheet, ActivityIndicator,
+} from "react-native";
+import { useTheme } from "../theme/ThemeContext";
+import { api } from "../api/client";
+import { USER_ID } from "../api/config";
+
+type FilterMode = "glucose" | "meals" | "mood" | "spending";
+
+export function HistoryScreen() {
+  const { theme } = useTheme();
+  const [mode, setMode] = useState<FilterMode>("glucose");
+  const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState<any[]>([]);
+
+  const [glThreshold, setGlThreshold] = useState("180");
+  const [glBucket, setGlBucket] = useState("");
+
+  const [mealQ, setMealQ] = useState("");
+  const [mealMinCarbs, setMealMinCarbs] = useState("");
+
+  const [moodMin, setMoodMin] = useState("");
+  const [moodMax, setMoodMax] = useState("");
+
+  const [spendMin, setSpendMin] = useState("");
+  const [spendCategory, setSpendCategory] = useState("");
+
+  async function handleSearch() {
+    setLoading(true);
+    setResults([]);
+    try {
+      let data: any[] = [];
+      if (mode === "glucose") {
+        data = await api.searchGlucose(USER_ID, {
+          threshold: glThreshold ? parseInt(glThreshold) : undefined,
+          bucket: glBucket || undefined,
+        });
+      } else if (mode === "meals") {
+        data = await api.searchMeals(USER_ID, {
+          q: mealQ || undefined,
+          min_carbs: mealMinCarbs ? parseFloat(mealMinCarbs) : undefined,
+        });
+      } else if (mode === "mood") {
+        data = await api.searchMood(USER_ID, {
+          min_score: moodMin ? parseInt(moodMin) : undefined,
+          max_score: moodMax ? parseInt(moodMax) : undefined,
+        });
+      } else if (mode === "spending") {
+        data = await api.searchSpending(USER_ID, {
+          min_amount: spendMin ? parseFloat(spendMin) : undefined,
+          category: spendCategory || undefined,
+        });
+      }
+      setResults(data);
+    } catch (e) {
+      console.error("Search failed", e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function formatDate(str: string): string {
+    return new Date(str).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+
+  const MODES: FilterMode[] = ["glucose", "meals", "mood", "spending"];
+  const modeLabel: Record<FilterMode, string> = { glucose: "Glucose", meals: "Meals", mood: "Mood", spending: "Spending" };
+
+  return (
+    <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content}>
+      <View style={styles.modeRow}>
+        {MODES.map(m => (
+          <Pressable
+            key={m}
+            onPress={() => { setMode(m); setResults([]); }}
+            style={[styles.modeChip, {
+              backgroundColor: mode === m ? theme.teal.bar : theme.page,
+              borderColor: mode === m ? theme.teal.bar : theme.cardBorder,
+            }]}
+          >
+            <Text style={{ color: mode === m ? "#fff" : theme.textSoft, fontSize: 13 }}>
+              {modeLabel[m]}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        {mode === "glucose" && (
+          <>
+            <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>Average above (mg/dL)</Text>
+            <TextInput
+              value={glThreshold}
+              onChangeText={setGlThreshold}
+              keyboardType="numeric"
+              placeholder="180"
+              placeholderTextColor={theme.textSoft}
+              style={[styles.input, { color: theme.textStrong, borderColor: theme.cardBorder, backgroundColor: theme.page }]}
+            />
+            <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>Time of day (optional)</Text>
+            <View style={styles.bucketRow}>
+              {["", "morning", "afternoon", "evening", "night"].map(b => (
+                <Pressable key={b || "any"}
+                  onPress={() => setGlBucket(b)}
+                  style={[styles.bucketChip, { backgroundColor: glBucket === b ? theme.pink.bg : theme.page, borderColor: glBucket === b ? theme.pink.sub : theme.cardBorder }]}
+                >
+                  <Text style={{ color: glBucket === b ? theme.pink.fg : theme.textSoft, fontSize: 12 }}>
+                    {b || "Any"}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </>
+        )}
+
+        {mode === "meals" && (
+          <>
+            <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>Food name contains</Text>
+            <TextInput
+              value={mealQ}
+              onChangeText={setMealQ}
+              placeholder="e.g. rice, pasta..."
+              placeholderTextColor={theme.textSoft}
+              style={[styles.input, { color: theme.textStrong, borderColor: theme.cardBorder, backgroundColor: theme.page }]}
+            />
+            <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>Min carbs (g)</Text>
+            <TextInput
+              value={mealMinCarbs}
+              onChangeText={setMealMinCarbs}
+              keyboardType="numeric"
+              placeholder="e.g. 60"
+              placeholderTextColor={theme.textSoft}
+              style={[styles.input, { color: theme.textStrong, borderColor: theme.cardBorder, backgroundColor: theme.page }]}
+            />
+          </>
+        )}
+
+        {mode === "mood" && (
+          <>
+            <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>Score range (1 = Bad, 5 = Great)</Text>
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <TextInput
+                value={moodMin}
+                onChangeText={setMoodMin}
+                keyboardType="numeric"
+                placeholder="Min"
+                placeholderTextColor={theme.textSoft}
+                style={[styles.input, { flex: 1, color: theme.textStrong, borderColor: theme.cardBorder, backgroundColor: theme.page }]}
+              />
+              <TextInput
+                value={moodMax}
+                onChangeText={setMoodMax}
+                keyboardType="numeric"
+                placeholder="Max"
+                placeholderTextColor={theme.textSoft}
+                style={[styles.input, { flex: 1, color: theme.textStrong, borderColor: theme.cardBorder, backgroundColor: theme.page }]}
+              />
+            </View>
+          </>
+        )}
+
+        {mode === "spending" && (
+          <>
+            <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>Min amount ($)</Text>
+            <TextInput
+              value={spendMin}
+              onChangeText={setSpendMin}
+              keyboardType="numeric"
+              placeholder="e.g. 50"
+              placeholderTextColor={theme.textSoft}
+              style={[styles.input, { color: theme.textStrong, borderColor: theme.cardBorder, backgroundColor: theme.page }]}
+            />
+            <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>Category contains</Text>
+            <TextInput
+              value={spendCategory}
+              onChangeText={setSpendCategory}
+              placeholder="e.g. food, transport..."
+              placeholderTextColor={theme.textSoft}
+              style={[styles.input, { color: theme.textStrong, borderColor: theme.cardBorder, backgroundColor: theme.page }]}
+            />
+          </>
+        )}
+
+        <Pressable
+          onPress={handleSearch}
+          disabled={loading}
+          style={[styles.searchBtn, { backgroundColor: theme.teal.bar }]}
+        >
+          {loading
+            ? <ActivityIndicator size="small" color="#fff" />
+            : <Text style={{ color: "#fff", fontWeight: "600", fontSize: 14 }}>Search</Text>
+          }
+        </Pressable>
+      </View>
+
+      {results.length > 0 ? (
+        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <Text style={[styles.resultsHeader, { color: theme.textSoft }]}>{results.length} result{results.length === 1 ? "" : "s"}</Text>
+          {results.map((r, i) => (
+            <View key={i} style={[styles.resultRow, i > 0 && { borderTopWidth: 0.5, borderTopColor: theme.cardBorder }]}>
+              {mode === "glucose" && (
+                <>
+                  <Text style={[styles.resultDate, { color: theme.textSoft }]}>{formatDate(r.date)}</Text>
+                  <Text style={{ color: theme.pink.sub, fontWeight: "500" }}>avg {r.avg_mg_dl} mg/dL</Text>
+                  <Text style={{ color: theme.textSoft, fontSize: 12 }}>peak {r.max_mg_dl} · {r.reading_count} readings</Text>
+                </>
+              )}
+              {mode === "meals" && (
+                <>
+                  <Text style={[styles.resultDate, { color: theme.textSoft }]}>{formatDate(r.logged_at)}</Text>
+                  <Text style={{ color: theme.textStrong, fontWeight: "500" }}>{r.name}</Text>
+                  {r.carbs_g != null && <Text style={{ color: theme.textSoft, fontSize: 12 }}>{Math.round(r.carbs_g)}g carbs{r.calories != null ? " · " + Math.round(r.calories) + " cal" : ""}</Text>}
+                </>
+              )}
+              {mode === "mood" && (
+                <>
+                  <Text style={[styles.resultDate, { color: theme.textSoft }]}>{formatDate(r.logged_at)}</Text>
+                  <Text style={{ color: theme.textStrong, fontWeight: "500" }}>{r.mood_label ?? "Score " + r.mood_score}</Text>
+                  {r.entry_text && <Text style={{ color: theme.textSoft, fontSize: 12 }} numberOfLines={2}>{r.entry_text}</Text>}
+                </>
+              )}
+              {mode === "spending" && (
+                <>
+                  <Text style={[styles.resultDate, { color: theme.textSoft }]}>{formatDate(r.logged_at)}</Text>
+                  <Text style={{ color: theme.blue.sub, fontWeight: "500" }}>${Number(r.amount).toFixed(2)}</Text>
+                  {r.category && <Text style={{ color: theme.textSoft, fontSize: 12 }}>{r.category}</Text>}
+                </>
+              )}
+            </View>
+          ))}
+        </View>
+      ) : null}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  content: { padding: 16, gap: 12 },
+  modeRow: { flexDirection: "row", gap: 8 },
+  modeChip: { flex: 1, borderWidth: 1, borderRadius: 10, paddingVertical: 8, alignItems: "center" },
+  card: { borderRadius: 14, borderWidth: 0.5, padding: 16, gap: 10 },
+  fieldLabel: { fontSize: 12 },
+  input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14 },
+  bucketRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  bucketChip: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+  searchBtn: { borderRadius: 10, paddingVertical: 12, alignItems: "center", marginTop: 4 },
+  resultsHeader: { fontSize: 12, marginBottom: 4 },
+  resultRow: { paddingVertical: 10, gap: 2 },
+  resultDate: { fontSize: 11 },
+});

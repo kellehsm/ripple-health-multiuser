@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, Dimensions, Platform, Alert, Modal, PanResponder } from "react-native";
+import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, Dimensions, Platform, Alert, Modal, PanResponder, RefreshControl } from "react-native";
+import * as Haptics from "expo-haptics";
 import Svg, { Polyline, Line, Text as SvgText, Rect } from "react-native-svg";
 import { useTheme } from "../theme/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
@@ -100,6 +101,7 @@ export function HealthScreen() {
   const [hcSyncing, setHcSyncing] = useState(false);
   const [hcResult, setHcResult] = useState<string | null>(null);
   const [liveTracking, setLiveTracking] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadStepsAndSleep = useCallback(async function () {
     const today = new Date().toISOString().split("T")[0];
@@ -176,8 +178,18 @@ export function HealthScreen() {
     }
   }, []);
 
+  async function handleRefresh() {
+    setRefreshing(true);
+    try {
+      await Promise.all([load(rangeHours), loadWater(), loadStepsAndSleep(), loadHeartRate(hrRangeHours)]);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   async function handleLogWater() {
     if (!waterMetricId) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       await api.logWater(waterMetricId);
       const logs = await api.todaysWaterCount(waterMetricId);
@@ -327,7 +339,11 @@ export function HealthScreen() {
     : undefined;
 
   return (
-    <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={{ backgroundColor: theme.page }}
+      contentContainerStyle={styles.content}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
+    >
       <View style={styles.grid}>
         <Pressable style={styles.halfCell} onPress={() => stepsMetricId && setStepsSheetVisible(true)}>
           <MetricCard
