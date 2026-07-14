@@ -13,6 +13,7 @@ import {
 import * as Haptics from "expo-haptics";
 import Svg, { Rect, Text as SvgText, Polyline, Line, Circle, Path } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { USER_ID } from "../api/config";
@@ -245,6 +246,7 @@ function buildGlanceSummary(
 
 export function OverviewScreen() {
   const { theme } = useTheme();
+  const navigation = useNavigation<any>();
 
   const [todayEntries, setTodayEntries] = useState<JournalEntry[]>([]);
   const [weeklyData, setWeeklyData] = useState<WeeklyDay[]>([]);
@@ -416,6 +418,19 @@ export function OverviewScreen() {
           🔥 {streak} day streak
         </Text>
       ) : null}
+
+      <Pressable
+        onPress={function () { navigation.getParent()?.navigate("Trends"); }}
+        style={[styles.trendsCard, { backgroundColor: theme.violet.bg, borderColor: theme.violet.sub }]}
+      >
+        <View style={styles.trendsCardLeft}>
+          <Text style={[styles.trendsCardTitle, { color: theme.violet.fg }]}>Trends & Insights</Text>
+          <Text style={[styles.trendsCardDesc, { color: theme.violet.sub }]}>
+            See how sleep, spending & glucose relate to your mood — patterns across the last 14, 30, or 60 days
+          </Text>
+        </View>
+        <Ionicons name="stats-chart" size={28} color={theme.violet.sub} style={{ marginLeft: 12, flexShrink: 0 }} />
+      </Pressable>
 
       {showRecap && digest ? (
         <View style={[styles.card, { backgroundColor: theme.teal.bg, borderColor: theme.teal.sub }]}>
@@ -843,4 +858,8 @@ const styles = StyleSheet.create({
   timelineDot: { width: 8, height: 8, borderRadius: 4 },
   showMoreBtn: { paddingTop: 6 },
   calloutBox: { borderWidth: 0.5, borderRadius: 10, padding: 10, marginTop: 8, marginBottom: 4 },
+  trendsCard: { borderWidth: 1, borderRadius: 14, padding: 16, flexDirection: "row", alignItems: "center" },
+  trendsCardLeft: { flex: 1 },
+  trendsCardTitle: { fontSize: 15, fontWeight: "600", marginBottom: 4 },
+  trendsCardDesc: { fontSize: 12, lineHeight: 17 },
 });
