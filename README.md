@@ -27,7 +27,8 @@ The goal is understanding and  seeing the actual shape of cause and effect in my
 ### Home — Daily Overview
 *Glance summary, streak badge, mood picker with emoji tiles, weekly recap card*
 
-<img width="720" height="1600" alt="1000002613" src="https://github.com/user-attachments/assets/bb55a0b0-1053-41b3-8ca7-a8bdf51e85f9" />
+<img width="720" height="1600" alt="Screenshot_20260714_014812_Ripple Health" src="https://github.com/user-attachments/assets/5e181b59-9695-4538-9c09-961e4c7a2575" />
+
 
 
 ### Health — Biometrics Dashboard
