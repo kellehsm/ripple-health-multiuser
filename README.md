@@ -27,34 +27,33 @@ The goal is understanding and  seeing the actual shape of cause and effect in my
 ### Home — Daily Overview
 *Glance summary, streak badge, mood picker with emoji tiles, weekly recap card*
 
-<!-- screenshot: home screen overview -->
+<img width="720" height="1600" alt="1000002613" src="https://github.com/user-attachments/assets/bb55a0b0-1053-41b3-8ca7-a8bdf51e85f9" />
 
----
 
 ### Health — Biometrics Dashboard
 *Live glucose chart with trend arrow, steps, sleep, water, heart rate metric cards*
+<img width="720" height="1600" alt="1000002617" src="https://github.com/user-attachments/assets/4a7cd736-ccd1-440a-af95-0dab68e41333" />
 
-<!-- screenshot: health screen with glucose chart -->
+<img width="720" height="2503" alt="1000002615" src="https://github.com/user-attachments/assets/2a988189-7a63-493d-a3fa-1f83a0060d50" />
 
 ### Health — Steps Weekly Breakdown
 *Tap the steps card to open a bar chart breakdown with daily average, best day, and % vs. last week*
 
-<!-- screenshot: steps detail sheet modal -->
+<img width="720" height="1600" alt="Screenshot_20260714_013722_Ripple Health" src="https://github.com/user-attachments/assets/5e81f88b-7587-4091-9e34-458e3c7267ed" />
 
 ---
 
 ### Meals — Food & Glucose Response
 *Barcode scan or food search to log meals; post-meal glucose overlay 60–90 min after eating*
 
-<!-- screenshot: meals screen with food log -->
+<img width="720" height="1600" alt="1000002616" src="https://github.com/user-attachments/assets/b666dc62-df97-4040-985e-991b19bd4400" />
 
 ---
 
 ### Life — Hobbies & Reading
 *Log hobby time with ratings and notes; book progress tracking; weekly stats*
 
-<!-- screenshot: life screen with hobbies and books -->
-
+<img width="720" height="1600" alt="1000002617" src="https://github.com/user-attachments/assets/3abf2deb-ab3a-451c-a09b-45da3ee3d4dc" />
 ---
 
 ### Finance — Spending Patterns
@@ -74,7 +73,7 @@ The goal is understanding and  seeing the actual shape of cause and effect in my
 ### Settings — Preferences & Export
 *Week start day picker, mood reminders, Health Connect toggles, PDF doctor report, full JSON backup*
 
-<!-- screenshot: settings screen -->
+<img width="720" height="6234" alt="Screenshot_20260714_013940_Ripple Health" src="https://github.com/user-attachments/assets/f52f6583-89ce-4e41-8c9c-4c31af92192d" />
 
 ---
 
