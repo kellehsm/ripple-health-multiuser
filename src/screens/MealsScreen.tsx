@@ -163,7 +163,7 @@ function MacroEditForm({
         onChangeText={setName}
         placeholder="Food name"
         placeholderTextColor={theme.textSoft}
-        style={[styles.input, { borderColor: theme.cardBorder, color: theme.textStrong }]}
+        style={[styles.input, { borderColor: theme.cardBorder, color: theme.textStrong, backgroundColor: theme.page }]}
       />
       <View style={styles.macroInputRow}>
         <TextInput
@@ -172,7 +172,7 @@ function MacroEditForm({
           placeholder="Carbs (g)"
           placeholderTextColor={theme.textSoft}
           keyboardType="decimal-pad"
-          style={[styles.macroInput, { borderColor: theme.cardBorder, color: theme.textStrong }]}
+          style={[styles.macroInput, { borderColor: theme.cardBorder, color: theme.textStrong, backgroundColor: theme.page }]}
         />
         <TextInput
           value={sugar}
@@ -180,7 +180,7 @@ function MacroEditForm({
           placeholder="Sugar (g)"
           placeholderTextColor={theme.textSoft}
           keyboardType="decimal-pad"
-          style={[styles.macroInput, { borderColor: theme.cardBorder, color: theme.textStrong }]}
+          style={[styles.macroInput, { borderColor: theme.cardBorder, color: theme.textStrong, backgroundColor: theme.page }]}
         />
         <TextInput
           value={cals}
@@ -188,7 +188,7 @@ function MacroEditForm({
           placeholder="Calories"
           placeholderTextColor={theme.textSoft}
           keyboardType="decimal-pad"
-          style={[styles.macroInput, { borderColor: theme.cardBorder, color: theme.textStrong }]}
+          style={[styles.macroInput, { borderColor: theme.cardBorder, color: theme.textStrong, backgroundColor: theme.page }]}
         />
       </View>
       <View style={styles.editFormButtons}>
@@ -535,7 +535,7 @@ export function MealsScreen() {
             value={searchQuery}
             onChangeText={setSearchQuery}
             onSubmitEditing={handleSearch}
-            style={[styles.input, { borderColor: theme.cardBorder, color: theme.textStrong }]}
+            style={[styles.input, { borderColor: theme.cardBorder, color: theme.textStrong, backgroundColor: theme.page }]}
             placeholderTextColor={theme.textSoft}
           />
           <Pressable

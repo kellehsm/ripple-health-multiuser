@@ -103,7 +103,7 @@ function TabNavigator() {
                   width: 52,
                   height: 52,
                   borderRadius: 26,
-                  backgroundColor: "#888",
+                  backgroundColor: theme.teal.bar,
                   alignItems: "center",
                   justifyContent: "center",
                   marginTop: -18,

@@ -84,12 +84,18 @@ const MOOD_OPTIONS = [
   { score: 1, label: "Bad",   emoji: "😣", colorKey: "red"    as const },
 ];
 
-const TOD_BG: Record<string, string> = {
-  morning: "#F5D89A", afternoon: "#B9E9D6", evening: "#F2BBD1", night: "#B9DBF7",
-};
-const TOD_FG: Record<string, string> = {
-  morning: "#8A5A0C", afternoon: "#149D74", evening: "#993556", night: "#185FA5",
-};
+function todBg(b: string, theme: any): string {
+  if (b === "morning") return theme.coral.bg;
+  if (b === "afternoon") return theme.teal.bg;
+  if (b === "evening") return theme.violet.bg;
+  return theme.blue.bg;
+}
+function todFg(b: string, theme: any): string {
+  if (b === "morning") return theme.coral.fg;
+  if (b === "afternoon") return theme.teal.fg;
+  if (b === "evening") return theme.violet.fg;
+  return theme.blue.fg;
+}
 
 const SCREEN_W = Dimensions.get("window").width;
 const CHART_W = SCREEN_W - 64; // inside card with 16px padding each side
@@ -201,9 +207,6 @@ const CORR_H = 90;
 const BAR_W = Math.floor((CORR_W / 7) * 0.35);
 const STEP = CORR_W / 7;
 
-const EVENT_COLORS: Record<string, string> = {
-  mood: "#A5401F", spend: "#6F4518", meal: "#8A5A0C", glucose_spike: "#A32D2D",
-};
 
 function buildGlanceSummary(
   patternEvents: PatternEvent[],
@@ -469,7 +472,7 @@ export function OverviewScreen() {
           {BUCKET_ORDER.map(function (b) {
             const entry = entryPerPeriod[b];
             const isNow = b === currentBucket;
-            const bg = entry ? TOD_BG[b] : isNow ? theme.page : theme.page;
+            const bg = entry ? todBg(b, theme) : theme.page;
             const border = isNow && !entry ? theme.coral.sub : theme.cardBorder;
             return (
               <Pressable
@@ -477,10 +480,10 @@ export function OverviewScreen() {
                 onPress={function () { openPicker(b); }}
                 style={[styles.periodChip, { backgroundColor: bg, borderColor: border }]}
               >
-                <Text style={{ color: TOD_FG[b], fontSize: 10, fontWeight: "500" }}>
+                <Text style={{ color: todFg(b, theme), fontSize: 10, fontWeight: "500" }}>
                   {BUCKET_LABEL[b].slice(0, 3)}
                 </Text>
-                <Text style={{ color: entry ? TOD_FG[b] : theme.textSoft, fontSize: 12, fontWeight: entry ? "600" : "400" }}>
+                <Text style={{ color: entry ? todFg(b, theme) : theme.textSoft, fontSize: 12, fontWeight: entry ? "600" : "400" }}>
                   {entry ? (entry.mood_label ?? String(entry.mood_score)) : (isNow ? "tap" : "—")}
                 </Text>
               </Pressable>
@@ -579,9 +582,9 @@ export function OverviewScreen() {
                 const data = digest.glucose_by_tod[b];
                 if (!data) return null;
                 return (
-                  <View key={b} style={[styles.todChip, { backgroundColor: TOD_BG[b] }]}>
-                    <Text style={{ color: TOD_FG[b], fontSize: 10, fontWeight: "500" }}>{BUCKET_LABEL[b].slice(0, 3)}</Text>
-                    <Text style={{ color: TOD_FG[b], fontSize: 15, fontWeight: "600" }}>{data.avg}</Text>
+                  <View key={b} style={[styles.todChip, { backgroundColor: todBg(b, theme) }]}>
+                    <Text style={{ color: todFg(b, theme), fontSize: 10, fontWeight: "500" }}>{BUCKET_LABEL[b].slice(0, 3)}</Text>
+                    <Text style={{ color: todFg(b, theme), fontSize: 15, fontWeight: "600" }}>{data.avg}</Text>
                   </View>
                 );
               })}
@@ -772,7 +775,11 @@ export function OverviewScreen() {
         ) : (
           <>
             {visibleEvents.map(function (ev, i) {
-              const dotColor = EVENT_COLORS[ev.type] ?? theme.textSoft;
+              const dotColor = ev.type === "mood" ? theme.violet.sub
+              : ev.type === "spend" ? theme.purple.sub
+              : ev.type === "meal" ? theme.coral.sub
+              : ev.type === "glucose_spike" ? theme.red.sub
+              : theme.textSoft;
               const isMoment = ev.type === "mood" && ev.entry_type === "moment";
               return (
                 <View key={i} style={styles.timelineRow}>

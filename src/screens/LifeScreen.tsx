@@ -288,7 +288,7 @@ export function LifeScreen() {
             value={searchText}
             onChangeText={setSearchText}
             onSubmitEditing={handleSearch}
-            style={[styles.input, { borderColor: theme.cardBorder, color: theme.textStrong }]}
+            style={[styles.input, { borderColor: theme.cardBorder, color: theme.textStrong, backgroundColor: theme.page }]}
             placeholderTextColor={theme.textSoft}
           />
           <Pressable
@@ -381,7 +381,7 @@ export function LifeScreen() {
                       keyboardType="numeric"
                       value={pageInputs[book.id] ?? ""}
                       onChangeText={(v) => setPageInputs((prev) => ({ ...prev, [book.id]: v }))}
-                      style={[styles.manualInput, { borderColor: theme.cardBorder, color: theme.textStrong }]}
+                      style={[styles.manualInput, { borderColor: theme.cardBorder, color: theme.textStrong, backgroundColor: theme.page }]}
                       placeholderTextColor={theme.textSoft}
                     />
                     <Pressable style={[styles.logBtn, { backgroundColor: theme.teal.bar }]} onPress={() => handleManualPages(book.id)}>
@@ -404,7 +404,7 @@ export function LifeScreen() {
             value={hobbyName}
             onChangeText={setHobbyName}
             onSubmitEditing={handleCreateHobby}
-            style={[styles.input, { borderColor: theme.cardBorder, color: theme.textStrong }]}
+            style={[styles.input, { borderColor: theme.cardBorder, color: theme.textStrong, backgroundColor: theme.page }]}
             placeholderTextColor={theme.textSoft}
           />
           <Pressable
@@ -473,7 +473,7 @@ export function LifeScreen() {
                     keyboardType="numeric"
                     value={hobbyAmountInputs[hobby.id] ?? ""}
                     onChangeText={(v) => setHobbyAmountInputs((prev) => ({ ...prev, [hobby.id]: v }))}
-                    style={[styles.manualInput, { borderColor: theme.cardBorder, color: theme.textStrong }]}
+                    style={[styles.manualInput, { borderColor: theme.cardBorder, color: theme.textStrong, backgroundColor: theme.page }]}
                     placeholderTextColor={theme.textSoft}
                   />
                   <Pressable style={[styles.logBtn, { backgroundColor: theme.teal.sub }]} onPress={() => handleManualHobbyLog(hobby.id)}>
