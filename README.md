@@ -1,158 +1,131 @@
-# Ripple Health
+<div align="center">
 
-> Every choice sends ripples. Ripple Health shows you where they go.
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=14&height=200&section=header&text=Ripple%20Health&fontColor=FFFFFF&fontSize=56&fontAlignY=38&desc=Personal%20health%20OS%20for%20Android&descSize=18&descAlignY=60" width="100%" />
 
-Ripple Health is a personal wellness app built around a single question: **how does everything I do affect my blood sugar, my sleep, and how I feel?**
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](.)
+[![React Native](https://img.shields.io/badge/React_Native-61DAFB?style=flat-square&logo=react&logoColor=black)](.)
+[![Expo](https://img.shields.io/badge/Expo_SDK_57-000020?style=flat-square&logo=expo&logoColor=white)](.)
+[![Android](https://img.shields.io/badge/Android-3DDC84?style=flat-square&logo=android&logoColor=white)](.)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)](.)
+[![Self-hosted](https://img.shields.io/badge/Self--hosted-FF6B35?style=flat-square&logo=homeassistant&logoColor=white)](.)
 
-Most trackers answer one thing in isolation. A CGM shows glucose. A step counter shows steps. A mood app shows mood. But the patterns that actually matter live in the *gaps between* those silos — the late dinner that sent glucose spiking overnight, the stressful week that killed motivation to move, the hobby session that left mood elevated for two days after. Ripple Health is my attempt to put all of that in one place so those connections stop being invisible.
+</div>
 
----
+## What it is
 
-## The Question Behind It
+Ripple Health is a **personal health OS** — not a step counter, not a calorie tracker, not a mood diary. All of those, integrated, with the data you actually want to see. It pulls together a Dexcom continuous glucose monitor, nutrition database lookups, mood journaling, Health Connect data (steps, sleep, heart rate), and spending tracking into a single Android app backed by a self-hosted PostgreSQL server.
 
-I have continuous glucose data — a real-time window into how my body responds to the world. But blood sugar doesn't exist in a vacuum. It's shaped by:
-
-- **What I eat** — not just carbs in isolation, but *which* foods, *when*, combined with what else was happening that day
-- **How I move** — steps, activity, whether I walked after eating
-- **How I sleep** — quality and duration the night before, which shapes insulin sensitivity the next day
-- **How I feel** — stress and mood have direct physiological effects on glucose that don't show up in any meal log
-- **What I'm doing** — hobbies, creative work, social time, reading; the texture of a day matters
-- **Financial stress** — spending patterns track closely with stress eating and low-energy days in ways I wanted to make visible
-
-The goal is understanding and  seeing the actual shape of cause and effect in my own life.
----
-
-## Screenshots
-
-### Home — Daily Overview
-*Glance summary, streak badge, mood picker with emoji tiles, weekly recap card*
-
-<img width="720" height="1600" alt="Screenshot_20260714_014812_Ripple Health" src="https://github.com/user-attachments/assets/5e181b59-9695-4538-9c09-961e4c7a2575" />
-
-
-
-### Health — Biometrics Dashboard
-*Live glucose chart with trend arrow, steps, sleep, water, heart rate metric cards*
-<img width="720" height="1600" alt="1000002617" src="https://github.com/user-attachments/assets/4a7cd736-ccd1-440a-af95-0dab68e41333" />
-
-<img width="720" height="2503" alt="1000002615" src="https://github.com/user-attachments/assets/2a988189-7a63-493d-a3fa-1f83a0060d50" />
-
-### Health — Steps Weekly Breakdown
-*Tap the steps card to open a bar chart breakdown with daily average, best day, and % vs. last week*
-
-<img width="720" height="1600" alt="Screenshot_20260714_013722_Ripple Health" src="https://github.com/user-attachments/assets/5e81f88b-7587-4091-9e34-458e3c7267ed" />
+**Why self-hosted:** your glucose readings, meal logs, and mood history are sensitive. They don't belong in a startup's cloud. Everything runs on a VPS you control.
 
 ---
 
-### Meals — Food & Glucose Response
-*Barcode scan or food search to log meals; post-meal glucose overlay 60–90 min after eating*
+## Features
 
-<img width="720" height="1600" alt="1000002616" src="https://github.com/user-attachments/assets/b666dc62-df97-4040-985e-991b19bd4400" />
+### Glucose
+- Real-time Dexcom CGM integration via Dexcom Share API
+- Live glucose value with trend arrow and rate-of-change delta
+- Configurable time-range chart (3h / 6h / 12h / 24h) with 70–180 mg/dL target band
+- Yesterday overlay for same-window comparison
+- High/low alerts with dedicated notification channel
+- Glucose response mini-chart per logged meal (15 min pre → 3 hr post window)
 
----
+### Nutrition & Meals
+- Food search backed by USDA FoodData Central + Open Food Facts
+- Barcode scanner for packaged foods
+- Manual macro entry (name, carbs, sugar, calories)
+- Per-meal glucose response chart showing post-meal spikes
+- Daily macro totals (carbs, sugar, calories)
+- **Frequent meals** — top 8 most-logged meals surfaced as one-tap shortcuts
+- Smart notification auto-cancels when meal is logged
 
-### Life — Hobbies & Reading
-*Log hobby time with ratings and notes; book progress tracking; weekly stats*
+### Mood & Journal
+- Time-of-day check-ins (morning / afternoon / evening / night) with named moods (Bad → Great)
+- Off-schedule "moment" logs with optional free-text note
+- Chronological event feed overlaid on glucose chart
 
-<img width="720" height="1600" alt="1000002617" src="https://github.com/user-attachments/assets/3abf2deb-ab3a-451c-a09b-45da3ee3d4dc" />
----
+### Activity & Health
+- **Steps** via Health Connect with 7-day and month-over-month breakdown
+- **Sleep** duration tracking via Health Connect
+- **Water** intake with configurable daily goal and one-tap logging
+- **Heart rate** chart with resting and peak values
+- Android home screen widget showing live glucose + today's steps (refreshes every 30 min, tap to force refresh)
+- App shortcuts (long-press icon) for instant meal or water logging
 
-### Finance — Spending Patterns
-*Weekly budget progress, category breakdown, stress-spend correlation chart*
+### Life & Finance
+- **Books** — search, add, and log reading progress with percentage completion
+- **Hobbies** — custom activities with time or unit tracking and week-over-week stats
+- **Spending** — manual entry with categories; tracked week-to-week
 
-<!-- screenshot: finance screen -->
+### Trends & Insights
+- Pearson correlation scatter plots across a 14d / 30d / 60d window
+- Sleep ↔ Mood · Spending ↔ Mood · Glucose ↔ Mood · Sleep ↔ Glucose
+- Linear regression trend line per chart
+- Descriptive insight text (never diagnostic, never causal)
 
----
-
-### History — Cross-Domain Search
-*Search glucose by threshold, meals by name or carbs, mood by score range, spending by category*
-
-<!-- screenshot: history search screen -->
-
----
-
-### Settings — Preferences & Export
-*Week start day picker, mood reminders, Health Connect toggles, PDF doctor report, full JSON backup*
-
-<img width="720" height="6234" alt="Screenshot_20260714_013940_Ripple Health" src="https://github.com/user-attachments/assets/f52f6583-89ce-4e41-8c9c-4c31af92192d" />
-
----
-
-### Android Home Screen Widget
-*Glucose reading + steps at a glance, tappable to refresh, updates every 30 minutes*
-
-<!-- screenshot: android home screen with widget -->
-
----
-
-## What It Tracks
-
-### Blood Sugar
-Real-time CGM readings via **Dexcom** integration. Glucose chart with 3h / 6h / 12h / 24h windows, trend arrow, high/low alerts, yesterday overlay for direct comparison, post-meal response analysis, and time-in-range calculation. The foundation that everything else is measured against.
-
-### Steps & Activity
-30 days of history synced from **Android Health Connect**. Weekly totals respect your chosen week-start day. Tapping the steps card opens a bar chart breakdown by day with daily average, best day, and % comparison to last week.
-
-### Sleep
-Session duration synced from Health Connect. Yesterday's sleep and 7-day average visible at a glance. Sleep quality the night before is one of the strongest predictors of next-day glucose patterns.
-
-### Heart Rate
-Historical BPM chart from Health Connect, viewable across any time window. Resting vs. peak comparison.
-
-### Water
-Quick-log glasses of water with daily goal tracking and 7-day running average.
-
-### Meals
-Food search (USDA database) and barcode scanning. Logs carbs, protein, fat, and calories. Each meal is cross-referenced with CGM data to show what your glucose actually did 60–90 minutes after eating — not what it *should* do based on carb count, but what it *did*.
-
-### Mood
-Five-point scale (😣 → 😕 → 😐 → 🙂 → 😃) with optional free-text journaling. Four check-in periods per day (morning, afternoon, evening, night) with configurable push reminders. Weekly mood summary and searchable history.
-
-### Hobbies
-Track anything — guitar, climbing, cooking, gaming, walking, whatever makes a day feel like more than work. Log time in minutes with a 1–5 rating and optional note. Stats show weekly totals and trends. The hypothesis: hobby time and mood correlate more strongly than most people expect.
-
-### Books
-Reading list with per-session page logging. Tracks pace and progress toward finishing. Included because reading hours and stress levels tend to move in opposite directions — another signal worth having.
-
-### Spending
-Log expenses with categories. Weekly budget progress bar. The category breakdown makes it possible to see when stress is showing up in spending before you've consciously registered that the week was hard.
+### Smart Notifications
+- **Meal reminders** — configurable per-meal-period with auto-cancel on logging
+- **Glucose spike prompt** — fires when glucose rises 30+ mg/dL in an hour
+- **Evening check-in** — end-of-day summary nudge
+- **Water reminder** — every 2 hours until daily goal is hit
+- **Streak protection** — warns before midnight if you haven't logged anything
+- Separate notification channels for each type (independently silenceable)
 
 ---
 
-## Analysis Features
+## Architecture
 
-**Post-meal glucose response** — For any logged meal, see your actual glucose curve from 60–90 minutes after eating. Identify which foods spike you vs. which you tolerate well, in the context of your actual life (not a controlled study).
-
-**Stress-spend correlation** — Spending and mood overlaid on the same timeline. Makes the link between emotional state and financial impulse visible and measurable over time.
-
-**Cross-domain history search** — Filter across any data type:
-- Glucose readings above a custom threshold, grouped by time of day
-- Meals by name keyword or minimum carb content
-- Mood entries by score range and date window
-- Spending by category and minimum amount
-
-**Streak tracking** — Consecutive days of meal logging shown on the home screen with a 🔥 badge at 3+ days. No guilt framing — just a lightweight signal for consistency.
-
-**Weekly recap** — Dismissible Monday card summarizing last week: steps total, hobby sessions, meals logged, mood pattern.
-
-**Doctor report** — Generate a PDF with glucose stats (avg, time-in-range, high/low events), trend chart, and a meal-glucose correlation table. Designed to be something you'd actually bring to an appointment.
-
-**Full data export** — One-tap JSON backup of everything: glucose, meals, mood, spending, books, hobbies, sleep, heart rate, metrics. Your data stays yours.
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Android App (RN/Expo)                 │
+│                                                          │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────────┐ │
+│  │  Tab Screens │  │  Foreground  │  │ Home Screen   │ │
+│  │  (5 tabs +   │  │  Service     │  │ Widget        │ │
+│  │   modals)    │  │  (Notifee)   │  │ (Kotlin)      │ │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬────────┘ │
+│         └─────────────────┴─────────────────┘          │
+│                           │ HTTPS                        │
+└───────────────────────────┼─────────────────────────────┘
+                            │
+              ┌─────────────▼──────────────┐
+              │   VPS  ·  Caddy (HTTPS)    │
+              │   Fastify REST API :4000    │
+              │   Node.js · TypeScript      │
+              └─────────────┬──────────────┘
+                            │
+              ┌─────────────▼──────────────┐
+              │       PostgreSQL            │
+              │  glucose · meals · journal  │
+              │  books · hobbies · spending │
+              │  health metrics · settings  │
+              └────────────────────────────┘
+                            │
+              ┌─────────────▼──────────────┐
+              │       External APIs         │
+              │  Dexcom Share               │
+              │  USDA FoodData Central      │
+              │  Open Food Facts            │
+              │  Health Connect (on-device) │
+              └────────────────────────────┘
+```
 
 ---
 
-## Stack
+## Tech Stack
 
-| Layer | Tech |
+| Layer | Technology |
 |---|---|
-| Mobile | React Native + Expo SDK 57, TypeScript |
-| Navigation | React Navigation (stack + bottom tabs) |
-| Biometrics | Android Health Connect (`expo-health-connect`) |
-| CGM | Dexcom Share API (polled by backend every 5 min) |
-| Backend | Node.js + Fastify + PostgreSQL |
-| Builds | EAS Build (Android, internal APK distribution) |
-| Infra | VPS + Caddy reverse proxy (auto TLS at `app.kels.gg`) |
-| Notifications | notifee foreground service + expo-notifications |
+| **Mobile** | React Native, Expo SDK 57, TypeScript |
+| **Navigation** | React Navigation (tabs + native stack) |
+| **Notifications** | Notifee (foreground service, 5 channels, deep links) |
+| **Health data** | Health Connect (steps, sleep, heart rate) |
+| **Charts** | react-native-svg (glucose curves, bar charts, scatter plots) |
+| **Haptics** | expo-haptics |
+| **Widget** | Kotlin AppWidgetProvider (native Android) |
+| **Backend** | Node.js, Fastify, TypeScript |
+| **Database** | PostgreSQL |
+| **Infrastructure** | VPS (Linux), Caddy reverse proxy, Let's Encrypt TLS |
+| **Build** | EAS Build (Expo Application Services) |
 
 ---
 
@@ -160,83 +133,50 @@ Log expenses with categories. Weekly budget progress bar. The category breakdown
 
 ```
 src/
-  screens/        OverviewScreen, HealthScreen, MealsScreen, LifeScreen,
-                  FinanceScreen, HistoryScreen, SettingsScreen
-  components/     MetricCard, BarcodeScannerModal
-  api/            client.ts — all typed API calls
-  lib/            healthConnect.ts (30-day sync), foregroundService.ts
-  theme/          ThemeContext, light/dark color tokens
-  navigation/     RootTabs.tsx
+├── api/
+│   └── client.ts          # Typed API client (all backend calls)
+├── components/
+│   ├── MetricCard.tsx      # Reusable colored metric tile
+│   ├── WeekComparisonChart.tsx
+│   └── BarcodeScannerModal.tsx
+├── lib/
+│   ├── smartNotifications.ts  # All 5 smart notification types
+│   ├── foregroundService.ts   # Persistent tracking service
+│   └── healthConnect.ts       # Health Connect sync
+├── navigation/
+│   ├── RootTabs.tsx       # Tab + stack navigator
+│   └── navigationRef.ts   # Imperative navigation for notifications
+├── screens/
+│   ├── OverviewScreen.tsx  # Home — mood, glucose chart, event feed
+│   ├── HealthScreen.tsx    # Glucose, steps, sleep, water, heart rate
+│   ├── MealsScreen.tsx     # Meal logging + glucose response
+│   ├── LifeScreen.tsx      # Books + hobbies
+│   ├── FinanceScreen.tsx   # Spending
+│   ├── SettingsScreen.tsx  # All toggles and preferences
+│   ├── StepsDetailScreen.tsx
+│   ├── TrendsScreen.tsx    # Correlation scatter plots
+│   └── HistoryScreen.tsx   # Search across all data types
+└── theme/
+    ├── theme.ts            # Light + dark color tokens
+    └── ThemeContext.tsx    # Toggle-able theme provider
 
 plugins/
-  withForegroundServiceType.js    patches notifee foreground service manifest entry
-  withAndroidWidget.js            adds home screen widget via config plugin
-  android-widget/
-    RippleWidgetProvider.kt       fetches glucose + steps, renders via RemoteViews
-    ripple_widget.xml             widget layout
-    ripple_widget_info.xml        widget metadata (2×2 cells, 30-min refresh)
+├── withAndroidWidget.js    # EAS config plugin — widget XML + Kotlin
+├── withAndroidShortcuts.js # EAS config plugin — app shortcuts
+└── android-widget/
+    ├── RippleWidgetProvider.kt
+    ├── ripple_widget.xml
+    └── ripple_widget_info.xml
 ```
 
 ---
 
 ## Backend
 
-The API server lives in a companion repo: **[kellehsm/wellness-app](https://github.com/kellehsm/wellness-app)**
-
-It handles Dexcom polling, Health Connect data ingestion, USDA food search, cross-domain pattern analysis, PDF report generation, and the search endpoints that make the correlation features possible.
-
-The app pulls together five dimensions of daily life into a single view so the links between them become visible over time.
+The API lives at [`ripple-health-backend`](https://github.com/kellehsm/ripple-health-backend) — a Fastify/PostgreSQL server handling all data storage, Dexcom sync, food lookups, and aggregation queries.
 
 ---
 
-## What it tracks
-
-**Health** — Steps, sleep, and heart rate synced from Android Health Connect. Continuous glucose data pulled from Dexcom. The baseline picture of how your body is actually doing day to day.
-
-**Meals** — Barcode scanning and food search for logging what you eat. Meal entries are cross-referenced against glucose readings to surface how specific foods affect your blood sugar in the hours after eating.
-
-**Life** — Mood logging, hobby time, and book progress. The stuff that signals whether life feels good or just busy — and whether the answer correlates with what you ate or how you slept.
-
-**Finance** — Spending logs with category breakdowns. Impulsive spending and stress eating often show up on the same days. Seeing both in one place makes that pattern hard to ignore.
-
-**Home** — A daily overview that aggregates signals from all four tabs: glucose trend, step count, mood, water intake, and spending — so you start each day with the full picture rather than fragments.
-
----
-
-## The idea
-
-The dots have always been there. Most people already know, somewhere in the back of their mind, that they eat worse when they're tired, spend more when they're stressed, and move less when they're stuck inside. Ripple Health just makes those connections explicit and consistent enough to act on.
-
----
-
-## Stack
-
-- **React Native** (Expo SDK 57) with TypeScript
-- **Android Health Connect** via `expo-health-connect` for biometric data
-- **Dexcom API** integration for real-time CGM glucose data
-- **Node.js / Express** backend (`/wellness-app`) with PostgreSQL
-- **EAS Build** for Android APK distribution
-- **Caddy** reverse proxy with automatic TLS on `app.kels.gg`
-
----
-
-## Project structure
-
-```
-src/
-  screens/       # HealthScreen, MealsScreen, LifeScreen, FinanceScreen, OverviewScreen
-  components/    # MetricCard, BarcodeScannerModal
-  api/           # Typed API client pointing at app.kels.gg/api
-  lib/           # Health Connect sync logic
-  theme/         # Shared colors, spacing, typography
-```
-
----
-
-## Building
-
-Requires an EAS account. Builds are triggered via:
-
-```bash
-npx eas-cli@latest build --platform android --profile preview --non-interactive
-```
+<div align="center">
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=14&height=80&section=footer" width="100%" />
+</div>
