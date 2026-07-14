@@ -117,12 +117,14 @@ export function LifeScreen() {
     setLoadingHobbies(true);
     setHobbyListError(null);
     try {
+      const settings = await api.getSettings(USER_ID).catch(() => null);
+      const wsd: number = settings?.week_start?.hobbies ?? 1;
       const data: Hobby[] = await api.hobbies(USER_ID);
       const list = Array.isArray(data) ? data : [];
       setHobbies(list);
       const entries = await Promise.all(
         list.map(async (h) => {
-          const s: HobbyStats = await api.hobbyStats(h.id);
+          const s: HobbyStats = await api.hobbyStats(h.id, wsd);
           return [h.id, s] as [string, HobbyStats];
         })
       );

@@ -13,7 +13,9 @@ import { LifeScreen } from "../screens/LifeScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
 import { HistoryScreen } from "../screens/HistoryScreen";
 import { StepsDetailScreen } from "../screens/StepsDetailScreen";
+import { TrendsScreen } from "../screens/TrendsScreen";
 import { useTheme } from "../theme/ThemeContext";
+import { navigationRef } from "./navigationRef";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -73,6 +75,9 @@ function TabNavigator() {
         options={({ navigation }) => ({
           headerRight: () => (
             <View style={{ flexDirection: "row", gap: 16, marginRight: 16, alignItems: "center" }}>
+              <Pressable onPress={() => (navigation as any).getParent()?.navigate("Trends")}>
+                <Ionicons name="stats-chart-outline" size={20} color={theme.textStrong} />
+              </Pressable>
               <Pressable onPress={() => (navigation as any).getParent()?.navigate("History")}>
                 <Ionicons name="search" size={20} color={theme.textStrong} />
               </Pressable>
@@ -143,7 +148,7 @@ export function RootTabs() {
   const { theme } = useTheme();
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator
         screenOptions={{
           headerStyle: { backgroundColor: theme.page },
@@ -155,6 +160,7 @@ export function RootTabs() {
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: "Settings" }} />
         <Stack.Screen name="History" component={HistoryScreen} options={{ title: "History" }} />
         <Stack.Screen name="StepsDetail" component={StepsDetailScreen} options={{ title: "Steps" }} />
+        <Stack.Screen name="Trends" component={TrendsScreen} options={{ title: "Trends & Insights" }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

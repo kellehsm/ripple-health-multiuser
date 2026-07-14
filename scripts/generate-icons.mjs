@@ -11,7 +11,7 @@ const sharp = require('/usr/lib/node_modules/sharp-cli/node_modules/sharp');
 
 const CREAM  = '#FBFAF7';
 const TEAL   = '#3FA0A6';   // top-left: activity / steps
-const CORAL  = '#E8654E';   // top-right: food / meals
+const CORAL  = '#E8820E';   // top-right: food / meals
 const PURPLE = '#7B3FBF';   // bottom-left: finance
 const BERRY  = '#A62A50';   // bottom-right: glucose / HR
 const WHITE  = '#FFFFFF';

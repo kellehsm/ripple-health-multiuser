@@ -45,8 +45,9 @@ export const api = {
   logHobby: function (hobbyId: string, amount: number, rating?: number, note?: string) {
     return request("/hobbies/" + hobbyId + "/logs", { method: "POST", body: JSON.stringify({ amount: amount, rating: rating, note: note }) });
   },
-  hobbyStats: function (hobbyId: string) {
-    return request("/hobbies/" + hobbyId + "/stats");
+  hobbyStats: function (hobbyId: string, weekStartDay?: number) {
+    const qs = weekStartDay !== undefined ? "?week_start_day=" + weekStartDay : "";
+    return request("/hobbies/" + hobbyId + "/stats" + qs);
   },
 
   glucoseToday: function (userId: string, date: string) {
@@ -110,8 +111,9 @@ export const api = {
   journalToday: function (userId: string) {
     return request("/journal/today?user_id=" + userId);
   },
-  weeklyMoodSummary: function (userId: string) {
-    return request("/journal/weekly-summary?user_id=" + userId);
+  weeklyMoodSummary: function (userId: string, days?: number) {
+    const qs = days ? "&days=" + days : "";
+    return request("/journal/weekly-summary?user_id=" + userId + qs);
   },
 
   stepsToday: function (userId: string, date: string) {
@@ -146,6 +148,9 @@ export const api = {
   },
   metricDailyBreakdown: function (metricId: string, weekStartDay: number, agg: string = "max") {
     return request("/metrics/" + metricId + "/daily-breakdown?week_start_day=" + weekStartDay + "&agg=" + agg);
+  },
+  metricMonthlyBreakdown: function (metricId: string, weekStartDay: number, agg: string = "max") {
+    return request("/metrics/" + metricId + "/monthly-breakdown?week_start_day=" + weekStartDay + "&agg=" + agg);
   },
   heartRateRange: function (userId: string, start: string, end: string) {
     return request("/heart-rate?user_id=" + userId + "&start=" + encodeURIComponent(start) + "&end=" + encodeURIComponent(end));

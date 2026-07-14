@@ -1,4 +1,4 @@
-import { initialize, requestPermission, readRecords } from "react-native-health-connect";
+import { initialize, requestPermission, readRecords, aggregateGroupByPeriod } from "react-native-health-connect";
 import { api } from "../api/client";
 import { USER_ID } from "../api/config";
 
@@ -42,33 +42,31 @@ export async function syncHealthData(): Promise<SyncResult> {
   let sleepHours: number | null = null;
   let heartRate: number | null = null;
 
-  // Steps — read past 30 days so historical weeks are fully populated
+  // Steps — use HC aggregation (deduplicates overlapping records across sources)
   try {
-    const eightDaysAgo = new Date(now);
-    eightDaysAgo.setDate(eightDaysAgo.getDate() - 30);
-    eightDaysAgo.setHours(0, 0, 0, 0);
+    const historyStart = new Date(now);
+    historyStart.setDate(historyStart.getDate() - 30);
+    historyStart.setHours(0, 0, 0, 0);
 
-    const result = await readRecords("Steps", {
+    const buckets = await aggregateGroupByPeriod({
+      recordType: "Steps",
       timeRangeFilter: {
         operator: "between",
-        startTime: eightDaysAgo.toISOString(),
+        startTime: historyStart.toISOString(),
         endTime: now.toISOString(),
       },
+      timeRangeSlicer: { period: "DAYS", length: 1 },
     });
 
-    // Group step intervals by local date and sum
-    const byDate: Record<string, number> = {};
-    for (const r of result.records as any[]) {
-      const d = new Date(r.startTime);
-      const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      byDate[localDate] = (byDate[localDate] ?? 0) + (r.count ?? 0);
-    }
-
     const todayLocal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    for (const [date, count] of Object.entries(byDate)) {
-      if (count > 0) await api.syncSteps(USER_ID, date, count);
+    for (const bucket of buckets) {
+      const count = (bucket.result as any).COUNT_TOTAL ?? 0;
+      if (count <= 0) continue;
+      const d = new Date(bucket.startTime);
+      const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      await api.syncSteps(USER_ID, localDate, count);
+      if (localDate === todayLocal) steps = count;
     }
-    steps = byDate[todayLocal] ?? null;
   } catch (e: any) {
     errors.push("Steps: " + (e?.message ?? "unknown error"));
   }

@@ -35,6 +35,7 @@
       "expo-notifications",
       "./plugins/withForegroundServiceType",
       "./plugins/withAndroidWidget",
+      "./plugins/withAndroidShortcuts",
       [
         "expo-network-security-config",
         {

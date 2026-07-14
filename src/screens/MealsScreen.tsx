@@ -12,6 +12,7 @@ import {
   RefreshControl,
 } from "react-native";
 import * as Haptics from "expo-haptics";
+import notifee from "@notifee/react-native";
 import Svg, { Polyline, Text as SvgText } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
@@ -370,6 +371,9 @@ export function MealsScreen() {
         setSearchQuery("");
         setSearchResults([]);
         loadMeals();
+        const h = new Date().getHours();
+        const periodKey = h >= 4 && h < 11 ? "breakfast" : h >= 11 && h < 15 ? "lunch" : h >= 17 && h < 23 ? "dinner" : null;
+        if (periodKey) notifee.cancelNotification(`meal-reminder-${periodKey}`).catch(() => {});
       })
       .catch(function (e: Error) {
         setSearchError(e.message || "Failed to log meal");

@@ -1,10 +1,30 @@
 import notifee, { AndroidImportance } from "@notifee/react-native";
-import { initialize, readRecords } from "react-native-health-connect";
+import { initialize, aggregateRecord } from "react-native-health-connect";
 import { api } from "../api/client";
 import { USER_ID } from "../api/config";
+import {
+  initSmartChannels,
+  checkMealReminders,
+  checkGlucoseSpike,
+  checkEveningCheckin,
+  checkWaterReminder,
+  checkStreakProtection,
+} from "./smartNotifications";
 
 const CHANNEL_ID = "ripple-health-live";
 const NOTIF_ID = "ripple-health-live";
+
+// Settings cache — re-fetch every 10 minutes to pick up changes without hammering the API
+let cachedSettings: any = null;
+let settingsFetchedAt = 0;
+async function getSettings(): Promise<any> {
+  if (cachedSettings && Date.now() - settingsFetchedAt < 10 * 60 * 1000) return cachedSettings;
+  try {
+    cachedSettings = await api.getSettings(USER_ID);
+    settingsFetchedAt = Date.now();
+  } catch (_) {}
+  return cachedSettings;
+}
 
 async function ensureChannel() {
   await notifee.createChannel({
@@ -12,6 +32,7 @@ async function ensureChannel() {
     name: "Live Health Tracking",
     importance: AndroidImportance.LOW,
   });
+  await initSmartChannels();
 }
 
 // Returns hex color for the notification accent based on glucose trend arrow.
@@ -33,19 +54,18 @@ async function syncAndUpdateNotification(notificationId: string) {
     const now = new Date();
     const startOfDay = new Date(now);
     startOfDay.setHours(0, 0, 0, 0);
-    const result = await readRecords("Steps", {
+    // Use aggregateRecord so HC deduplicates overlapping records from all sources
+    const agg = await aggregateRecord({
+      recordType: "Steps",
       timeRangeFilter: {
         operator: "between",
         startTime: startOfDay.toISOString(),
         endTime: now.toISOString(),
       },
     });
-    const total = (result.records as any[]).reduce(
-      (sum, r) => sum + (r.count ?? 0),
-      0
-    );
+    const total = (agg as any).COUNT_TOTAL ?? 0;
     if (total > 0) {
-      const today = now.toISOString().split("T")[0];
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
       await api.syncSteps(USER_ID, today, total);
       stepsText = total.toLocaleString() + " steps today";
     }
@@ -77,6 +97,17 @@ async function syncAndUpdateNotification(notificationId: string) {
       color: trendColor(arrow),
     },
   });
+
+  // Smart notifications — run after the main notification update
+  try {
+    const settings = await getSettings();
+    const now = new Date();
+    await checkMealReminders(settings, now);
+    await checkGlucoseSpike(settings, now);
+    await checkEveningCheckin(settings, now);
+    await checkWaterReminder(settings, now);
+    await checkStreakProtection(settings, now);
+  } catch (_) {}
 }
 
 // Called from index.js — registers the headless handler before the React tree mounts.

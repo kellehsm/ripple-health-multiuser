@@ -22,7 +22,7 @@ import { getGrantedPermissions } from "react-native-health-connect";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { USER_ID } from "../api/config";
-import { requestHealthPermissions } from "../lib/healthConnect";
+import { requestHealthPermissions, syncHealthData } from "../lib/healthConnect";
 import {
   startForegroundService,
   stopForegroundService,
@@ -31,6 +31,7 @@ import {
 
 const WEEK_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
+type MealPeriodSettings = { enabled?: boolean; hour?: number };
 type Settings = {
   week_start?: { water?: number; sleep?: number; steps?: number; hobbies?: number };
   health_connect?: {
@@ -47,6 +48,18 @@ type Settings = {
   mood_reminders?: {
     enabled?: boolean;
     periods?: { morning?: boolean; afternoon?: boolean; evening?: boolean; night?: boolean };
+  };
+  smart_notifications?: {
+    meal_reminders?: {
+      enabled?: boolean;
+      breakfast?: MealPeriodSettings;
+      lunch?: MealPeriodSettings;
+      dinner?: MealPeriodSettings;
+    };
+    glucose_spike?: { enabled?: boolean; threshold_mg_dl?: number };
+    evening_checkin?: { enabled?: boolean; hour?: number };
+    water_reminder?: { enabled?: boolean; start_hour?: number; goal?: number };
+    streak_protection?: { enabled?: boolean; hour?: number };
   };
 };
 
@@ -70,6 +83,8 @@ export function SettingsScreen() {
   const [batteryGranted, setBatteryGranted] = useState<boolean | null>(null);
   const [hcGranted, setHcGranted] = useState<boolean | null>(null);
   const [trackingBusy, setTrackingBusy] = useState(false);
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillResult, setBackfillResult] = useState<string | null>(null);
 
   const defaultEnd = new Date().toISOString().slice(0, 10);
   const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -357,6 +372,27 @@ export function SettingsScreen() {
     save(updated);
   }
 
+  async function handleBackfill() {
+    setBackfilling(true);
+    setBackfillResult(null);
+    try {
+      const granted = await requestHealthPermissions();
+      if (!granted) {
+        setBackfillResult("Health Connect permission required.");
+        return;
+      }
+      const result = await syncHealthData();
+      const parts: string[] = [];
+      if (result.steps !== null) parts.push(result.steps.toLocaleString() + " steps today");
+      if (result.errors.length > 0) parts.push("errors: " + result.errors.join(", "));
+      setBackfillResult(parts.length > 0 ? "Done — " + parts.join(", ") : "Backfill complete (30 days).");
+    } catch (e: any) {
+      setBackfillResult("Backfill failed: " + (e?.message ?? "unknown error"));
+    } finally {
+      setBackfilling(false);
+    }
+  }
+
   if (loading) {
     return (
       <View style={[styles.center, { backgroundColor: theme.page }]}>
@@ -526,6 +562,19 @@ export function SettingsScreen() {
           onChange={(v) => setHcToggle("sync_heart_rate", v)}
           theme={theme}
         />
+        <Pressable
+          onPress={handleBackfill}
+          disabled={backfilling}
+          style={[styles.saveButton, { backgroundColor: theme.teal.bg, borderColor: theme.teal.sub, opacity: backfilling ? 0.6 : 1 }]}
+        >
+          {backfilling
+            ? <ActivityIndicator size="small" color={theme.teal.fg} />
+            : <Text style={{ color: theme.teal.fg, fontWeight: "500" }}>Backfill 30-day history</Text>
+          }
+        </Pressable>
+        {backfillResult ? (
+          <Text style={{ color: theme.textSoft, fontSize: 12, marginTop: 4 }}>{backfillResult}</Text>
+        ) : null}
       </View>
 
       {/* Dexcom credentials */}
@@ -588,6 +637,186 @@ export function SettingsScreen() {
         >
           <Text style={{ color: theme.teal.fg, fontWeight: "500" }}>Save Dexcom credentials</Text>
         </Pressable>
+      </View>
+
+      {/* Smart notifications */}
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Smart Notifications</Text>
+        <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
+          Requires Always-on Tracking to be enabled.
+        </Text>
+
+        {/* Meal reminders */}
+        <Text style={[styles.subHead, { color: theme.textStrong }]}>Meal Reminders</Text>
+        <ToggleRow
+          label="Remind me to log meals"
+          value={settings.smart_notifications?.meal_reminders?.enabled === true}
+          onChange={(v) => save({ smart_notifications: { ...(settings.smart_notifications ?? {}), meal_reminders: { ...(settings.smart_notifications?.meal_reminders ?? {}), enabled: v } } })}
+          theme={theme}
+        />
+        {settings.smart_notifications?.meal_reminders?.enabled === true ? (
+          <>
+            {(["breakfast", "lunch", "dinner"] as const).map((meal) => {
+              const defaults: Record<string, number> = { breakfast: 9, lunch: 13, dinner: 19 };
+              const mealLabel = meal.charAt(0).toUpperCase() + meal.slice(1);
+              const mealCfg = settings.smart_notifications?.meal_reminders?.[meal] ?? {};
+              const currentH = mealCfg.hour ?? defaults[meal];
+              const hours = meal === "breakfast" ? [7, 8, 9, 10] : meal === "lunch" ? [11, 12, 13, 14] : [17, 18, 19, 20, 21];
+              return (
+                <View key={meal} style={styles.weekRow}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <ToggleRow
+                      label={mealLabel}
+                      value={mealCfg.enabled !== false}
+                      onChange={(v) => save({ smart_notifications: { ...(settings.smart_notifications ?? {}), meal_reminders: { ...(settings.smart_notifications?.meal_reminders ?? {}), [meal]: { ...mealCfg, enabled: v } } } })}
+                      theme={theme}
+                    />
+                  </View>
+                  {mealCfg.enabled !== false ? (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dayScroll}>
+                      {hours.map((h) => {
+                        const label12 = h === 0 ? "12am" : h < 12 ? h + "am" : h === 12 ? "12pm" : (h - 12) + "pm";
+                        return (
+                          <Pressable
+                            key={h}
+                            onPress={() => save({ smart_notifications: { ...(settings.smart_notifications ?? {}), meal_reminders: { ...(settings.smart_notifications?.meal_reminders ?? {}), [meal]: { ...mealCfg, hour: h } } } })}
+                            style={[styles.dayChip, { backgroundColor: currentH === h ? theme.coral.sub : theme.page, borderColor: theme.cardBorder }]}
+                          >
+                            <Text style={{ color: currentH === h ? "#fff" : theme.textSoft, fontSize: 12 }}>{label12}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </ScrollView>
+                  ) : null}
+                </View>
+              );
+            })}
+          </>
+        ) : null}
+
+        {/* Glucose spike */}
+        <Text style={[styles.subHead, { color: theme.textStrong }]}>Glucose Spike Prompt</Text>
+        <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
+          Asks if you ate something when glucose rises 30+ mg/dL in an hour.
+        </Text>
+        <ToggleRow
+          label="Prompt on glucose spike"
+          value={settings.smart_notifications?.glucose_spike?.enabled === true}
+          onChange={(v) => save({ smart_notifications: { ...(settings.smart_notifications ?? {}), glucose_spike: { ...(settings.smart_notifications?.glucose_spike ?? {}), enabled: v } } })}
+          theme={theme}
+        />
+
+        {/* Evening check-in */}
+        <Text style={[styles.subHead, { color: theme.textStrong }]}>Evening Check-in</Text>
+        <ToggleRow
+          label="Daily end-of-day summary"
+          value={settings.smart_notifications?.evening_checkin?.enabled === true}
+          onChange={(v) => save({ smart_notifications: { ...(settings.smart_notifications ?? {}), evening_checkin: { ...(settings.smart_notifications?.evening_checkin ?? {}), enabled: v } } })}
+          theme={theme}
+        />
+        {settings.smart_notifications?.evening_checkin?.enabled === true ? (
+          <View style={styles.weekRow}>
+            <Text style={[styles.weekLabel, { color: theme.textStrong }]}>Send at</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dayScroll}>
+              {[19, 20, 21, 22].map((h) => {
+                const currentH = settings.smart_notifications?.evening_checkin?.hour ?? 21;
+                const label12 = (h - 12) + "pm";
+                return (
+                  <Pressable
+                    key={h}
+                    onPress={() => save({ smart_notifications: { ...(settings.smart_notifications ?? {}), evening_checkin: { ...(settings.smart_notifications?.evening_checkin ?? {}), hour: h } } })}
+                    style={[styles.dayChip, { backgroundColor: currentH === h ? theme.teal.bar : theme.page, borderColor: theme.cardBorder }]}
+                  >
+                    <Text style={{ color: currentH === h ? "#fff" : theme.textSoft, fontSize: 12 }}>{label12}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        ) : null}
+
+        {/* Water reminder */}
+        <Text style={[styles.subHead, { color: theme.textStrong }]}>Water Reminder</Text>
+        <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
+          Nudges every 2 hours if you haven't hit your daily glass goal.
+        </Text>
+        <ToggleRow
+          label="Remind me to drink water"
+          value={settings.smart_notifications?.water_reminder?.enabled === true}
+          onChange={(v) => save({ smart_notifications: { ...(settings.smart_notifications ?? {}), water_reminder: { ...(settings.smart_notifications?.water_reminder ?? {}), enabled: v } } })}
+          theme={theme}
+        />
+        {settings.smart_notifications?.water_reminder?.enabled === true ? (
+          <>
+            <View style={styles.weekRow}>
+              <Text style={[styles.weekLabel, { color: theme.textStrong }]}>Daily goal</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dayScroll}>
+                {[6, 7, 8, 9, 10, 12].map((g) => {
+                  const currentGoal = settings.smart_notifications?.water_reminder?.goal ?? 8;
+                  return (
+                    <Pressable
+                      key={g}
+                      onPress={() => save({ smart_notifications: { ...(settings.smart_notifications ?? {}), water_reminder: { ...(settings.smart_notifications?.water_reminder ?? {}), goal: g } } })}
+                      style={[styles.dayChip, { backgroundColor: currentGoal === g ? theme.blue.sub : theme.page, borderColor: theme.cardBorder }]}
+                    >
+                      <Text style={{ color: currentGoal === g ? "#fff" : theme.textSoft, fontSize: 12 }}>{g} glasses</Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+            <View style={styles.weekRow}>
+              <Text style={[styles.weekLabel, { color: theme.textStrong }]}>Start at</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dayScroll}>
+                {[7, 8, 9, 10].map((h) => {
+                  const currentH = settings.smart_notifications?.water_reminder?.start_hour ?? 9;
+                  const label12 = h + "am";
+                  return (
+                    <Pressable
+                      key={h}
+                      onPress={() => save({ smart_notifications: { ...(settings.smart_notifications ?? {}), water_reminder: { ...(settings.smart_notifications?.water_reminder ?? {}), start_hour: h } } })}
+                      style={[styles.dayChip, { backgroundColor: currentH === h ? theme.blue.sub : theme.page, borderColor: theme.cardBorder }]}
+                    >
+                      <Text style={{ color: currentH === h ? "#fff" : theme.textSoft, fontSize: 12 }}>{label12}</Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </>
+        ) : null}
+
+        {/* Streak protection */}
+        <Text style={[styles.subHead, { color: theme.textStrong }]}>Streak Protection</Text>
+        <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
+          Warns you before midnight if you haven't logged anything today and have an active streak.
+        </Text>
+        <ToggleRow
+          label="Protect my streak"
+          value={settings.smart_notifications?.streak_protection?.enabled === true}
+          onChange={(v) => save({ smart_notifications: { ...(settings.smart_notifications ?? {}), streak_protection: { ...(settings.smart_notifications?.streak_protection ?? {}), enabled: v } } })}
+          theme={theme}
+        />
+        {settings.smart_notifications?.streak_protection?.enabled === true ? (
+          <View style={styles.weekRow}>
+            <Text style={[styles.weekLabel, { color: theme.textStrong }]}>Alert at</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dayScroll}>
+              {[18, 19, 20, 21, 22].map((h) => {
+                const currentH = settings.smart_notifications?.streak_protection?.hour ?? 20;
+                const label12 = (h - 12) + "pm";
+                return (
+                  <Pressable
+                    key={h}
+                    onPress={() => save({ smart_notifications: { ...(settings.smart_notifications ?? {}), streak_protection: { ...(settings.smart_notifications?.streak_protection ?? {}), hour: h } } })}
+                    style={[styles.dayChip, { backgroundColor: currentH === h ? theme.coral.sub : theme.page, borderColor: theme.cardBorder }]}
+                  >
+                    <Text style={{ color: currentH === h ? "#fff" : theme.textSoft, fontSize: 12 }}>{label12}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        ) : null}
       </View>
 
       {/* Doctor PDF export */}
@@ -699,6 +928,7 @@ const styles = StyleSheet.create({
   card: { borderRadius: 14, borderWidth: 0.5, padding: 16, gap: 8 },
   sectionTitle: { fontSize: 14, fontWeight: "600", marginBottom: 2 },
   sectionDesc: { fontSize: 12, marginBottom: 4 },
+  subHead: { fontSize: 13, fontWeight: "500", marginTop: 8, marginBottom: 2 },
   weekRow: { gap: 6 },
   weekLabel: { fontSize: 13 },
   dayScroll: { flexGrow: 0 },

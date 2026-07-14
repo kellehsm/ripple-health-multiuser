@@ -11,6 +11,16 @@ import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { WeekComparisonChart, ChartDayData } from "../components/WeekComparisonChart";
 
+type MonthWeek = {
+  week_offset: number;
+  week_start_date: string;
+  week_label: string;
+  is_current: boolean;
+  recent_total: number;
+  prior_total: number;
+  change_pct: number | null;
+};
+
 type WeekDay = {
   date: string;
   day_label: string;
@@ -55,6 +65,7 @@ export function StepsDetailScreen() {
   const { theme } = useTheme();
   const [data, setData] = useState<BreakdownData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [monthlyData, setMonthlyData] = useState<MonthWeek[] | null>(null);
 
   useEffect(() => {
     api
@@ -62,6 +73,10 @@ export function StepsDetailScreen() {
       .then(setData)
       .catch(() => {})
       .finally(() => setLoading(false));
+    api
+      .metricMonthlyBreakdown(metricId, weekStartDay)
+      .then(setMonthlyData)
+      .catch(() => {});
   }, [metricId, weekStartDay]);
 
   if (loading) {
@@ -225,6 +240,45 @@ export function StepsDetailScreen() {
           </Text>
         )}
       </View>
+
+      {/* Monthly comparison — 4 recent weeks vs same weeks from prior month */}
+      {monthlyData && monthlyData.length > 0 && (
+        <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <Text style={[s.sectionTitle, { color: theme.textStrong }]}>Month-over-Month</Text>
+          <View style={s.monthColHeaders}>
+            <Text style={[s.monthColWeek, { color: theme.textSoft }]}>Week of</Text>
+            <Text style={[s.monthColVal, { color: theme.textSoft }]}>Recent</Text>
+            <Text style={[s.monthColVal, { color: theme.textSoft }]}>Prior</Text>
+            <Text style={[s.monthColChg, { color: theme.textSoft }]}>Change</Text>
+          </View>
+          {monthlyData.map((w, i) => (
+            <View
+              key={w.week_start_date}
+              style={[s.monthRow, i > 0 && { borderTopWidth: 0.5, borderTopColor: theme.cardBorder }]}
+            >
+              <Text style={[s.monthColWeek, { color: w.is_current ? theme.teal.bar : theme.textStrong }]}>
+                {w.week_label}{w.is_current ? " ·" : ""}
+              </Text>
+              <Text style={[s.monthColVal, { color: w.is_current ? theme.teal.bar : theme.textStrong }]}>
+                {fmtCompact(w.recent_total)}
+              </Text>
+              <Text style={[s.monthColVal, { color: theme.textSoft }]}>
+                {fmtCompact(w.prior_total)}
+              </Text>
+              {w.change_pct !== null ? (
+                <Text style={[s.monthColChg, { color: w.change_pct >= 0 ? theme.teal.bar : theme.coral.sub }]}>
+                  {w.change_pct >= 0 ? "+" : ""}{w.change_pct}%
+                </Text>
+              ) : (
+                <Text style={[s.monthColChg, { color: theme.textSoft }]}>—</Text>
+              )}
+            </View>
+          ))}
+          <Text style={[s.monthNote, { color: theme.textSoft }]}>
+            Compared to same weeks 4 weeks ago
+          </Text>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -262,4 +316,11 @@ const s = StyleSheet.create({
   avgVal: { fontSize: 22, fontWeight: "600" },
   avgLbl: { fontSize: 11, marginTop: 2 },
   avgDiffTxt: { fontSize: 12, marginTop: 12 },
+
+  monthColHeaders: { flexDirection: "row", paddingBottom: 6, marginBottom: 2 },
+  monthRow: { flexDirection: "row", alignItems: "center", paddingVertical: 9 },
+  monthColWeek: { flex: 2, fontSize: 12 },
+  monthColVal: { flex: 1, fontSize: 13, fontWeight: "500", textAlign: "right" },
+  monthColChg: { flex: 1, fontSize: 12, textAlign: "right" },
+  monthNote: { fontSize: 10, marginTop: 8 },
 });

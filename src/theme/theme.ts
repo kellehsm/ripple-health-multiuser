@@ -1,5 +1,5 @@
 // Color tokens for the Ripple Health palette.
-// Brand anchor: teal #3FA0A6 (activity), coral #E8654E (food), purple #7B3FBF (finance), berry #A62A50 (glucose/HR).
+// Brand anchor: teal #3FA0A6 (activity), coral #E8820E (food), purple #7B3FBF (finance), berry #A62A50 (glucose/HR).
 // All metric ramps harmonise with these four icon quadrant colors.
 
 export const lightTheme = {
@@ -12,7 +12,7 @@ export const lightTheme = {
   // Activity — steps, books, hobbies — icon top-left
   teal:   { bg: "#C2E9EB", fg: "#1A5C62", sub: "#2A8490", bar: "#3FA0A6" },
   // Food / meals — icon top-right
-  coral:  { bg: "#FCCDC7", fg: "#7A2015", sub: "#B03C28" },
+  coral:  { bg: "#FFE4C2", fg: "#6A3800", sub: "#C46210" },
   // Water — complementary mid blue
   blue:   { bg: "#C0DAF2", fg: "#0D3E70", sub: "#1A5AA0" },
   // Sleep — muted indigo-lavender (key name "amber" kept for backward compat with colorKey refs)
@@ -39,7 +39,7 @@ export const darkTheme = {
   textSoft: "#B4B1A8",
 
   teal:   { bg: "#0E3E44", fg: "#85D9E0", sub: "#5CC0C8", bar: "#4BB5BC" },
-  coral:  { bg: "#5C1D12", fg: "#F5A898", sub: "#E07060" },
+  coral:  { bg: "#452400", fg: "#FFB870", sub: "#E07A28" },
   blue:   { bg: "#0A2E58", fg: "#8AC4F2", sub: "#5CA0DC" },
   amber:  { bg: "#1E224A", fg: "#B0B5F5", sub: "#8085DC" },
   purple: { bg: "#2A1050", fg: "#C8A8F8", sub: "#A070E0" },
