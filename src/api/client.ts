@@ -81,6 +81,9 @@ export const api = {
   mealGlucoseResponse: function (mealId: string) {
     return request("/meals/" + mealId + "/glucose-response");
   },
+  frequentMeals: function (userId: string) {
+    return request("/meals/frequent?user_id=" + userId);
+  },
 
   spending: function (userId: string, since?: string) {
     return request("/spending?user_id=" + userId + (since ? "&since=" + since : ""));

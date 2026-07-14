@@ -22,6 +22,16 @@ import { BarcodeScannerModal } from "../components/BarcodeScannerModal";
 
 type MealType = "breakfast" | "lunch" | "dinner" | "snack";
 
+type FrequentMeal = {
+  name: string;
+  source_food_id: string | null;
+  source_db: string | null;
+  carbs_g: number | null;
+  sugar_g: number | null;
+  calories: number | null;
+  frequency: number;
+};
+
 type FoodResult = {
   source_food_id: string;
   name: string;
@@ -293,6 +303,7 @@ export function MealsScreen() {
   const [pendingFood, setPendingFood] = useState<PendingFood | null>(null);
   const [editingMealId, setEditingMealId] = useState<string | null>(null);
 
+  const [frequentMeals, setFrequentMeals] = useState<FrequentMeal[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedMealId, setExpandedMealId] = useState<string | null>(null);
   const [glucoseData, setGlucoseData] = useState<Record<string, GlucoseReading[]>>({});
@@ -318,6 +329,9 @@ export function MealsScreen() {
 
   useEffect(function () {
     loadMeals();
+    api.frequentMeals(USER_ID)
+      .then(function (data) { setFrequentMeals(Array.isArray(data) ? data : []); })
+      .catch(function () {});
   }, [loadMeals]);
 
   function handleSearch() {
@@ -349,9 +363,28 @@ export function MealsScreen() {
     });
   }
 
+  function handleSelectFrequent(meal: FrequentMeal) {
+    setSearchResults([]);
+    setSearchQuery("");
+    setPendingFood({
+      name: meal.name,
+      carbs_g: meal.carbs_g,
+      sugar_g: meal.sugar_g,
+      calories: meal.calories,
+      source_food_id: meal.source_food_id ?? undefined,
+      source_db: meal.source_db ?? "manual",
+    });
+  }
+
   async function handleRefresh() {
     setRefreshing(true);
-    try { await loadMeals(); } finally { setRefreshing(false); }
+    try {
+      await loadMeals();
+      const freq = await api.frequentMeals(USER_ID).catch(() => []);
+      setFrequentMeals(Array.isArray(freq) ? freq : []);
+    } finally {
+      setRefreshing(false);
+    }
   }
 
   function handleSavePending(values: MacroValues) {
@@ -497,6 +530,32 @@ export function MealsScreen() {
       {/* A. Log a meal */}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Log a meal</Text>
+
+        {frequentMeals.length > 0 ? (
+          <View style={styles.frequentSection}>
+            <Text style={[styles.frequentLabel, { color: theme.textSoft }]}>Your usual</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.frequentRow}>
+              {frequentMeals.map(function (meal, i) {
+                return (
+                  <Pressable
+                    key={meal.source_food_id ?? meal.name + i}
+                    onPress={function () { handleSelectFrequent(meal); }}
+                    style={[styles.frequentChip, { backgroundColor: theme.coral.bg, borderColor: theme.coral.sub }]}
+                  >
+                    <Text style={[styles.frequentChipName, { color: theme.coral.fg }]} numberOfLines={1}>
+                      {meal.name}
+                    </Text>
+                    {(meal.calories != null || meal.carbs_g != null) ? (
+                      <Text style={[styles.frequentChipSub, { color: theme.coral.sub }]} numberOfLines={1}>
+                        {meal.calories != null ? meal.calories + " cal" : meal.carbs_g + "g carbs"}
+                      </Text>
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        ) : null}
 
         <View style={styles.chipRow}>
           {MEAL_TYPES.map(function (type) {
@@ -820,6 +879,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  frequentSection: { marginTop: 10, marginBottom: 4 },
+  frequentLabel: { fontSize: 11, fontWeight: "500", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
+  frequentRow: { gap: 8, paddingBottom: 2 },
+  frequentChip: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, maxWidth: 140 },
+  frequentChipName: { fontSize: 13, fontWeight: "500" },
+  frequentChipSub: { fontSize: 11, marginTop: 2 },
   mealRow: { borderTopWidth: 0.5, paddingTop: 12, marginTop: 12 },
   mealContent: { flexDirection: "row", alignItems: "flex-start" },
   mealMain: { flex: 1, flexDirection: "row", alignItems: "flex-start" },
