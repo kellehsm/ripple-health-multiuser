@@ -8,7 +8,8 @@ async function request(path: string, options: RequestInit = {}): Promise<any> {
   if (!res.ok) throw new Error("API error " + res.status + ": " + (await res.text()));
   return res.json();
 }
-
+export const GOOGLE_CLIENT_ID =
+  "629396147708-a40h3rld7t1bjt1nsm097g010p2jaai9.apps.googleusercontent.com";
 export const api = {
   today: function (userId: string) {
     return request("/summary/today?user_id=" + userId);
@@ -158,6 +159,9 @@ export const api = {
   heartRateRange: function (userId: string, start: string, end: string) {
     return request("/heart-rate?user_id=" + userId + "&start=" + encodeURIComponent(start) + "&end=" + encodeURIComponent(end));
   },
+  heartRateDaily: function (userId: string, days: number = 7) {
+    return request("/heart-rate/daily?user_id=" + userId + "&days=" + days);
+  },
   reportUrl: function (userId: string, start: string, end: string): string {
     return BASE_URL + "/export/doctor-report?user_id=" + userId + "&start=" + encodeURIComponent(start) + "&end=" + encodeURIComponent(end);
   },
@@ -191,6 +195,18 @@ export const api = {
   },
   patchSettings: function (userId: string, patch: Record<string, unknown>) {
     return request("/settings", { method: "PATCH", body: JSON.stringify({ user_id: userId, ...patch }) });
+  },
+  getDriveStatus: function (userId: string) {
+    return request("/settings/google-drive/status?user_id=" + userId);
+  },
+  triggerDriveBackup: function (userId: string) {
+    return request("/settings/google-drive/backup", { method: "POST", body: JSON.stringify({ user_id: userId }) });
+  },
+  setDriveAutoBackup: function (userId: string, enabled: boolean) {
+    return request("/settings/google-drive/auto-backup", { method: "PATCH", body: JSON.stringify({ user_id: userId, enabled }) });
+  },
+  disconnectDrive: function (userId: string) {
+    return request("/settings/google-drive/disconnect", { method: "POST", body: JSON.stringify({ user_id: userId }) });
   },
 
   getOrCreateWaterMetric: async function (userId: string) {

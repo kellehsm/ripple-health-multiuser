@@ -377,14 +377,17 @@ export function HealthScreen() {
             sublabel={waterStatLine ?? undefined}
           />
         </View>
-        <View style={styles.halfCell}>
+        <Pressable
+          style={styles.halfCell}
+          onPress={() => navigation.getParent()?.navigate("HeartRateDetail")}
+        >
           <MetricCard
             label="Heart Rate"
             value={hrReadings.length > 0 ? hrReadings[hrReadings.length - 1].bpm + " bpm" : "--"}
             icon="heart-circle"
-            colorKey="berry"
+            colorKey="red"
           />
-        </View>
+        </Pressable>
         <View style={styles.fullCell}>
           <MetricCard label="Glucose" value={glucoseValue} icon="pulse" colorKey="berry" sublabel={glucoseSub} />
         </View>
@@ -526,7 +529,7 @@ export function HealthScreen() {
             <View style={styles.cardHeaderRow}>
               <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Heart Rate</Text>
               {peakBpm !== null ? (
-                <Text style={{ color: theme.berry.sub, fontSize: 13 }}>peak {peakBpm} bpm</Text>
+                <Text style={{ color: theme.red.sub, fontSize: 13 }}>peak {peakBpm} bpm</Text>
               ) : null}
             </View>
             {restingBpm !== null ? (
@@ -560,7 +563,7 @@ export function HealthScreen() {
               </Text>
             ) : (
               <Svg width={CHART_WIDTH} height={CHART_HEIGHT} style={{ marginTop: 12 }}>
-                <Polyline points={hrPoints} fill="none" stroke={theme.berry.sub} strokeWidth={2} />
+                <Polyline points={hrPoints} fill="none" stroke={theme.red.sub} strokeWidth={2} />
               </Svg>
             )}
           </View>

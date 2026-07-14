@@ -13,6 +13,7 @@ import { LifeScreen } from "../screens/LifeScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
 import { HistoryScreen } from "../screens/HistoryScreen";
 import { StepsDetailScreen } from "../screens/StepsDetailScreen";
+import { HeartRateDetailScreen } from "../screens/HeartRateDetailScreen";
 import { TrendsScreen } from "../screens/TrendsScreen";
 import { useTheme } from "../theme/ThemeContext";
 import { navigationRef } from "./navigationRef";
@@ -160,6 +161,7 @@ export function RootTabs() {
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: "Settings" }} />
         <Stack.Screen name="History" component={HistoryScreen} options={{ title: "History" }} />
         <Stack.Screen name="StepsDetail" component={StepsDetailScreen} options={{ title: "Steps" }} />
+        <Stack.Screen name="HeartRateDetail" component={HeartRateDetailScreen} options={{ title: "Heart Rate" }} />
         <Stack.Screen name="Trends" component={TrendsScreen} options={{ title: "Trends & Insights" }} />
       </Stack.Navigator>
     </NavigationContainer>

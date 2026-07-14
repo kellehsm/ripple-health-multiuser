@@ -14,6 +14,7 @@ import {
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import * as IntentLauncher from "expo-intent-launcher";
+import * as WebBrowser from "expo-web-browser";
 import notifee, { AuthorizationStatus } from "@notifee/react-native";
 import * as Notifications from "expo-notifications";
 import { SchedulableTriggerInputTypes } from "expo-notifications";
@@ -22,12 +23,15 @@ import { getGrantedPermissions } from "react-native-health-connect";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { USER_ID } from "../api/config";
+import { GOOGLE_CLIENT_ID } from "../api/client";
 import { requestHealthPermissions, syncHealthData } from "../lib/healthConnect";
 import {
   startForegroundService,
   stopForegroundService,
   isForegroundServiceRunning,
 } from "../lib/foregroundService";
+
+WebBrowser.maybeCompleteAuthSession();
 
 const WEEK_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -63,6 +67,13 @@ type Settings = {
   };
 };
 
+type DriveStatus = {
+  connected: boolean;
+  last_backup: string | null;
+  auto_backup: boolean;
+  connected_at: string | null;
+};
+
 const REMINDER_PERIODS: { key: string; label: string; hour: number; minute: number }[] = [
   { key: "morning", label: "Morning", hour: 9, minute: 0 },
   { key: "afternoon", label: "Afternoon", hour: 14, minute: 0 },
@@ -93,6 +104,17 @@ export function SettingsScreen() {
   const [exporting, setExporting] = useState(false);
   const [exportingAll, setExportingAll] = useState(false);
 
+  const [driveStatus, setDriveStatus] = useState<DriveStatus | null>(null);
+  const [driveConnecting, setDriveConnecting] = useState(false);
+  const [driveBackingUp, setDriveBackingUp] = useState(false);
+
+  const loadDriveStatus = useCallback(async function () {
+    try {
+      const status = await api.getDriveStatus(USER_ID);
+      setDriveStatus(status);
+    } catch (_) {}
+  }, []);
+
   const load = useCallback(async function () {
     try {
       const s = await api.getSettings(USER_ID);
@@ -104,7 +126,8 @@ export function SettingsScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+    loadDriveStatus();
+  }, [loadDriveStatus]);
 
   useEffect(function () { load(); }, [load]);
 
@@ -283,6 +306,84 @@ export function SettingsScreen() {
         await cancelMoodReminder(p.key);
       }
     }
+  }
+
+  async function handleConnectGoogleDrive() {
+    if (!GOOGLE_CLIENT_ID) {
+      Alert.alert("Not configured", "Set GOOGLE_CLIENT_ID in src/api/config.ts to enable Drive backups.");
+      return;
+    }
+    setDriveConnecting(true);
+    try {
+      const redirectUri = "https://app.kels.gg/auth/google/callback";
+      const scope = "https://www.googleapis.com/auth/drive.file";
+      const authUrl =
+        "https://accounts.google.com/o/oauth2/v2/auth?" +
+        new URLSearchParams({
+          client_id: GOOGLE_CLIENT_ID,
+          redirect_uri: redirectUri,
+          response_type: "code",
+          scope,
+          access_type: "offline",
+          prompt: "consent",
+        }).toString();
+
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, "wellnessfresh://oauth");
+      if (result.type === "success" && result.url.includes("status=connected")) {
+        await loadDriveStatus();
+        Alert.alert("Connected", "Google Drive backup is set up. Nightly backups will run at 2 AM.");
+      } else if (result.type === "success" && result.url.includes("status=error")) {
+        Alert.alert("Connection failed", "Google authorization failed. Try again.");
+      }
+    } catch (e: any) {
+      Alert.alert("Error", e?.message ?? "Failed to open Google auth.");
+    } finally {
+      setDriveConnecting(false);
+    }
+  }
+
+  async function handleManualBackup() {
+    setDriveBackingUp(true);
+    try {
+      const res = await api.triggerDriveBackup(USER_ID);
+      await loadDriveStatus();
+      Alert.alert("Backup complete", res.filename ?? "Backup uploaded to Google Drive.");
+    } catch (e: any) {
+      Alert.alert("Backup failed", e?.message ?? "Unknown error");
+    } finally {
+      setDriveBackingUp(false);
+    }
+  }
+
+  async function handleDriveAutoBackupToggle(value: boolean) {
+    try {
+      await api.setDriveAutoBackup(USER_ID, value);
+      setDriveStatus((prev) => prev ? { ...prev, auto_backup: value } : prev);
+    } catch (e: any) {
+      Alert.alert("Error", e?.message ?? "Failed to update setting.");
+    }
+  }
+
+  async function handleDisconnectDrive() {
+    Alert.alert(
+      "Disconnect Google Drive?",
+      "Nightly backups will stop. Existing backup files in Drive will remain.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Disconnect",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await api.disconnectDrive(USER_ID);
+              setDriveStatus(null);
+            } catch (e: any) {
+              Alert.alert("Error", e?.message ?? "Failed to disconnect.");
+            }
+          },
+        },
+      ]
+    );
   }
 
   async function handleExportReport() {
@@ -872,6 +973,68 @@ export function SettingsScreen() {
             : <Text style={{ color: theme.teal.fg, fontWeight: "500" }}>Download full backup</Text>
           }
         </Pressable>
+      </View>
+
+      {/* Google Drive backups */}
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Google Drive Backups</Text>
+        <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
+          Automatically backs up your full database to Google Drive every night at 2 AM. Keeps the last 14 days.
+        </Text>
+
+        {driveStatus?.connected ? (
+          <>
+            <View style={[styles.statusBox, { borderColor: theme.teal.sub, backgroundColor: theme.teal.bg }]}>
+              <Text style={{ color: theme.teal.fg, fontSize: 13, fontWeight: "600" }}>● Connected</Text>
+              {driveStatus.last_backup ? (
+                <Text style={{ color: theme.teal.fg, fontSize: 12, marginTop: 2 }}>
+                  Last backup: {new Date(driveStatus.last_backup).toLocaleString()}
+                </Text>
+              ) : (
+                <Text style={{ color: theme.teal.sub, fontSize: 12, marginTop: 2 }}>No backup yet</Text>
+              )}
+            </View>
+
+            <View style={styles.toggleRow}>
+              <Text style={{ color: theme.textStrong, flex: 1 }}>Nightly auto-backup</Text>
+              <Switch
+                value={driveStatus.auto_backup}
+                onValueChange={handleDriveAutoBackupToggle}
+                trackColor={{ false: theme.cardBorder, true: theme.teal.bar }}
+                thumbColor="#fff"
+              />
+            </View>
+
+            <Pressable
+              onPress={handleManualBackup}
+              disabled={driveBackingUp}
+              style={[styles.saveButton, { backgroundColor: theme.teal.bg, borderColor: theme.teal.sub, opacity: driveBackingUp ? 0.6 : 1 }]}
+            >
+              {driveBackingUp
+                ? <ActivityIndicator size="small" color={theme.teal.fg} />
+                : <Text style={{ color: theme.teal.fg, fontWeight: "500" }}>Back up now</Text>
+              }
+            </Pressable>
+
+            <Pressable
+              onPress={handleDisconnectDrive}
+              style={[styles.saveButton, { backgroundColor: theme.card, borderColor: theme.coral.sub, marginTop: 4 }]}
+            >
+              <Text style={{ color: theme.coral.fg, fontWeight: "500" }}>Disconnect Google Drive</Text>
+            </Pressable>
+          </>
+        ) : (
+          <Pressable
+            onPress={handleConnectGoogleDrive}
+            disabled={driveConnecting}
+            style={[styles.saveButton, { backgroundColor: theme.blue.bg, borderColor: theme.blue.sub, opacity: driveConnecting ? 0.6 : 1 }]}
+          >
+            {driveConnecting
+              ? <ActivityIndicator size="small" color={theme.blue.fg} />
+              : <Text style={{ color: theme.blue.fg, fontWeight: "500" }}>Connect Google Drive</Text>
+            }
+          </Pressable>
+        )}
       </View>
     </ScrollView>
   );
