@@ -13,7 +13,6 @@ const SHORTCUTS_XML = `<?xml version="1.0" encoding="utf-8"?>
     <intent
         android:action="android.intent.action.VIEW"
         android:data="wellnessfresh://meals" />
-    <categories android:name="android.shortcut.conversation" />
   </shortcut>
   <shortcut
       android:shortcutId="log_water"
@@ -24,7 +23,6 @@ const SHORTCUTS_XML = `<?xml version="1.0" encoding="utf-8"?>
     <intent
         android:action="android.intent.action.VIEW"
         android:data="wellnessfresh://log-water" />
-    <categories android:name="android.shortcut.conversation" />
   </shortcut>
 </shortcuts>`;
 

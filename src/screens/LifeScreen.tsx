@@ -17,6 +17,8 @@ import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { USER_ID } from "../api/config";
 
+const INK = "#111111";
+
 type Book = {
   id: string;
   title: string;
@@ -53,7 +55,7 @@ function formatAmount(amount: number, unit: string): string {
 function weekCompareText(stats: HobbyStats, unit: string): string {
   if (stats.last_week_total === 0) return "first week tracking this";
   if (stats.change === 0) return "same as last week";
-  const dir = stats.change > 0 ? "up" : "down";
+  const dir = stats.change > 0 ? "↑" : "↓";
   return dir + " from " + formatAmount(stats.last_week_total, unit) + " last week";
 }
 
@@ -201,12 +203,8 @@ export function LifeScreen() {
       {
         text: "Delete", style: "destructive",
         onPress: async () => {
-          try {
-            await api.deleteBook(bookId);
-            loadBooks();
-          } catch (e) {
-            console.error("Failed to delete book", e);
-          }
+          try { await api.deleteBook(bookId); loadBooks(); }
+          catch (e) { console.error("Failed to delete book", e); }
         },
       },
     ]);
@@ -218,12 +216,8 @@ export function LifeScreen() {
       {
         text: "Delete", style: "destructive",
         onPress: async () => {
-          try {
-            await api.deleteHobby(hobbyId);
-            loadHobbies();
-          } catch (e) {
-            console.error("Failed to delete hobby", e);
-          }
+          try { await api.deleteHobby(hobbyId); loadHobbies(); }
+          catch (e) { console.error("Failed to delete hobby", e); }
         },
       },
     ]);
@@ -233,24 +227,16 @@ export function LifeScreen() {
     if (!hobbyName.trim()) return;
     setCreatingHobby(true);
     setCreateHobbyError(null);
-    api
-      .createHobby({
-        user_id: USER_ID,
-        name: hobbyName.trim(),
-        unit_label: "minutes",
-        icon: "star",
-        color_key: "coral",
-      })
-      .then(function () {
-        setHobbyName("");
-        loadHobbies();
-      })
-      .catch(function (e: Error) {
-        setCreateHobbyError(e.message || "Failed to create hobby");
-      })
-      .finally(function () {
-        setCreatingHobby(false);
-      });
+    api.createHobby({
+      user_id: USER_ID,
+      name: hobbyName.trim(),
+      unit_label: "minutes",
+      icon: "star",
+      color_key: "coral",
+    })
+      .then(function () { setHobbyName(""); loadHobbies(); })
+      .catch(function (e: Error) { setCreateHobbyError(e.message || "Failed to create hobby"); })
+      .finally(function () { setCreatingHobby(false); });
   }
 
   async function handleLogHobby(hobbyId: string, amount: number) {
@@ -280,7 +266,8 @@ export function LifeScreen() {
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
     >
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+      {/* Add a book card */}
+      <View style={[styles.card, { backgroundColor: theme.card }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Add a book</Text>
         <View style={styles.searchRow}>
           <TextInput
@@ -288,14 +275,11 @@ export function LifeScreen() {
             value={searchText}
             onChangeText={setSearchText}
             onSubmitEditing={handleSearch}
-            style={[styles.input, { borderColor: theme.cardBorder, color: theme.textStrong, backgroundColor: theme.page }]}
+            style={[styles.textInput, { color: theme.textStrong, flex: 1 }]}
             placeholderTextColor={theme.textSoft}
           />
-          <Pressable
-            style={[styles.addButton, { backgroundColor: theme.teal.bar }]}
-            onPress={handleSearch}
-          >
-            {searching ? <ActivityIndicator color="#fff" /> : <Text style={styles.addButtonText}>Search</Text>}
+          <Pressable style={[styles.actionBtn, { backgroundColor: theme.teal.solid }]} onPress={handleSearch}>
+            {searching ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionBtnText}>SEARCH</Text>}
           </Pressable>
         </View>
 
@@ -305,15 +289,15 @@ export function LifeScreen() {
               <Pressable
                 key={i}
                 onPress={() => handleAddBook(result)}
-                style={[styles.resultRow, { borderColor: theme.cardBorder }]}
+                style={styles.resultRow}
               >
                 {result.cover_url ? (
                   <Image source={{ uri: result.cover_url }} style={styles.coverThumb} />
                 ) : (
-                  <View style={[styles.coverThumb, { backgroundColor: theme.teal.bg }]} />
+                  <View style={[styles.coverThumb, { backgroundColor: theme.teal.tint }]} />
                 )}
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: theme.textStrong, fontSize: 13 }} numberOfLines={1}>
+                  <Text style={{ color: theme.textStrong, fontSize: 13, fontWeight: "700" }} numberOfLines={1}>
                     {result.title}
                   </Text>
                   <Text style={{ color: theme.textSoft, fontSize: 11 }} numberOfLines={1}>
@@ -321,82 +305,95 @@ export function LifeScreen() {
                     {result.total_pages ? ` · ${result.total_pages}p` : ""}
                   </Text>
                 </View>
+                <Ionicons name="add-circle-outline" size={20} color={theme.teal.solid} />
               </Pressable>
             ))}
           </View>
         )}
       </View>
 
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
-        <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Currently reading</Text>
-        {loadingBooks ? (
-          <ActivityIndicator style={{ marginTop: 10 }} />
-        ) : currentlyReading.length === 0 ? (
-          <Text style={{ color: theme.textSoft, fontSize: 12, marginTop: 10 }}>
-            No books yet - search above to add one.
-          </Text>
-        ) : (
-          currentlyReading.map((book) => {
-            const prog = progress[book.id];
-            const pagesTotal = prog?.pages_read_total ?? 0;
-            const totalPages = prog?.total_pages ?? null;
-            const pct = prog?.percent_complete ?? null;
-            return (
-              <View key={book.id} style={styles.bookRow}>
+      {/* Currently reading — each book its own card */}
+      {loadingBooks ? (
+        <ActivityIndicator style={{ marginTop: 10 }} color={theme.teal.bar} />
+      ) : currentlyReading.length === 0 ? (
+        <View style={[styles.card, { borderColor: theme.cardBorder, borderWidth: 1 }]}>
+          <Text style={{ color: theme.textSoft, fontSize: 13 }}>No books yet — search above to add one.</Text>
+        </View>
+      ) : (
+        currentlyReading.map((book) => {
+          const prog = progress[book.id];
+          const pagesTotal = prog?.pages_read_total ?? 0;
+          const totalPages = prog?.total_pages ?? null;
+          const pct = prog?.percent_complete ?? null;
+
+          return (
+            <View key={book.id} style={[styles.card, { backgroundColor: theme.card }]}>
+              <View style={styles.bookRow}>
+                {/* Cover */}
                 {book.cover_url ? (
                   <Image source={{ uri: book.cover_url }} style={styles.coverThumb} />
                 ) : (
-                  <View style={[styles.coverThumb, { backgroundColor: theme.teal.bg }]} />
+                  <View style={[styles.coverThumb, { backgroundColor: theme.teal.tint, borderWidth: 2, borderColor: INK }]} />
                 )}
+
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
-                    <Text style={{ color: theme.textStrong, fontSize: 14, fontWeight: "600", flex: 1 }} numberOfLines={2}>{book.title}</Text>
+                    <Text style={[styles.bookTitle, { color: theme.textStrong, flex: 1 }]} numberOfLines={2}>{book.title}</Text>
                     <Pressable onPress={() => handleDeleteBook(book.id, book.title)} hitSlop={8} style={{ marginLeft: 8 }}>
                       <Ionicons name="trash-outline" size={16} color={theme.textSoft} />
                     </Pressable>
                   </View>
                   {book.author ? <Text style={{ color: theme.textSoft, fontSize: 12 }}>{book.author}</Text> : null}
 
+                  {/* Progress bar with ink border */}
                   {totalPages ? (
                     <>
-                      <View style={[styles.progressTrack, { backgroundColor: theme.teal.bg }]}>
-                        <View style={[styles.progressFill, { backgroundColor: theme.teal.bar, width: `${Math.min(pct ?? 0, 100)}%` }]} />
+                      <View style={styles.progressOuter}>
+                        <View style={[styles.progressFill, {
+                          backgroundColor: theme.teal.solid,
+                          width: `${Math.min(pct ?? 0, 100)}%` as any,
+                        }]} />
                       </View>
-                      <Text style={[styles.progressText, { color: theme.textSoft }]}>{pagesTotal} of {totalPages} pages · {pct ?? 0}%</Text>
+                      <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 4 }}>
+                        {pagesTotal} of {totalPages} pages · {pct ?? 0}%
+                      </Text>
                     </>
                   ) : pagesTotal > 0 ? (
-                    <Text style={[styles.progressText, { color: theme.textSoft }]}>{pagesTotal} pages read</Text>
+                    <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 4 }}>{pagesTotal} pages read</Text>
                   ) : null}
 
-                  <View style={styles.pageButtonRow}>
+                  {/* Quick log buttons */}
+                  <View style={styles.quickBtnRow}>
                     {[10, 20, 30].map((n) => (
-                      <Pressable key={n} onPress={() => handleLogPages(book.id, n)} style={[styles.pageButton, { backgroundColor: theme.teal.bg }]}>
-                        <Text style={{ color: theme.teal.fg, fontSize: 12 }}>+{n}</Text>
+                      <Pressable key={n} onPress={() => handleLogPages(book.id, n)} style={styles.quickBtn}>
+                        <Text style={styles.quickBtnText}>+{n}</Text>
                       </Pressable>
                     ))}
                   </View>
+
+                  {/* Manual log row */}
                   <View style={styles.manualRow}>
                     <TextInput
                       placeholder="pages"
                       keyboardType="numeric"
                       value={pageInputs[book.id] ?? ""}
                       onChangeText={(v) => setPageInputs((prev) => ({ ...prev, [book.id]: v }))}
-                      style={[styles.manualInput, { borderColor: theme.cardBorder, color: theme.textStrong, backgroundColor: theme.page }]}
+                      style={[styles.manualInput, { color: theme.textStrong }]}
                       placeholderTextColor={theme.textSoft}
                     />
-                    <Pressable style={[styles.logBtn, { backgroundColor: theme.teal.bar }]} onPress={() => handleManualPages(book.id)}>
-                      <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Log</Text>
+                    <Pressable style={[styles.actionBtn, { backgroundColor: theme.teal.solid }]} onPress={() => handleManualPages(book.id)}>
+                      <Text style={styles.actionBtnText}>LOG</Text>
                     </Pressable>
                   </View>
-
                 </View>
               </View>
-            );
-          })
-        )}
-      </View>
+            </View>
+          );
+        })
+      )}
 
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+      {/* Hobbies section — add form */}
+      <View style={[styles.card, { backgroundColor: theme.card }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Hobbies</Text>
         <View style={styles.searchRow}>
           <TextInput
@@ -404,118 +401,218 @@ export function LifeScreen() {
             value={hobbyName}
             onChangeText={setHobbyName}
             onSubmitEditing={handleCreateHobby}
-            style={[styles.input, { borderColor: theme.cardBorder, color: theme.textStrong, backgroundColor: theme.page }]}
+            style={[styles.textInput, { color: theme.textStrong, flex: 1 }]}
             placeholderTextColor={theme.textSoft}
           />
-          <Pressable
-            style={[styles.addButton, { backgroundColor: theme.teal.sub }]}
-            onPress={handleCreateHobby}
-          >
-            {creatingHobby ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.addButtonText}>Add</Text>
-            )}
+          <Pressable style={[styles.actionBtn, { backgroundColor: theme.teal.solid }]} onPress={handleCreateHobby}>
+            {creatingHobby ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionBtnText}>ADD</Text>}
           </Pressable>
         </View>
-
-        {createHobbyError ? (
-          <Text style={{ color: theme.teal.sub, fontSize: 12, marginTop: 6 }}>
-            {createHobbyError}
-          </Text>
-        ) : null}
-
-        {logHobbyError ? (
-          <Text style={{ color: theme.teal.sub, fontSize: 12, marginTop: 6 }}>
-            {logHobbyError}
-          </Text>
-        ) : null}
-
-        {hobbyListError ? (
-          <Text style={{ color: theme.teal.sub, fontSize: 12, marginTop: 6 }}>
-            {hobbyListError}
-          </Text>
-        ) : null}
-
-        {loadingHobbies ? (
-          <ActivityIndicator style={{ marginTop: 10 }} />
-        ) : hobbies.length === 0 ? (
-          <Text style={{ color: theme.textSoft, fontSize: 12, marginTop: 10 }}>
-            No hobbies yet — add one above.
-          </Text>
-        ) : (
-          hobbies.map(function (hobby) {
-            const stats = hobbyStats[hobby.id];
-            return (
-              <View key={hobby.id} style={{ marginTop: 12 }}>
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                  <Text style={{ color: theme.textStrong, fontSize: 14 }}>{hobby.name}</Text>
-                  <Pressable onPress={() => handleDeleteHobby(hobby.id, hobby.name)} hitSlop={8}>
-                    <Ionicons name="trash-outline" size={16} color={theme.textSoft} />
-                  </Pressable>
-                </View>
-                <View style={styles.pageButtonRow}>
-                  {[15, 30, 60].map(function (mins) {
-                    return (
-                      <Pressable
-                        key={mins}
-                        onPress={function () { handleLogHobby(hobby.id, mins); }}
-                        style={[styles.pageButton, { backgroundColor: theme.teal.bg }]}
-                      >
-                        <Text style={{ color: theme.teal.fg, fontSize: 12 }}>+{mins} min</Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-                <View style={styles.manualRow}>
-                  <TextInput
-                    placeholder={hobby.unit_label}
-                    keyboardType="numeric"
-                    value={hobbyAmountInputs[hobby.id] ?? ""}
-                    onChangeText={(v) => setHobbyAmountInputs((prev) => ({ ...prev, [hobby.id]: v }))}
-                    style={[styles.manualInput, { borderColor: theme.cardBorder, color: theme.textStrong, backgroundColor: theme.page }]}
-                    placeholderTextColor={theme.textSoft}
-                  />
-                  <Pressable style={[styles.logBtn, { backgroundColor: theme.teal.sub }]} onPress={() => handleManualHobbyLog(hobby.id)}>
-                    <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Log</Text>
-                  </Pressable>
-                </View>
-                {stats ? (
-                  <View style={{ marginTop: 6 }}>
-                    <Text style={{ color: theme.teal.sub, fontSize: 13, fontWeight: "500" }}>
-                      {formatAmount(stats.this_week_total, hobby.unit_label)} this week
-                    </Text>
-                    <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 2 }}>
-                      {weekCompareText(stats, hobby.unit_label)}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-            );
-          })
-        )}
+        {createHobbyError ? <Text style={{ color: theme.teal.sub, fontSize: 12, marginTop: 6 }}>{createHobbyError}</Text> : null}
+        {logHobbyError ? <Text style={{ color: theme.teal.sub, fontSize: 12, marginTop: 6 }}>{logHobbyError}</Text> : null}
+        {hobbyListError ? <Text style={{ color: theme.teal.sub, fontSize: 12, marginTop: 6 }}>{hobbyListError}</Text> : null}
       </View>
+
+      {/* Individual hobby cards */}
+      {loadingHobbies ? (
+        <ActivityIndicator style={{ marginTop: 4 }} color={theme.teal.bar} />
+      ) : hobbies.length === 0 ? (
+        <View style={[styles.card, { borderColor: theme.cardBorder, borderWidth: 1 }]}>
+          <Text style={{ color: theme.textSoft, fontSize: 13 }}>No hobbies yet — add one above.</Text>
+        </View>
+      ) : (
+        hobbies.map(function (hobby) {
+          const stats = hobbyStats[hobby.id];
+          return (
+            <View key={hobby.id} style={[styles.card, { backgroundColor: theme.card }]}>
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+                {/* Coral icon tile */}
+                <View style={[styles.hobbyIconTile, { backgroundColor: theme.coral.solid }]}>
+                  <Ionicons name="star" size={16} color="#fff" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.hobbyName, { color: theme.textStrong }]}>{hobby.name}</Text>
+                  {stats ? (
+                    <>
+                      <Text style={[styles.hobbyStatLabel, { color: theme.textSoft }]}>THIS WEEK</Text>
+                      <Text style={[styles.hobbyStatValue, { color: theme.textStrong }]}>
+                        {formatAmount(stats.this_week_total, hobby.unit_label)}
+                      </Text>
+                      <Text style={{ color: theme.textSoft, fontSize: 11 }}>{weekCompareText(stats, hobby.unit_label)}</Text>
+                    </>
+                  ) : null}
+                </View>
+                <Pressable onPress={() => handleDeleteHobby(hobby.id, hobby.name)} hitSlop={8}>
+                  <Ionicons name="trash-outline" size={16} color={theme.textSoft} />
+                </Pressable>
+              </View>
+
+              {/* Quick log buttons */}
+              <View style={styles.quickBtnRow}>
+                {[15, 30, 60].map(function (mins) {
+                  return (
+                    <Pressable
+                      key={mins}
+                      onPress={function () { handleLogHobby(hobby.id, mins); }}
+                      style={[styles.quickBtn, { backgroundColor: theme.coral.tint }]}
+                    >
+                      <Text style={[styles.quickBtnText, { color: theme.coral.fg }]}>+{mins} min</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              {/* Manual log */}
+              <View style={[styles.manualRow, { marginTop: 8 }]}>
+                <TextInput
+                  placeholder={hobby.unit_label}
+                  keyboardType="numeric"
+                  value={hobbyAmountInputs[hobby.id] ?? ""}
+                  onChangeText={(v) => setHobbyAmountInputs((prev) => ({ ...prev, [hobby.id]: v }))}
+                  style={[styles.manualInput, { color: theme.textStrong }]}
+                  placeholderTextColor={theme.textSoft}
+                />
+                <Pressable style={[styles.actionBtn, { backgroundColor: theme.coral.solid }]} onPress={() => handleManualHobbyLog(hobby.id)}>
+                  <Text style={styles.actionBtnText}>LOG</Text>
+                </Pressable>
+              </View>
+            </View>
+          );
+        })
+      )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
-  card: { borderRadius: 14, borderWidth: 0.5, padding: 16 },
-  cardTitle: { fontSize: 14, fontWeight: "500" },
-  searchRow: { flexDirection: "row", gap: 8, marginTop: 10 },
-  input: { flex: 1, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
-  addButton: { borderRadius: 10, paddingHorizontal: 16, justifyContent: "center", minWidth: 70, alignItems: "center" },
-  addButtonText: { color: "#fff", fontWeight: "600", fontSize: 13 },
-  resultRow: { flexDirection: "row", gap: 10, borderWidth: 0.5, borderRadius: 10, padding: 8, alignItems: "center" },
+
+  card: {
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: INK,
+    padding: 14,
+    shadowColor: INK,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
+  },
+  cardTitle: { fontSize: 19, fontWeight: "800", marginBottom: 8 },
+
+  searchRow: { flexDirection: "row", gap: 8 },
+  textInput: {
+    borderWidth: 2,
+    borderColor: INK,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    backgroundColor: "#ffffff", // keep white per spec (inputs stay white in both modes)
+    fontSize: 14,
+    shadowColor: INK,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+  actionBtn: {
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: INK,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 68,
+    shadowColor: INK,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+  actionBtnText: { color: "#fff", fontWeight: "800", fontSize: 11, letterSpacing: 0.4 },
+
+  resultRow: {
+    flexDirection: "row",
+    gap: 10,
+    borderWidth: 2,
+    borderColor: INK,
+    borderRadius: 10,
+    padding: 10,
+    alignItems: "center",
+    shadowColor: INK,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 2,
+  },
   coverThumb: { width: 36, height: 52, borderRadius: 4 },
-  pageButtonRow: { flexDirection: "row", gap: 8, marginTop: 8 },
-  pageButton: { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
-  bookRow: { flexDirection: "row", gap: 10, marginTop: 12 },
-  progressTrack: { height: 6, borderRadius: 6, overflow: "hidden", marginTop: 8 },
+
+  bookRow: { flexDirection: "row", gap: 12 },
+  bookTitle: { fontSize: 15, fontWeight: "800", marginBottom: 2 },
+
+  progressOuter: {
+    height: 10,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: INK,
+    overflow: "hidden",
+    marginTop: 8,
+    backgroundColor: "#fff",
+  },
   progressFill: { height: "100%" },
-  progressText: { fontSize: 11, marginTop: 4 },
-  manualRow: { flexDirection: "row", gap: 6, marginTop: 6 },
-  manualInput: { width: 72, borderWidth: 1, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5, fontSize: 13 },
-  logBtn: { borderRadius: 8, paddingHorizontal: 12, justifyContent: "center" },
+
+  quickBtnRow: { flexDirection: "row", gap: 6, marginTop: 10 },
+  quickBtn: {
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: INK,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: "#fff",
+    shadowColor: INK,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+  quickBtnText: { fontSize: 11, fontWeight: "800", color: INK, letterSpacing: 0.3 },
+
+  manualRow: { flexDirection: "row", gap: 8, marginTop: 6 },
+  manualInput: {
+    width: 80,
+    borderWidth: 2,
+    borderColor: INK,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 13,
+    backgroundColor: "#ffffff",
+    shadowColor: INK,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+
+  // Hobby card
+  hobbyIconTile: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: INK,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+    shadowColor: INK,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 2,
+    flexShrink: 0,
+  },
+  hobbyName: { fontSize: 16, fontWeight: "800", marginBottom: 2 },
+  hobbyStatLabel: { fontSize: 9, fontWeight: "800", letterSpacing: 0.7, marginTop: 2 },
+  hobbyStatValue: { fontSize: 18, fontWeight: "800" },
 });

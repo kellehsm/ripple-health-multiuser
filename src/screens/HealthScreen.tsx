@@ -16,6 +16,8 @@ import {
 } from "../lib/foregroundService";
 import * as IntentLauncher from "expo-intent-launcher";
 
+const INK = "#111111";
+
 type GlucoseReading = {
   recorded_at: string;
   mg_dl: number;
@@ -334,17 +336,13 @@ export function HealthScreen() {
     ? Math.max.apply(null, todayReadings.map(function (r) { return Number(r.mg_dl); }))
     : null;
 
-  const glucoseValue = status && status.hasData ? status.mg_dl + " " + (status.arrow || "") : "--";
-  const glucoseSub = status && status.delta != null
-    ? (status.delta > 0 ? "+" : "") + status.delta + " from last"
-    : undefined;
-
   return (
     <ScrollView
       style={{ backgroundColor: theme.page }}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
     >
+      {/* 2×2 metric tile grid */}
       <View style={styles.grid}>
         <Pressable
           style={styles.halfCell}
@@ -355,6 +353,7 @@ export function HealthScreen() {
             value={stepsCount !== null ? stepsCount.toLocaleString() : "--"}
             icon="walk"
             colorKey="teal"
+            variant="solid"
             sublabel={stepsWeekTotal !== null ? stepsWeekTotal.toLocaleString() + " this week" : undefined}
           />
         </Pressable>
@@ -364,6 +363,7 @@ export function HealthScreen() {
             value={sleepDisplay ?? "--"}
             icon="moon"
             colorKey="amber"
+            variant="tint"
             sublabel={sleepStatLine ?? undefined}
           />
         </View>
@@ -373,6 +373,7 @@ export function HealthScreen() {
             value={waterCount !== null ? waterCount + " / " + WATER_GOAL : "-- / " + WATER_GOAL}
             icon="water"
             colorKey="blue"
+            variant="tint"
             onAction={handleLogWater}
             sublabel={waterStatLine ?? undefined}
           />
@@ -385,74 +386,76 @@ export function HealthScreen() {
             label="Heart Rate"
             value={hrReadings.length > 0 ? hrReadings[hrReadings.length - 1].bpm + " bpm" : "--"}
             icon="heart-circle"
-            colorKey="red"
+            colorKey="berry"
+            variant="tint"
           />
         </Pressable>
-        <View style={styles.fullCell}>
-          <MetricCard label="Glucose" value={glucoseValue} icon="pulse" colorKey="berry" sublabel={glucoseSub} />
-        </View>
       </View>
 
+      {/* Glucose alert banner */}
       {status && status.alerts && status.alerts.length > 0 ? (
-        <View style={[styles.alertCard, { backgroundColor: theme.red.bg }]}>
+        <View style={[styles.alertCard, { backgroundColor: theme.red.tint, borderColor: INK }]}>
           {status.alerts.map(function (alert: string, i: number) {
             return (
-              <Text key={i} style={{ color: theme.red.fg, fontSize: 13 }}>
-                Alert: {alert}
+              <Text key={i} style={{ color: theme.red.fg, fontSize: 13, fontWeight: "700" }}>
+                ⚠ {alert}
               </Text>
             );
           })}
         </View>
       ) : null}
 
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+      {/* Glucose chart card */}
+      <View style={[styles.card, { backgroundColor: theme.card }]}>
         <View style={styles.cardHeaderRow}>
           <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Glucose</Text>
           {peak !== null ? (
-            <Text style={{ color: theme.pink.sub, fontSize: 13 }}>{peak} mg/dL peak</Text>
+            <View style={styles.peakBadge}>
+              <Text style={styles.peakBadgeText}>{peak} PEAK</Text>
+            </View>
           ) : null}
         </View>
 
+        {/* Range selector buttons */}
         <View style={styles.rangeRow}>
           {RANGE_OPTIONS.map(function (hrs) {
+            const active = rangeHours === hrs;
             return (
               <Pressable
                 key={hrs}
-                onPress={function () {
-                  setRangeHours(hrs);
-                }}
+                onPress={function () { setRangeHours(hrs); }}
                 style={[
-                  styles.rangeButton,
-                  {
-                    backgroundColor: rangeHours === hrs ? theme.teal.bar : theme.page,
-                    borderColor: theme.cardBorder,
-                  },
+                  styles.rangeBtn,
+                  { backgroundColor: active ? INK : "#ffffff" },
                 ]}
               >
-                <Text style={{ color: rangeHours === hrs ? "#fff" : theme.textSoft, fontSize: 12 }}>
-                  {hrs}h
+                <Text style={[styles.rangeBtnText, { color: active ? "#ffffff" : INK }]}>
+                  {hrs}H
                 </Text>
               </Pressable>
             );
           })}
         </View>
 
+        {/* Current reading — solid berry block */}
         {status && status.hasData ? (
-          <View style={[styles.glucoseCurrentBox, { backgroundColor: theme.berry.bg }]}>
+          <View style={[styles.glucoseCurrentBox, { backgroundColor: theme.berry.solid }]}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.glucoseCurrentValue, { color: theme.berry.fg }]}>
+              <Text style={styles.glucoseCurrentValue}>
                 {status.mg_dl}{status.arrow ? " " + status.arrow : ""}
               </Text>
               {status.minutesSinceReading != null ? (
-                <Text style={{ color: theme.berry.fg, fontSize: 12, opacity: 0.7, marginTop: 2 }}>
-                  as of {status.minutesSinceReading} min ago
+                <Text style={styles.glucoseMinAgo}>
+                  {status.minutesSinceReading} min ago
                 </Text>
               ) : null}
             </View>
             {status.delta != null ? (
-              <Text style={{ color: theme.berry.fg, fontSize: 14, fontWeight: "500" }}>
-                {status.delta > 0 ? "+" : ""}{status.delta} from last
-              </Text>
+              <View style={styles.deltaBadge}>
+                <Text style={styles.deltaBadgeText}>
+                  {status.delta > 0 ? "+" : ""}{status.delta}
+                </Text>
+              </View>
             ) : null}
           </View>
         ) : null}
@@ -475,43 +478,60 @@ export function HealthScreen() {
               );
             })}
 
-            <Line x1={PAD_LEFT} x2={CHART_WIDTH} y1={highY} y2={highY} stroke={theme.red.sub} strokeDasharray="3,3" strokeWidth={1} />
-            <Line x1={PAD_LEFT} x2={CHART_WIDTH} y1={lowY} y2={lowY} stroke={theme.red.sub} strokeDasharray="3,3" strokeWidth={1} />
+            {/* Target range band with dashed ink border */}
+            <Rect
+              x={PAD_LEFT}
+              y={highY}
+              width={CHART_WIDTH - PAD_LEFT}
+              height={lowY - highY}
+              fill={theme.berry.tint}
+              opacity={0.4}
+              stroke={INK}
+              strokeWidth={1}
+              strokeDasharray="5,5"
+            />
 
+            {/* Yesterday faded line */}
             {yesterdayPoints.length > 0 ? (
-              <Polyline points={yesterdayPoints} fill="none" stroke={theme.textSoft} strokeWidth={2} opacity={0.35} />
+              <Polyline points={yesterdayPoints} fill="none" stroke={theme.textSoft} strokeWidth={1.5} opacity={0.25} />
             ) : null}
 
-            <Polyline points={todayPoints} fill="none" stroke={theme.berry.bar} strokeWidth={2.5} />
+            {/* Today — double stroke: ink outline below, color on top */}
+            {todayPoints.length > 0 ? (
+              <>
+                <Polyline points={todayPoints} fill="none" stroke={INK} strokeWidth={3.5} />
+                <Polyline points={todayPoints} fill="none" stroke={theme.berry.bar} strokeWidth={2} />
+              </>
+            ) : null}
           </Svg>
         )}
 
         <View style={styles.legendRow}>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: theme.berry.bar }]} />
+            <View style={[styles.legendDot, { backgroundColor: theme.berry.bar, borderWidth: 1.5, borderColor: INK }]} />
             <Text style={{ color: theme.textSoft, fontSize: 11 }}>Today</Text>
           </View>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: theme.textSoft, opacity: 0.5 }]} />
-            <Text style={{ color: theme.textSoft, fontSize: 11 }}>Yesterday (same time)</Text>
+            <View style={[styles.legendDot, { backgroundColor: theme.textSoft, opacity: 0.4 }]} />
+            <Text style={{ color: theme.textSoft, fontSize: 11 }}>Yesterday</Text>
           </View>
         </View>
 
         {status && status.isStale ? (
           <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 8 }}>
-            Last reading {status.minutesSinceReading} min ago - sensor may be disconnected.
+            Last reading {status.minutesSinceReading} min ago — sensor may be disconnected.
           </Text>
         ) : null}
       </View>
 
-      {/* Heart Rate chart */}
+      {/* Heart Rate chart card */}
       {(() => {
         const hrValues = hrReadings.map((r) => r.bpm);
         const hrMin = hrValues.length ? Math.min(...hrValues) - 5 : 40;
         const hrMax = hrValues.length ? Math.max(...hrValues) + 5 : 120;
         const hrRange = hrMax - hrMin || 1;
-        const now = Date.now();
-        const hrWindowStart = now - hrRangeHours * 60 * 60 * 1000;
+        const hrNow = Date.now();
+        const hrWindowStart = hrNow - hrRangeHours * 60 * 60 * 1000;
         const hrWindowMs = hrRangeHours * 60 * 60 * 1000;
         const usableW = CHART_WIDTH - PAD_LEFT;
         const usableH = CHART_HEIGHT - PAD_TOP - PAD_BOTTOM;
@@ -525,32 +545,30 @@ export function HealthScreen() {
         const peakBpm = hrValues.length ? Math.max(...hrValues) : null;
         const HR_RANGE_OPTIONS = [3, 6, 12, 24];
         return (
-          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <View style={[styles.card, { backgroundColor: theme.card }]}>
             <View style={styles.cardHeaderRow}>
               <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Heart Rate</Text>
               {peakBpm !== null ? (
-                <Text style={{ color: theme.red.sub, fontSize: 13 }}>peak {peakBpm} bpm</Text>
+                <View style={styles.peakBadge}>
+                  <Text style={styles.peakBadgeText}>{peakBpm} PEAK</Text>
+                </View>
               ) : null}
             </View>
             {restingBpm !== null ? (
-              <Text style={{ color: theme.textSoft, fontSize: 12, marginBottom: 2 }}>
+              <Text style={{ color: theme.textSoft, fontSize: 12, marginBottom: 4 }}>
                 Resting: {restingBpm} bpm
               </Text>
             ) : null}
             <View style={styles.rangeRow}>
               {HR_RANGE_OPTIONS.map(function (hrs) {
+                const active = hrRangeHours === hrs;
                 return (
                   <Pressable
                     key={hrs}
                     onPress={function () { setHrRangeHours(hrs); }}
-                    style={[styles.rangeButton, {
-                      backgroundColor: hrRangeHours === hrs ? theme.red.sub : theme.page,
-                      borderColor: theme.cardBorder,
-                    }]}
+                    style={[styles.rangeBtn, { backgroundColor: active ? INK : "#ffffff" }]}
                   >
-                    <Text style={{ color: hrRangeHours === hrs ? "#fff" : theme.textSoft, fontSize: 12 }}>
-                      {hrs}h
-                    </Text>
+                    <Text style={[styles.rangeBtnText, { color: active ? "#ffffff" : INK }]}>{hrs}H</Text>
                   </Pressable>
                 );
               })}
@@ -563,24 +581,27 @@ export function HealthScreen() {
               </Text>
             ) : (
               <Svg width={CHART_WIDTH} height={CHART_HEIGHT} style={{ marginTop: 12 }}>
-                <Polyline points={hrPoints} fill="none" stroke={theme.red.sub} strokeWidth={2} />
+                {/* Double-stroke HR line */}
+                <Polyline points={hrPoints} fill="none" stroke={INK} strokeWidth={3.5} />
+                <Polyline points={hrPoints} fill="none" stroke={theme.berry.sub} strokeWidth={2} />
               </Svg>
             )}
           </View>
         );
       })()}
 
+      {/* Health Connect card (Android only) */}
       {Platform.OS === "android" ? (
-        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <View style={[styles.card, { backgroundColor: theme.card }]}>
           <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Health Connect</Text>
           <Pressable
             onPress={handleHealthConnectSync}
             disabled={hcSyncing}
-            style={[styles.hcButton, { backgroundColor: theme.teal.bg, borderColor: theme.teal.sub }]}
+            style={[styles.hcBtn, { backgroundColor: theme.teal.tint }]}
           >
             {hcSyncing
               ? <ActivityIndicator size="small" color={theme.teal.fg} />
-              : <Text style={{ color: theme.teal.fg, fontSize: 13, fontWeight: "500" }}>Sync from Health Connect</Text>
+              : <Text style={[styles.hcBtnText, { color: theme.teal.fg }]}>SYNC FROM HEALTH CONNECT</Text>
             }
           </Pressable>
           {hcResult ? (
@@ -589,23 +610,22 @@ export function HealthScreen() {
 
           <Pressable
             onPress={handleToggleLiveTracking}
-            style={[styles.hcButton, {
-              backgroundColor: liveTracking ? theme.coral.bg : theme.blue.bg,
-              borderColor: liveTracking ? theme.coral.sub : theme.blue.sub,
+            style={[styles.hcBtn, {
+              backgroundColor: liveTracking ? theme.coral.tint : theme.blue.tint,
               marginTop: 10,
             }]}
           >
-            <Text style={{ color: liveTracking ? theme.coral.fg : theme.blue.fg, fontSize: 13, fontWeight: "500" }}>
-              {liveTracking ? "Stop live tracking" : "Start live tracking"}
+            <Text style={[styles.hcBtnText, { color: liveTracking ? theme.coral.fg : theme.blue.fg }]}>
+              {liveTracking ? "STOP LIVE TRACKING" : "START LIVE TRACKING"}
             </Text>
           </Pressable>
 
           {liveTracking ? (
             <Pressable
               onPress={handleBatteryOptimization}
-              style={[styles.hcButton, { backgroundColor: theme.page, borderColor: theme.cardBorder, marginTop: 8 }]}
+              style={[styles.hcBtn, { backgroundColor: "#ffffff", marginTop: 8 }]}
             >
-              <Text style={{ color: theme.textSoft, fontSize: 12 }}>Enable always-on tracking (battery exemption)</Text>
+              <Text style={[styles.hcBtnText, { color: theme.textSoft }]}>BATTERY EXEMPTION</Text>
             </Pressable>
           ) : null}
         </View>
@@ -619,31 +639,94 @@ const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: CARD_GAP },
   halfCell: { width: HALF_CARD_WIDTH },
-  fullCell: { width: "100%" },
-  card: { borderRadius: 14, borderWidth: 0.5, padding: 16, marginTop: 4 },
-  cardHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  cardTitle: { fontSize: 14, fontWeight: "500" },
-  alertCard: { borderRadius: 12, padding: 12, gap: 4 },
-  rangeRow: { flexDirection: "row", gap: 8, marginTop: 10 },
-  rangeButton: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
-  legendRow: { flexDirection: "row", gap: 16, marginTop: 10 },
-  legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
-  legendDot: { width: 8, height: 8, borderRadius: 4 },
-  hcButton: {
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 10,
+  card: {
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: INK,
+    padding: 14,
+    shadowColor: INK,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
   },
+  cardHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+  cardTitle: { fontSize: 19, fontWeight: "800" },
+  alertCard: {
+    borderRadius: 12,
+    borderWidth: 2,
+    padding: 12,
+    gap: 4,
+    shadowColor: INK,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  peakBadge: {
+    borderWidth: 2,
+    borderColor: INK,
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: "#ffffff",
+  },
+  peakBadgeText: { fontSize: 10, fontWeight: "800", color: INK, letterSpacing: 0.5 },
+  rangeRow: { flexDirection: "row", gap: 8, marginTop: 10 },
+  rangeBtn: {
+    borderWidth: 2,
+    borderColor: INK,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    shadowColor: INK,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+  rangeBtnText: { fontSize: 11, fontWeight: "800", letterSpacing: 0.4 },
   glucoseCurrentBox: {
-    borderRadius: 14,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: INK,
     padding: 14,
     marginTop: 12,
     flexDirection: "row",
     alignItems: "center",
+    shadowColor: INK,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
   },
-  glucoseCurrentValue: { fontSize: 24, fontWeight: "500" },
+  glucoseCurrentValue: { fontSize: 26, fontWeight: "800", color: "#ffffff" },
+  glucoseMinAgo: { color: "rgba(255,255,255,0.8)", fontSize: 11, marginTop: 2 },
+  deltaBadge: {
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.6)",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  deltaBadgeText: { color: "#ffffff", fontSize: 14, fontWeight: "800" },
+  legendRow: { flexDirection: "row", gap: 16, marginTop: 10 },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  hcBtn: {
+    borderWidth: 2,
+    borderColor: INK,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 10,
+    shadowColor: INK,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+  hcBtnText: { fontSize: 11, fontWeight: "800", letterSpacing: 0.5 },
 });
-

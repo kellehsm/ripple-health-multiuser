@@ -4,6 +4,12 @@ const path = require('path');
 
 const SRC = path.join(__dirname, 'android-widget');
 
+const WIDGET_STRINGS_XML = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="widget_label">Ripple Health</string>
+  <string name="widget_description">Glucose &amp; steps at a glance</string>
+</resources>`;
+
 function withAndroidWidget(config) {
   // Copy native files into the generated Android project during prebuild
   config = withDangerousMod(config, [
@@ -27,6 +33,10 @@ function withAndroidWidget(config) {
       fs.mkdirSync(xmlDir, { recursive: true });
       fs.copyFileSync(path.join(SRC, 'ripple_widget_info.xml'), path.join(xmlDir, 'ripple_widget_info.xml'));
 
+      const valuesDir = path.join(root, 'app/src/main/res/values');
+      fs.mkdirSync(valuesDir, { recursive: true });
+      fs.writeFileSync(path.join(valuesDir, 'widget_strings.xml'), WIDGET_STRINGS_XML);
+
       return mod;
     },
   ]);
@@ -45,6 +55,7 @@ function withAndroidWidget(config) {
         $: {
           'android:name': 'com.kellehs.wellness.RippleWidgetProvider',
           'android:exported': 'true',
+          'android:label': '@string/widget_label',
         },
         'intent-filter': [
           {

@@ -18,6 +18,8 @@ import { TrendsScreen } from "../screens/TrendsScreen";
 import { useTheme } from "../theme/ThemeContext";
 import { navigationRef } from "./navigationRef";
 
+const INK = "#111111";
+
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -39,16 +41,17 @@ function TabNavigator() {
           </View>
         ),
         headerStyle: { backgroundColor: theme.page },
-        headerTitleStyle: { color: theme.textStrong },
+        headerTitleStyle: { color: theme.textStrong, fontWeight: "800", fontSize: 19 },
         tabBarStyle: {
           backgroundColor: theme.page,
-          borderTopColor: theme.cardBorder,
+          borderTopColor: INK,
+          borderTopWidth: 2,
           height: 64,
         },
         tabBarActiveTintColor: theme.textStrong,
         tabBarInactiveTintColor: theme.textSoft,
         tabBarItemStyle: route.name !== "Finance"
-          ? { borderRightWidth: 0.5, borderRightColor: theme.cardBorder }
+          ? { borderRightWidth: 1, borderRightColor: INK }
           : {},
       })}
     >
@@ -57,7 +60,7 @@ function TabNavigator() {
         component={HealthScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <Ionicons name="heart" size={22} color={focused ? theme.berry.sub : theme.textSoft} />
+            <Ionicons name="heart" size={22} color={focused ? theme.berry.solid : theme.textSoft} />
           ),
         }}
       />
@@ -66,7 +69,7 @@ function TabNavigator() {
         component={MealsScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <Ionicons name="restaurant" size={22} color={focused ? theme.coral.sub : theme.textSoft} />
+            <Ionicons name="restaurant" size={22} color={focused ? theme.coral.solid : theme.textSoft} />
           ),
         }}
       />
@@ -107,11 +110,13 @@ function TabNavigator() {
                   backgroundColor: theme.teal.bar,
                   alignItems: "center",
                   justifyContent: "center",
-                  marginTop: -18,
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.15,
-                  shadowRadius: 4,
+                  marginTop: -24,
+                  borderWidth: 2.5,
+                  borderColor: INK,
+                  shadowColor: INK,
+                  shadowOffset: { width: 3, height: 3 },
+                  shadowOpacity: 1,
+                  shadowRadius: 0,
                   elevation: 4,
                 }}
               >
@@ -128,7 +133,7 @@ function TabNavigator() {
         options={{
           title: "Habits",
           tabBarIcon: ({ focused }) => (
-            <Ionicons name="book" size={22} color={focused ? theme.teal.sub : theme.textSoft} />
+            <Ionicons name="book" size={22} color={focused ? theme.teal.solid : theme.textSoft} />
           ),
         }}
       />
@@ -137,7 +142,7 @@ function TabNavigator() {
         component={FinanceScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <Ionicons name="wallet" size={22} color={focused ? theme.purple.sub : theme.textSoft} />
+            <Ionicons name="wallet" size={22} color={focused ? theme.purple.solid : theme.textSoft} />
           ),
         }}
       />
@@ -153,7 +158,7 @@ export function RootTabs() {
       <Stack.Navigator
         screenOptions={{
           headerStyle: { backgroundColor: theme.page },
-          headerTitleStyle: { color: theme.textStrong },
+          headerTitleStyle: { color: theme.textStrong, fontWeight: "800", fontSize: 19 },
           headerTintColor: theme.textStrong,
         }}
       >

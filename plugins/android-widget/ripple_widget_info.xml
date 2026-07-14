@@ -6,5 +6,8 @@
     android:targetCellHeight="2"
     android:updatePeriodMillis="1800000"
     android:initialLayout="@layout/ripple_widget"
+    android:previewLayout="@layout/ripple_widget"
+    android:previewImage="@mipmap/ic_launcher"
     android:widgetCategory="home_screen"
-    android:resizeMode="horizontal|vertical"/>
+    android:resizeMode="horizontal|vertical"
+    android:description="@string/widget_description"/>

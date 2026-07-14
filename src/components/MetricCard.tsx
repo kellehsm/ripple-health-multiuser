@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
 
+const INK = "#111111";
+
 type ColorKey = "teal" | "blue" | "amber" | "coral" | "pink" | "green" | "red" | "berry" | "violet" | "purple";
 
 type Props = {
@@ -12,25 +14,40 @@ type Props = {
   colorKey: ColorKey;
   sublabel?: string;
   onAction?: () => void;
+  // solid = saturated fill + white text; tint = light bg + colored dark text
+  variant?: "solid" | "tint";
 };
 
-// One card = one metric. Reused across Overview/Health/Finance tabs so the
-// color-per-metric-type rule (steps=teal, sleep=blue, etc.) can't drift.
-export function MetricCard({ label, value, icon, colorKey, sublabel, onAction }: Props) {
+export function MetricCard({ label, value, icon, colorKey, sublabel, onAction, variant = "tint" }: Props) {
   const { theme } = useTheme();
-  const c = theme[colorKey];
+  const c = (theme as any)[colorKey];
+
+  const bg = variant === "solid" ? c.solid : c.tint;
+  const textColor = variant === "solid" ? "#ffffff" : c.fg;
+  const subColor = variant === "solid" ? "rgba(255,255,255,0.8)" : c.sub;
+  const iconColor = variant === "solid" ? "rgba(255,255,255,0.9)" : c.fg;
 
   return (
-    <View style={[styles.card, { backgroundColor: c.bg }]}>
+    <View style={[styles.tile, { backgroundColor: bg }]}>
       <View style={styles.labelRow}>
-        <Ionicons name={icon} size={15} color={c.fg} />
-        <Text style={[styles.label, { color: c.sub }]}>{label}</Text>
+        <Ionicons name={icon} size={11} color={iconColor} />
+        <Text style={[styles.label, { color: subColor }]}>{label.toUpperCase()}</Text>
       </View>
-      <Text style={[styles.value, { color: c.fg }]}>{value}</Text>
-      {sublabel ? <Text style={[styles.sublabel, { color: c.sub }]}>{sublabel}</Text> : null}
+      <Text style={[styles.value, { color: textColor }]}>{value}</Text>
+      {sublabel ? <Text style={[styles.sublabel, { color: subColor }]}>{sublabel}</Text> : null}
       {onAction ? (
-        <Pressable onPress={onAction} style={[styles.actionButton, { backgroundColor: c.fg + "22" }]}>
-          <Ionicons name="add" size={14} color={c.fg} />
+        <Pressable
+          onPress={onAction}
+          style={[
+            styles.actionButton,
+            {
+              backgroundColor: variant === "solid" ? "rgba(255,255,255,0.2)" : "#ffffff",
+              borderColor: variant === "solid" ? "rgba(255,255,255,0.5)" : INK,
+            },
+          ]}
+        >
+          <Ionicons name="add" size={11} color={variant === "solid" ? "#fff" : c.fg} />
+          <Text style={[styles.actionLabel, { color: variant === "solid" ? "#fff" : c.fg }]}>+1</Text>
         </Pressable>
       ) : null}
     </View>
@@ -38,10 +55,38 @@ export function MetricCard({ label, value, icon, colorKey, sublabel, onAction }:
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 14, padding: 14, flexGrow: 1, minWidth: 130 },
-  labelRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
-  label: { fontSize: 12 },
-  value: { fontSize: 21, fontWeight: "500" },
-  sublabel: { fontSize: 12, marginTop: 4 },
-  actionButton: { marginTop: 10, borderRadius: 8, padding: 5, alignSelf: "flex-end" },
+  tile: {
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: INK,
+    padding: 10,
+    flexGrow: 1,
+    minWidth: 130,
+    shadowColor: INK,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  labelRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 6 },
+  label: { fontSize: 10, fontWeight: "800", letterSpacing: 0.7 },
+  value: { fontSize: 22, fontWeight: "800" },
+  sublabel: { fontSize: 11, marginTop: 4 },
+  actionButton: {
+    marginTop: 8,
+    borderRadius: 8,
+    borderWidth: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    shadowColor: INK,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+  actionLabel: { fontSize: 10, fontWeight: "800" },
 });

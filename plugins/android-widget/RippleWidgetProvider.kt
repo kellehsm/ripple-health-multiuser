@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.app.PendingIntent
+import android.util.Log
 import android.widget.RemoteViews
 import org.json.JSONObject
 import java.net.URL
@@ -15,6 +16,7 @@ import javax.net.ssl.HttpsURLConnection
 class RippleWidgetProvider : AppWidgetProvider() {
 
     companion object {
+        private const val TAG = "RippleWidget"
         private const val API = "https://app.kels.gg/api"
         private const val UID = "f2cde901-feae-443e-abed-ddf7302bb131"
     }
@@ -62,7 +64,8 @@ class RippleWidgetProvider : AppWidgetProvider() {
                 val arrow = obj.optString("arrow", "").trim()
                 if (arrow.isNotEmpty()) "$mg mg/dL $arrow" else "$mg mg/dL"
             } else "-- mg/dL"
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w(TAG, "fetchGlucose failed", e)
             "-- mg/dL"
         }
     }
@@ -78,7 +81,8 @@ class RippleWidgetProvider : AppWidgetProvider() {
             val obj = JSONObject(text)
             val steps = obj.optInt("steps", 0)
             if (steps > 0) "${NumberFormat.getNumberInstance().format(steps)} steps" else "-- steps"
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w(TAG, "fetchSteps failed", e)
             "-- steps"
         }
     }
