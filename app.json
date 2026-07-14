@@ -54,6 +54,14 @@
         }
       ]
     ],
+    "updates": {
+      "url": "https://u.expo.dev/db5bae1a-d8dd-4c26-84e7-7711669de2e8",
+      "enabled": true,
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "web": {
       "output": "single",
       "favicon": "./assets/images/favicon.png"
