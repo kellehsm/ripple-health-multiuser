@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -43,6 +43,9 @@ function dayLabel(iso: string): string {
 
 export function HeartRateDetailScreen() {
   const { theme } = useTheme();
+  const ink = theme.ink;
+  const card = theme.card;
+  const s = useMemo(() => makeStyles(ink, card), [ink, card]);
   const [rangeHours, setRangeHours] = useState(6);
   const [readings, setReadings] = useState<HRReading[]>([]);
   const [loadingChart, setLoadingChart] = useState(true);
@@ -109,7 +112,7 @@ export function HeartRateDetailScreen() {
     <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={s.content}>
 
       {/* Summary stats */}
-      <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={s.card}>
         <View style={s.statsRow}>
           <View style={s.stat}>
             <Text style={[s.statVal, { color: theme.red.sub }]}>{resting ?? "--"}</Text>
@@ -134,7 +137,7 @@ export function HeartRateDetailScreen() {
       </View>
 
       {/* Chart */}
-      <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={s.card}>
         <View style={s.rowBetween}>
           <Text style={[s.sectionTitle, { color: theme.textStrong }]}>Heart Rate</Text>
           {peak !== null && (
@@ -148,8 +151,8 @@ export function HeartRateDetailScreen() {
               key={hrs}
               onPress={() => setRangeHours(hrs)}
               style={[s.rangeBtn, {
-                backgroundColor: rangeHours === hrs ? theme.red.sub : theme.page,
-                borderColor: theme.ink,
+                backgroundColor: rangeHours === hrs ? theme.red.sub : card,
+                borderColor: ink,
               }]}
             >
               <Text style={{ color: rangeHours === hrs ? "#fff" : theme.textSoft, fontSize: 12 }}>
@@ -187,7 +190,7 @@ export function HeartRateDetailScreen() {
       </View>
 
       {/* 7-day history */}
-      <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={s.card}>
         <Text style={[s.sectionTitle, { color: theme.textStrong }]}>7-Day History</Text>
 
         {loadingDaily ? (
@@ -247,20 +250,38 @@ export function HeartRateDetailScreen() {
   );
 }
 
-const s = StyleSheet.create({
+function makeStyles(ink: string, card: string) {
+  const shadow = {
+    shadowColor: ink,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1 as const,
+    shadowRadius: 0,
+    elevation: 4,
+  };
+  return StyleSheet.create({
   content: { padding: 16, gap: 12, paddingBottom: 32 },
-  card: { borderRadius: 14, borderWidth: 2, padding: 16 },
-  sectionTitle: { fontSize: 13, fontWeight: "500", marginBottom: 10 },
+  card: { borderRadius: 14, borderWidth: 2, borderColor: ink, padding: 16, backgroundColor: card, ...shadow },
+  sectionTitle: { fontSize: 16, fontWeight: "800", marginBottom: 10 },
   rowBetween: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 2 },
 
   statsRow: { flexDirection: "row", gap: 8 },
   stat: { flex: 1 },
-  statVal: { fontSize: 20, fontWeight: "600" },
+  statVal: { fontSize: 20, fontWeight: "800" },
   statLbl: { fontSize: 11, marginTop: 2 },
   subNote: { fontSize: 11, marginTop: 8 },
 
   rangeRow: { flexDirection: "row", gap: 6, marginBottom: 4 },
-  rangeBtn: { borderWidth: 2, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+  rangeBtn: {
+    borderWidth: 2,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    shadowColor: ink,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 2,
+  },
 
   emptyBox: { paddingVertical: 24, alignItems: "center" },
 
@@ -269,4 +290,5 @@ const s = StyleSheet.create({
   colVal: { flex: 1, textAlign: "right", fontSize: 13 },
   colCount: { width: 36, textAlign: "right", fontSize: 12 },
   footNote: { fontSize: 10, marginTop: 10 },
-});
+  });
+}

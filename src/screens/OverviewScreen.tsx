@@ -407,7 +407,7 @@ export function OverviewScreen() {
       {/* Streak pill badge */}
       {streak >= 3 ? (
         <View style={{ flexDirection: "row", marginBottom: 8 }}>
-          <View style={styles.streakPill}>
+          <View style={[styles.streakPill, { backgroundColor: theme.teal.solid }]}>
             <Text style={styles.streakPillText}>🔥 {streak} DAY STREAK</Text>
           </View>
         </View>
@@ -465,7 +465,7 @@ export function OverviewScreen() {
           <Text style={[styles.cardTitle, { color: theme.coral.fg }]}>Mood check-in</Text>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             {currentUnlogged ? (
-              <View style={styles.dueNowPill}>
+              <View style={[styles.dueNowPill, { backgroundColor: theme.coral.solid }]}>
                 <Text style={styles.dueNowText}>DUE NOW</Text>
               </View>
             ) : null}
@@ -491,7 +491,7 @@ export function OverviewScreen() {
                 style={[
                   styles.periodTile,
                   {
-                    backgroundColor: "#ffffff",
+                    backgroundColor: card,
                     borderColor: isNow && !entry ? theme.coral.solid : ink,
                     borderWidth: isNow && !entry ? 2.5 : 2,
                   },
@@ -511,7 +511,7 @@ export function OverviewScreen() {
 
         {/* Mood picker */}
         {activePicker !== null ? (
-          <View style={[styles.pickerBox, { backgroundColor: "#ffffff" }]}>
+          <View style={[styles.pickerBox, { backgroundColor: card }]}>
             <Text style={{ color: theme.textSoft, fontSize: 11, fontWeight: "800", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
               {activePicker === "moment"
                 ? "Log a moment"

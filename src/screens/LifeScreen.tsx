@@ -567,6 +567,11 @@ function makeStyles(ink: string, card: string) {
     borderWidth: 2,
     paddingHorizontal: 14,
     paddingVertical: 10,
+    shadowColor: ink,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
   },
 
   card: {
@@ -640,7 +645,7 @@ function makeStyles(ink: string, card: string) {
     borderColor: ink,
     overflow: "hidden",
     marginTop: 8,
-    backgroundColor: "#fff",
+    backgroundColor: card,
   },
   progressFill: { height: "100%" },
 

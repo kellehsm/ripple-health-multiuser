@@ -651,7 +651,7 @@ export function HealthScreen() {
           {liveTracking ? (
             <Pressable
               onPress={handleBatteryOptimization}
-              style={[styles.hcBtn, { backgroundColor: "#ffffff", marginTop: 8 }]}
+              style={[styles.hcBtn, { backgroundColor: theme.card, marginTop: 8 }]}
             >
               <Text style={[styles.hcBtnText, { color: theme.textSoft }]}>BATTERY EXEMPTION</Text>
             </Pressable>

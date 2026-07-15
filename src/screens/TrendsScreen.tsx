@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   ScrollView,
   View,
@@ -119,6 +119,7 @@ type CardProps = {
 };
 
 function CorrCard({ title, xLabel, yLabel, xs, ys, insight, dotColor, lineColor, theme }: CardProps) {
+  const s = useMemo(() => makeStyles(theme.ink, theme.card), [theme.ink, theme.card]);
   // Filter out any NaN / null that slipped through
   const clean: [number, number][] = [];
   for (let i = 0; i < xs.length; i++) {
@@ -188,6 +189,9 @@ type DayRow = {
 
 export function TrendsScreen() {
   const { theme } = useTheme();
+  const ink = theme.ink;
+  const card = theme.card;
+  const s = useMemo(() => makeStyles(ink, card), [ink, card]);
   const [days, setDays] = useState(30);
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<DayRow[]>([]);
@@ -399,16 +403,27 @@ export function TrendsScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const s = StyleSheet.create({
+function makeStyles(ink: string, card: string) {
+  const shadow = {
+    shadowColor: ink,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1 as const,
+    shadowRadius: 0,
+    elevation: 4,
+  };
+  return StyleSheet.create({
   page:       { padding: 16, paddingBottom: 32, gap: 14 },
   periodRow:  { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 2 },
-  chip:       { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 2 },
+  chip: {
+    paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 2,
+    shadowColor: ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2,
+  },
   periodNote: { fontSize: 13, marginLeft: 2 },
-  card:       { borderRadius: 14, borderWidth: 2, padding: 16, gap: 10 },
+  card: { borderRadius: 14, borderWidth: 2, borderColor: ink, padding: 16, gap: 10, backgroundColor: card, ...shadow },
   cardHead:   { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 8 },
-  cardTitle:  { fontSize: 15, fontWeight: "600", flex: 1 },
-  badge:      { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, flexShrink: 1 },
-  badgeTxt:   { fontSize: 11, fontWeight: "500" },
+  cardTitle:  { fontSize: 17, fontWeight: "800", flex: 1 },
+  badge:      { borderRadius: 20, borderWidth: 2, borderColor: ink, paddingHorizontal: 10, paddingVertical: 4, flexShrink: 1 },
+  badgeTxt:   { fontSize: 11, fontWeight: "700" },
   axisRow:    { flexDirection: "row", justifyContent: "space-between", marginBottom: -4 },
   axisLbl:    { fontSize: 11 },
   insight:    { fontSize: 13, lineHeight: 20 },
@@ -416,4 +431,5 @@ const s = StyleSheet.create({
   footnote:   { fontSize: 11, lineHeight: 17, textAlign: "center", marginTop: 4 },
   empty:      { alignItems: "center", paddingVertical: 48 },
   emptyTxt:   { fontSize: 14, textAlign: "center", lineHeight: 22 },
-});
+  });
+}

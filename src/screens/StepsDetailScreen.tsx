@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -63,6 +63,9 @@ export function StepsDetailScreen() {
   const route = useRoute<any>();
   const { metricId, weekStartDay } = route.params as { metricId: string; weekStartDay: number };
   const { theme } = useTheme();
+  const ink = theme.ink;
+  const card = theme.card;
+  const s = useMemo(() => makeStyles(ink, card), [ink, card]);
   const [data, setData] = useState<BreakdownData | null>(null);
   const [loading, setLoading] = useState(true);
   const [monthlyData, setMonthlyData] = useState<MonthWeek[] | null>(null);
@@ -119,7 +122,7 @@ export function StepsDetailScreen() {
   return (
     <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={s.content}>
       {/* Summary stats */}
-      <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={s.card}>
         <View style={s.statsRow}>
           <View style={s.stat}>
             <Text style={[s.statVal, { color: theme.teal.bar }]}>{fmt(this_week_total)}</Text>
@@ -147,7 +150,7 @@ export function StepsDetailScreen() {
       </View>
 
       {/* Bar chart */}
-      <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={s.card}>
         <Text style={[s.sectionTitle, { color: theme.textStrong }]}>Week Comparison</Text>
         <WeekComparisonChart
           days={chartDays}
@@ -169,7 +172,7 @@ export function StepsDetailScreen() {
       </View>
 
       {/* Day-by-day list */}
-      <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={s.card}>
         <Text style={[s.sectionTitle, { color: theme.textStrong }]}>Day by Day</Text>
         {this_week.map((tw, i) => {
           const lw = last_week[i];
@@ -222,7 +225,7 @@ export function StepsDetailScreen() {
       </View>
 
       {/* Averages block */}
-      <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={s.card}>
         <Text style={[s.sectionTitle, { color: theme.textStrong }]}>Daily Averages</Text>
         <View style={s.avgsRow}>
           <View style={s.avgCell}>
@@ -243,7 +246,7 @@ export function StepsDetailScreen() {
 
       {/* Monthly comparison — 4 recent weeks vs same weeks from prior month */}
       {monthlyData && monthlyData.length > 0 && (
-        <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+        <View style={s.card}>
           <Text style={[s.sectionTitle, { color: theme.textStrong }]}>Month-over-Month</Text>
           <View style={s.monthColHeaders}>
             <Text style={[s.monthColWeek, { color: theme.textSoft }]}>Week of</Text>
@@ -283,15 +286,23 @@ export function StepsDetailScreen() {
   );
 }
 
-const s = StyleSheet.create({
+function makeStyles(ink: string, card: string) {
+  const shadow = {
+    shadowColor: ink,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1 as const,
+    shadowRadius: 0,
+    elevation: 4,
+  };
+  return StyleSheet.create({
   content: { padding: 16, gap: 12, paddingBottom: 32 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  card: { borderRadius: 14, borderWidth: 2, padding: 16 },
-  sectionTitle: { fontSize: 13, fontWeight: "500", marginBottom: 12 },
+  card: { borderRadius: 14, borderWidth: 2, borderColor: ink, padding: 16, backgroundColor: card, ...shadow },
+  sectionTitle: { fontSize: 16, fontWeight: "800", marginBottom: 12 },
 
   statsRow: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   stat: { flex: 1, minWidth: 70 },
-  statVal: { fontSize: 18, fontWeight: "600" },
+  statVal: { fontSize: 18, fontWeight: "800" },
   statLbl: { fontSize: 11, marginTop: 2 },
 
   legend: { flexDirection: "row", gap: 16, marginTop: 12 },
@@ -300,9 +311,9 @@ const s = StyleSheet.create({
   legendLbl: { fontSize: 11 },
 
   dayRow: { paddingVertical: 10, flexDirection: "row", alignItems: "center" },
-  dayName: { fontSize: 13, fontWeight: "500", width: 82 },
+  dayName: { fontSize: 13, fontWeight: "600", width: 82 },
   dayCols: { flex: 1, flexDirection: "row", alignItems: "center" },
-  colThis: { flex: 1, fontSize: 13, fontWeight: "500", textAlign: "right" },
+  colThis: { flex: 1, fontSize: 13, fontWeight: "600", textAlign: "right" },
   colLast: { flex: 1, fontSize: 12, textAlign: "right" },
   colDiff: { flex: 1, fontSize: 12, textAlign: "right" },
   dayColHeaders: { flexDirection: "row", paddingTop: 6, marginTop: 2 },
@@ -313,14 +324,15 @@ const s = StyleSheet.create({
 
   avgsRow: { flexDirection: "row", gap: 24 },
   avgCell: { flex: 1 },
-  avgVal: { fontSize: 22, fontWeight: "600" },
+  avgVal: { fontSize: 22, fontWeight: "800" },
   avgLbl: { fontSize: 11, marginTop: 2 },
   avgDiffTxt: { fontSize: 12, marginTop: 12 },
 
   monthColHeaders: { flexDirection: "row", paddingBottom: 6, marginBottom: 2 },
   monthRow: { flexDirection: "row", alignItems: "center", paddingVertical: 9 },
   monthColWeek: { flex: 2, fontSize: 12 },
-  monthColVal: { flex: 1, fontSize: 13, fontWeight: "500", textAlign: "right" },
+  monthColVal: { flex: 1, fontSize: 13, fontWeight: "600", textAlign: "right" },
   monthColChg: { flex: 1, fontSize: 12, textAlign: "right" },
   monthNote: { fontSize: 10, marginTop: 8 },
-});
+  });
+}

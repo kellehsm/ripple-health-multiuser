@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   ScrollView, View, Text, TextInput, Pressable,
   StyleSheet, ActivityIndicator,
@@ -11,6 +11,9 @@ type FilterMode = "glucose" | "meals" | "mood" | "spending";
 
 export function HistoryScreen() {
   const { theme } = useTheme();
+  const ink = theme.ink;
+  const card = theme.card;
+  const styles = useMemo(() => makeStyles(ink, card), [ink, card]);
   const [mode, setMode] = useState<FilterMode>("glucose");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any[]>([]);
@@ -87,7 +90,7 @@ export function HistoryScreen() {
         ))}
       </View>
 
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={styles.card}>
         {mode === "glucose" && (
           <>
             <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>Average above (mg/dL)</Text>
@@ -196,7 +199,7 @@ export function HistoryScreen() {
       </View>
 
       {results.length > 0 ? (
-        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+        <View style={styles.card}>
           <Text style={[styles.resultsHeader, { color: theme.textSoft }]}>{results.length} result{results.length === 1 ? "" : "s"}</Text>
           {results.map((r, i) => (
             <View key={i} style={[styles.resultRow, i > 0 && { borderTopWidth: 0.5, borderTopColor: theme.cardBorder }]}>
@@ -236,17 +239,35 @@ export function HistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(ink: string, card: string) {
+  const shadow = {
+    shadowColor: ink,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1 as const,
+    shadowRadius: 0,
+    elevation: 4,
+  };
+  return StyleSheet.create({
   content: { padding: 16, gap: 12 },
   modeRow: { flexDirection: "row", gap: 8 },
-  modeChip: { flex: 1, borderWidth: 2, borderRadius: 10, paddingVertical: 8, alignItems: "center" },
-  card: { borderRadius: 14, borderWidth: 2, padding: 16, gap: 10 },
+  modeChip: {
+    flex: 1, borderWidth: 2, borderRadius: 10, paddingVertical: 8, alignItems: "center",
+    shadowColor: ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2,
+  },
+  card: { borderRadius: 14, borderWidth: 2, borderColor: ink, padding: 16, gap: 10, backgroundColor: card, ...shadow },
   fieldLabel: { fontSize: 12 },
-  input: { borderWidth: 2, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14 },
+  input: {
+    borderWidth: 2, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14,
+    shadowColor: ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2,
+  },
   bucketRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   bucketChip: { borderWidth: 2, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
-  searchBtn: { borderRadius: 10, paddingVertical: 12, alignItems: "center", marginTop: 4 },
+  searchBtn: {
+    borderRadius: 10, borderWidth: 2, borderColor: ink, paddingVertical: 12, alignItems: "center", marginTop: 4,
+    shadowColor: ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2,
+  },
   resultsHeader: { fontSize: 12, marginBottom: 4 },
   resultRow: { paddingVertical: 10, gap: 2 },
   resultDate: { fontSize: 11 },
-});
+  });
+}
