@@ -701,19 +701,19 @@ export function MealsScreen() {
       {totals !== null && (
         <View style={styles.totalsRow}>
           {totals.carbs !== null ? (
-            <View style={[styles.totalBlock, { backgroundColor: theme.coral.solid }]}>
+            <View style={[styles.totalBlock, { backgroundColor: theme.teal.solid }]}>
               <Text style={styles.totalBlockLabel}>CARBS</Text>
               <Text style={styles.totalBlockValue}>{totals.carbs}g</Text>
             </View>
           ) : null}
           {totals.sugar !== null ? (
-            <View style={[styles.totalBlock, { backgroundColor: theme.berry.solid }]}>
+            <View style={[styles.totalBlock, { backgroundColor: theme.coral.solid }]}>
               <Text style={styles.totalBlockLabel}>SUGAR</Text>
               <Text style={styles.totalBlockValue}>{totals.sugar}g</Text>
             </View>
           ) : null}
           {totals.calories !== null ? (
-            <View style={[styles.totalBlock, { backgroundColor: theme.purple.solid }]}>
+            <View style={[styles.totalBlock, { backgroundColor: theme.berry.solid }]}>
               <Text style={styles.totalBlockLabel}>CALORIES</Text>
               <Text style={styles.totalBlockValue}>{totals.calories}</Text>
             </View>
@@ -722,7 +722,7 @@ export function MealsScreen() {
       )}
 
       {/* Log a meal card */}
-      <View style={[styles.card, { backgroundColor: theme.card }]}>
+      <View style={[styles.card, { backgroundColor: theme.coral.tint }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Log a meal</Text>
 
         {/* Frequent meals */}
@@ -844,7 +844,7 @@ export function MealsScreen() {
       </View>
 
       {/* Today's meals list */}
-      <View style={[styles.card, { backgroundColor: theme.card }]}>
+      <View style={[styles.card, { backgroundColor: theme.coral.tint }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Today's meals</Text>
 
         {mealsError ? (
@@ -866,7 +866,7 @@ export function MealsScreen() {
             const mealColor = MEAL_TYPE_COLORS[meal.meal_type] ?? "#3FA0A6";
 
             return (
-              <View key={meal.id} style={[styles.mealCard, { borderColor: INK, backgroundColor: theme.card }]}>
+              <View key={meal.id} style={[styles.mealCard, { borderColor: INK, backgroundColor: theme.coral.tint }]}>
                 <View style={styles.mealContent}>
                   {/* Colored icon tile */}
                   <View style={[styles.mealIconTile, { backgroundColor: mealColor }]}>
@@ -931,7 +931,7 @@ export function MealsScreen() {
       </View>
 
       {/* Caffeine & Alcohol */}
-      <View style={[styles.card, { backgroundColor: theme.card }]}>
+      <View style={[styles.card, { backgroundColor: theme.coral.tint }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Caffeine & Alcohol</Text>
 
         {/* Totals strip */}

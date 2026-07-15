@@ -393,7 +393,7 @@ export function LifeScreen() {
       )}
 
       {/* Hobbies section — add form */}
-      <View style={[styles.card, { backgroundColor: theme.card }]}>
+      <View style={[styles.card, { backgroundColor: theme.coral.tint }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Hobbies</Text>
         <View style={styles.searchRow}>
           <TextInput
@@ -424,7 +424,7 @@ export function LifeScreen() {
         hobbies.map(function (hobby) {
           const stats = hobbyStats[hobby.id];
           return (
-            <View key={hobby.id} style={[styles.card, { backgroundColor: theme.card }]}>
+            <View key={hobby.id} style={[styles.card, { backgroundColor: theme.coral.tint }]}>
               <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
                 {/* Coral icon tile */}
                 <View style={[styles.hobbyIconTile, { backgroundColor: theme.coral.solid }]}>
