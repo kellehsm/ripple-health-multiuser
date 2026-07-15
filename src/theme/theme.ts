@@ -1,4 +1,4 @@
-// Color tokens for the Ripple Health palette.
+// Color tokens for the Ripple Wellness palette.
 // Brand anchor: teal #3FA0A6 (activity), coral #E8654E (food), purple #7B3FBF (finance), berry #A62A50 (glucose/HR).
 // Bold Outline + Color Blocks design language: ink #111111 for all borders/shadows.
 

@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=14&height=200&section=header&text=Ripple%20Health&fontColor=FFFFFF&fontSize=56&fontAlignY=38&desc=Personal%20health%20OS%20for%20Android&descSize=18&descAlignY=60" width="100%" />
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=14&height=200&section=header&text=Ripple%20Wellness&fontColor=FFFFFF&fontSize=56&fontAlignY=38&desc=Personal%20health%20OS%20for%20Android&descSize=18&descAlignY=60" width="100%" />
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](.)
 [![React Native](https://img.shields.io/badge/React_Native-61DAFB?style=flat-square&logo=react&logoColor=black)](.)
@@ -13,7 +13,7 @@
 
 ## What it is
 
-Ripple Health is a **personal health OS** — not a step counter, not a calorie tracker, not a mood diary. All of those, integrated, with the data you actually want to see. It pulls together a Dexcom continuous glucose monitor, nutrition database lookups, mood journaling, Health Connect data (steps, sleep, heart rate), and spending tracking into a single Android app backed by a self-hosted PostgreSQL server.
+Ripple Wellness is a **personal health OS** — not a step counter, not a calorie tracker, not a mood diary. All of those, integrated, with the data you actually want to see. It pulls together a Dexcom continuous glucose monitor, nutrition database lookups, mood journaling, Health Connect data (steps, sleep, heart rate), and spending tracking into a single Android app backed by a self-hosted PostgreSQL server.
 
 **Why self-hosted:** your glucose readings, meal logs, and mood history are sensitive. They don't belong in a startup's cloud. Everything runs on a VPS you control.
 

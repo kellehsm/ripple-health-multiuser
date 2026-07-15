@@ -1,6 +1,6 @@
-# Ripple Health — Frontend (CLAUDE.md)
+# Ripple Wellness — Frontend (CLAUDE.md)
 
-Expo/React Native (TypeScript) app, "Ripple Health." Talks to the backend at `https://app.kels.gg/api`.
+Expo/React Native (TypeScript) app, "Ripple Wellness." Talks to the backend at `https://app.kels.gg/api`.
 
 ## Critical operational rules
 
@@ -10,7 +10,7 @@ Expo/React Native (TypeScript) app, "Ripple Health." Talks to the backend at `ht
 
 ## App identity
 
-- Name: **Ripple Health**
+- Name: **Ripple Wellness**
 - Icon: four-quadrant droplet, thin black outline (`#111111`), black pulse/heartbeat line through center, centered, on cream background (`#FBFAF7`)
 - Current quadrant colors: teal `#3FA0A6` (top-left), coral `#E8654E` (top-right), purple `#7B3FBF` (bottom-left), berry-wine `#A62A50` (bottom-right) — chosen specifically to avoid resembling Google Health's palette; don't drift back toward teal/blue/green-dominant schemes.
 

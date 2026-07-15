@@ -392,7 +392,7 @@ export function SettingsScreen() {
       const startIso = new Date(exportStart).toISOString();
       const endIso = new Date(exportEnd + "T23:59:59").toISOString();
       const url = api.reportUrl(USER_ID, startIso, endIso);
-      const localUri = (FileSystem.cacheDirectory ?? "") + "ripple-health-report.pdf";
+      const localUri = (FileSystem.cacheDirectory ?? "") + "ripple-wellness-report.pdf";
       const { uri } = await FileSystem.downloadAsync(url, localUri);
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {

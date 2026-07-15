@@ -242,7 +242,7 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
       body: (
         <>
           <Text style={[styles.stepDesc, { color: theme.textStrong }]}>
-            Ripple Health can automatically back up your data — glucose, meals, mood, spending, and more —
+            Ripple Wellness can automatically back up your data — glucose, meals, mood, spending, and more —
             to{" "}
             <Text style={{ fontWeight: "700" }}>your own Google Drive</Text>
             {" "}so you never lose your history.

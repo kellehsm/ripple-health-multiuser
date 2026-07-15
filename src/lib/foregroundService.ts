@@ -11,8 +11,8 @@ import {
   checkStreakProtection,
 } from "./smartNotifications";
 
-const CHANNEL_ID = "ripple-health-live";
-const NOTIF_ID = "ripple-health-live";
+const CHANNEL_ID = "ripple-wellness-live";
+const NOTIF_ID = "ripple-wellness-live";
 
 // Settings cache — re-fetch every 10 minutes to pick up changes without hammering the API
 let cachedSettings: any = null;
@@ -86,7 +86,7 @@ async function syncAndUpdateNotification(notificationId: string) {
 
   await notifee.displayNotification({
     id: notificationId,
-    title: "Ripple Health",
+    title: "Ripple Wellness",
     body: glucoseText + " · " + stepsText,
     android: {
       channelId: CHANNEL_ID,
@@ -131,7 +131,7 @@ export async function startForegroundService() {
   await ensureChannel();
   await notifee.displayNotification({
     id: NOTIF_ID,
-    title: "Ripple Health",
+    title: "Ripple Wellness",
     body: "Starting live tracking…",
     android: {
       channelId: CHANNEL_ID,
