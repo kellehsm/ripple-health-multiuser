@@ -1,6 +1,5 @@
 import notifee, { AndroidImportance } from "@notifee/react-native";
 import { api } from "../api/client";
-import { USER_ID } from "../api/config";
 
 export const CH_MEALS   = "ripple-meal-reminders";
 export const CH_GLUCOSE = "ripple-glucose";
@@ -57,7 +56,7 @@ export async function checkMealReminders(settings: any, now: Date) {
   const today = now.toISOString().slice(0, 10);
 
   let meals: any[] = [];
-  try { meals = await api.meals(USER_ID, today); } catch (_) {}
+  try { meals = await api.meals(today); } catch (_) {}
 
   for (const m of MEALS) {
     const periodCfg = mealCfg[m.key] ?? {};
@@ -106,7 +105,7 @@ export async function checkGlucoseSpike(settings: any, now: Date) {
   const threshold: number = spikeCfg.threshold_mg_dl ?? 30;
   try {
     const windowStart = new Date(now.getTime() - 70 * 60 * 1000);
-    const readings = await api.glucoseRange(USER_ID, windowStart.toISOString(), now.toISOString());
+    const readings = await api.glucoseRange(windowStart.toISOString(), now.toISOString());
     if (!Array.isArray(readings) || readings.length < 2) return;
 
     const earliest = Number(readings[0].mg_dl);
@@ -147,8 +146,8 @@ export async function checkEveningCheckin(settings: any, now: Date) {
   let body = "Tap to review your day.";
   try {
     const [meals, streaks] = await Promise.all([
-      api.meals(USER_ID, today).catch(() => [] as any[]),
-      api.streaks(USER_ID).catch(() => null),
+      api.meals(today).catch(() => [] as any[]),
+      api.streaks().catch(() => null),
     ]);
     const parts: string[] = [];
     const mealCount = Array.isArray(meals) ? meals.length : 0;
@@ -186,7 +185,7 @@ export async function checkWaterReminder(settings: any, now: Date) {
 
   try {
     if (!cachedWaterMetricId) {
-      const metric = await api.getOrCreateWaterMetric(USER_ID);
+      const metric = await api.getOrCreateWaterMetric();
       cachedWaterMetricId = metric?.id ?? null;
     }
     if (!cachedWaterMetricId) return;
@@ -231,8 +230,8 @@ export async function checkStreakProtection(settings: any, now: Date) {
 
   try {
     const [streaks, meals] = await Promise.all([
-      api.streaks(USER_ID).catch(() => null),
-      api.meals(USER_ID, now.toISOString().slice(0, 10)).catch(() => [] as any[]),
+      api.streaks().catch(() => null),
+      api.meals(now.toISOString().slice(0, 10)).catch(() => [] as any[]),
     ]);
 
     if (!streaks?.current_streak || streaks.current_streak < 1) return;

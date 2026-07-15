@@ -11,7 +11,7 @@ import {
 import Svg, { Circle, Line } from "react-native-svg";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
-import { USER_ID } from "../api/config";
+
 
 const SCREEN_W = Dimensions.get("window").width;
 // 16 scroll padding × 2 + 16 card padding × 2
@@ -202,9 +202,9 @@ export function TrendsScreen() {
       const end = new Date().toISOString().slice(0, 10);
       const start = new Date(Date.now() - (n - 1) * 86400000).toISOString().slice(0, 10);
       const [moodData, glucoseData, substanceData] = await Promise.all([
-        api.weeklyMoodSummary(USER_ID, n),
-        api.searchGlucose(USER_ID, { start, end, threshold: 0 }).catch(() => [] as any[]),
-        api.substancesSummary(USER_ID, start, end).catch(() => [] as any[]),
+        api.weeklyMoodSummary(n),
+        api.searchGlucose({ start, end, threshold: 0 }).catch(() => [] as any[]),
+        api.substancesSummary(start, end).catch(() => [] as any[]),
       ]);
 
       const glucoseByDate = new Map<string, number>();

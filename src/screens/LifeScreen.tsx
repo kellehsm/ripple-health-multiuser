@@ -17,7 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
-import { USER_ID } from "../api/config";
+
 
 type Book = {
   id: string;
@@ -104,7 +104,7 @@ export function LifeScreen() {
   const loadBooks = useCallback(async () => {
     setLoadingBooks(true);
     try {
-      const data = await api.books(USER_ID, "reading");
+      const data = await api.books("reading");
       setBooks(data);
       const entries = await Promise.all(
         data.map(async (b: Book) => {
@@ -124,9 +124,9 @@ export function LifeScreen() {
     setLoadingHobbies(true);
     setHobbyListError(null);
     try {
-      const settings = await api.getSettings(USER_ID).catch(() => null);
+      const settings = await api.getSettings().catch(() => null);
       const wsd: number = settings?.week_start?.hobbies ?? 1;
-      const data: Hobby[] = await api.hobbies(USER_ID);
+      const data: Hobby[] = await api.hobbies();
       const list = Array.isArray(data) ? data : [];
       setHobbies(list);
       const entries = await Promise.all(
@@ -145,7 +145,7 @@ export function LifeScreen() {
 
   const loadCompletedCount = useCallback(async () => {
     try {
-      const data = await api.completed(USER_ID);
+      const data = await api.completed();
       setCompletedCount(Array.isArray(data) ? data.length : 0);
     } catch (_) {
       setCompletedCount(0);
@@ -179,7 +179,7 @@ export function LifeScreen() {
   async function handleAddBook(result: BookSearchResult) {
     try {
       await api.createBook({
-        user_id: USER_ID,
+        ,
         title: result.title,
         author: result.author,
         cover_url: result.cover_url,
@@ -282,7 +282,7 @@ export function LifeScreen() {
     setCreatingHobby(true);
     setCreateHobbyError(null);
     api.createHobby({
-      user_id: USER_ID,
+      ,
       name: hobbyName.trim(),
       unit_label: "minutes",
       icon: "star",

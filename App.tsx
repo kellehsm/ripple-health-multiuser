@@ -6,10 +6,12 @@ import { CommonActions } from "@react-navigation/native";
 import { ThemeProvider } from "./src/theme/ThemeContext";
 import { RootTabs } from "./src/navigation/RootTabs";
 import { OnboardingFlow } from "./src/screens/OnboardingFlow";
+import { LoginScreen } from "./src/screens/LoginScreen";
 import { navigationRef } from "./src/navigation/navigationRef";
 import { api } from "./src/api/client";
-import { USER_ID } from "./src/api/config";
-import { hasCompletedOnboarding, markOnboardingComplete } from "./src/lib/onboarding";
+import { getToken, clearToken, registerLogoutHandler } from "./src/lib/auth";
+
+type AppState = "loading" | "login" | "onboarding" | "app";
 
 function navigateWhenReady(name: "Meals" | "Health") {
   const attempt = () => {
@@ -33,9 +35,9 @@ function toast(msg: string) {
 
 async function logWaterFromShortcut() {
   try {
-    const metric = await api.getOrCreateWaterMetric(USER_ID);
+    const metric = await api.getOrCreateWaterMetric();
     await api.logWater(metric.id);
-    toast("Water logged 💧");
+    toast("Water logged");
   } catch (e) {
     toast("Couldn't log water — try again from the app.");
   }
@@ -56,17 +58,15 @@ function shouldGoToMeals(data: any, actionId?: string): boolean {
 }
 
 export default function App() {
-  const [ready, setReady] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [appState, setAppState] = useState<AppState>("loading");
+
+  // Register logout handler so Settings can sign the user out
+  registerLogoutHandler(() => setAppState("login"));
 
   useEffect(() => {
-    // Check onboarding flag on startup
-    hasCompletedOnboarding().then((done) => {
-      setShowOnboarding(!done);
-      setReady(true);
-    });
+    initAuth();
 
-    // Notification cold-start (killed → tap notification)
+    // Notification cold-start
     notifee.getInitialNotification().then((initial) => {
       if (!initial) return;
       if (shouldGoToMeals(initial.notification?.data, initial.pressAction?.id)) {
@@ -74,10 +74,9 @@ export default function App() {
       }
     });
 
-    // Deep-link cold-start (killed → app shortcut / scheme URL)
+    // Deep-link cold-start
     Linking.getInitialURL().then(handleUrl);
 
-    // Notification press while app is running
     const unsubscribeNotif = notifee.onForegroundEvent(({ type, detail }) => {
       if (type === EventType.PRESS || type === EventType.ACTION_PRESS) {
         if (shouldGoToMeals(detail.notification?.data, detail.pressAction?.id)) {
@@ -86,7 +85,6 @@ export default function App() {
       }
     });
 
-    // Deep-link while app is running
     const linkingSub = Linking.addEventListener("url", ({ url }) => handleUrl(url));
 
     return () => {
@@ -95,22 +93,65 @@ export default function App() {
     };
   }, []);
 
+  async function initAuth() {
+    const token = await getToken();
+    if (!token) {
+      setAppState("login");
+      return;
+    }
+    try {
+      const user = await api.me();
+      if (!user) throw new Error("no user");
+      setAppState(user.onboarding_completed ? "app" : "onboarding");
+    } catch {
+      await clearToken();
+      setAppState("login");
+    }
+  }
+
+  async function handleLoginSuccess() {
+    // After login, re-check onboarding status from server
+    try {
+      const user = await api.me();
+      setAppState(user?.onboarding_completed ? "app" : "onboarding");
+    } catch {
+      setAppState("app");
+    }
+  }
+
   async function handleOnboardingComplete() {
-    await markOnboardingComplete();
-    setShowOnboarding(false);
+    try {
+      await api.markOnboardingComplete();
+    } catch (_) {}
+    setAppState("app");
+  }
+
+  if (appState === "loading") {
+    return <View style={{ flex: 1, backgroundColor: "#F5F1E8" }} />;
+  }
+
+  if (appState === "login") {
+    return (
+      <ThemeProvider>
+        <StatusBar style="auto" />
+        <LoginScreen onLoginSuccess={handleLoginSuccess} />
+      </ThemeProvider>
+    );
+  }
+
+  if (appState === "onboarding") {
+    return (
+      <ThemeProvider>
+        <StatusBar style="auto" />
+        <OnboardingFlow onComplete={handleOnboardingComplete} />
+      </ThemeProvider>
+    );
   }
 
   return (
     <ThemeProvider>
       <StatusBar style="auto" />
-      {!ready ? (
-        // Brief blank during flag check (masked by native splash screen in practice)
-        <View style={{ flex: 1, backgroundColor: "#F5F1E8" }} />
-      ) : showOnboarding ? (
-        <OnboardingFlow onComplete={handleOnboardingComplete} />
-      ) : (
-        <RootTabs />
-      )}
+      <RootTabs />
     </ThemeProvider>
   );
 }

@@ -22,7 +22,8 @@ import { useFocusEffect } from "@react-navigation/core";
 import { getGrantedPermissions } from "react-native-health-connect";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
-import { USER_ID } from "../api/config";
+import { logout } from "../lib/auth";
+
 import { GOOGLE_CLIENT_ID } from "../api/client";
 import { requestHealthPermissions, syncHealthData } from "../lib/healthConnect";
 import {
@@ -110,14 +111,14 @@ export function SettingsScreen() {
 
   const loadDriveStatus = useCallback(async function () {
     try {
-      const status = await api.getDriveStatus(USER_ID);
+      const status = await api.getDriveStatus();
       setDriveStatus(status);
     } catch (_) {}
   }, []);
 
   const load = useCallback(async function () {
     try {
-      const s = await api.getSettings(USER_ID);
+      const s = await api.getSettings();
       setSettings(s ?? {});
       setDexcomAccountId(s?.dexcom?.share_account_id ?? "");
       setDexcomRegion(s?.dexcom?.share_region === "ous" ? "ous" : "us");
@@ -345,7 +346,7 @@ export function SettingsScreen() {
   async function handleManualBackup() {
     setDriveBackingUp(true);
     try {
-      const res = await api.triggerDriveBackup(USER_ID);
+      const res = await api.triggerDriveBackup();
       await loadDriveStatus();
       Alert.alert("Backup complete", res.filename ?? "Backup uploaded to Google Drive.");
     } catch (e: any) {
@@ -357,7 +358,7 @@ export function SettingsScreen() {
 
   async function handleDriveAutoBackupToggle(value: boolean) {
     try {
-      await api.setDriveAutoBackup(USER_ID, value);
+      await api.setDriveAutoBackup(value);
       setDriveStatus((prev) => prev ? { ...prev, auto_backup: value } : prev);
     } catch (e: any) {
       Alert.alert("Error", e?.message ?? "Failed to update setting.");
@@ -375,7 +376,7 @@ export function SettingsScreen() {
           style: "destructive",
           onPress: async () => {
             try {
-              await api.disconnectDrive(USER_ID);
+              await api.disconnectDrive();
               setDriveStatus(null);
             } catch (e: any) {
               Alert.alert("Error", e?.message ?? "Failed to disconnect.");
@@ -391,7 +392,7 @@ export function SettingsScreen() {
     try {
       const startIso = new Date(exportStart).toISOString();
       const endIso = new Date(exportEnd + "T23:59:59").toISOString();
-      const url = api.reportUrl(USER_ID, startIso, endIso);
+      const url = await api.reportUrl(startIso, endIso);
       const localUri = (FileSystem.cacheDirectory ?? "") + "ripple-wellness-report.pdf";
       const { uri } = await FileSystem.downloadAsync(url, localUri);
       const canShare = await Sharing.isAvailableAsync();
@@ -410,7 +411,7 @@ export function SettingsScreen() {
   async function handleExportAll() {
     setExportingAll(true);
     try {
-      const url = api.exportAllUrl(USER_ID);
+      const url = await api.exportAllUrl();
       const date = new Date().toISOString().slice(0, 10);
       const localUri = (FileSystem.cacheDirectory ?? "") + "ripple-backup-" + date + ".json";
       const { uri } = await FileSystem.downloadAsync(url, localUri);
@@ -430,7 +431,7 @@ export function SettingsScreen() {
   async function save(patch: Record<string, unknown>) {
     setSaving(true);
     try {
-      await api.patchSettings(USER_ID, patch);
+      await api.patchSettings(patch);
       await load();
     } catch (e: any) {
       Alert.alert("Error", e?.message ?? "Failed to save settings.");
@@ -1035,6 +1036,26 @@ export function SettingsScreen() {
             }
           </Pressable>
         )}
+      </View>
+
+      {/* Account */}
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+        <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Account</Text>
+        <Pressable
+          onPress={() => {
+            Alert.alert("Sign out", "You'll need to sign in again to access your data.", [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Sign out",
+                style: "destructive",
+                onPress: () => logout(),
+              },
+            ]);
+          }}
+          style={[styles.saveButton, { backgroundColor: theme.card, borderColor: theme.coral.sub, marginTop: 4 }]}
+        >
+          <Text style={{ color: theme.coral.fg, fontWeight: "600" }}>Sign out</Text>
+        </Pressable>
       </View>
     </ScrollView>
   );

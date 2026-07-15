@@ -17,7 +17,7 @@ import Svg, { Polyline, Text as SvgText } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
-import { USER_ID } from "../api/config";
+
 import { BarcodeScannerModal } from "../components/BarcodeScannerModal";
 
 // ── Substance types ───────────────────────────────────────────────────────────
@@ -515,7 +515,7 @@ export function MealsScreen() {
     const today = new Date().toISOString().split("T")[0];
     setLoadingMeals(true);
     setMealsError(null);
-    api.meals(USER_ID, today)
+    api.meals(today)
       .then(function (data: Meal[]) { setMeals(Array.isArray(data) ? data : []); })
       .catch(function (e: Error) { setMealsError(e.message || "Failed to load meals"); })
       .finally(function () { setLoadingMeals(false); });
@@ -524,7 +524,7 @@ export function MealsScreen() {
   const loadSubstances = useCallback(function () {
     const today = new Date().toISOString().split("T")[0];
     setSubLoading(true);
-    api.substancesToday(USER_ID, today)
+    api.substancesToday(today)
       .then(function (data: { entries: SubstanceEntry[]; totals: SubstanceTotals }) {
         setSubEntries(Array.isArray(data?.entries) ? data.entries : []);
         if (data?.totals) setSubTotals(data.totals);
@@ -536,7 +536,7 @@ export function MealsScreen() {
   useEffect(function () {
     loadMeals();
     loadSubstances();
-    api.frequentMeals(USER_ID)
+    api.frequentMeals()
       .then(function (data) { setFrequentMeals(Array.isArray(data) ? data : []); })
       .catch(function () {});
   }, [loadMeals, loadSubstances]);
@@ -582,7 +582,7 @@ export function MealsScreen() {
       await Promise.all([
         loadMeals(),
         loadSubstances(),
-        api.frequentMeals(USER_ID).then(d => setFrequentMeals(Array.isArray(d) ? d : [])).catch(() => {}),
+        api.frequentMeals().then(d => setFrequentMeals(Array.isArray(d) ? d : [])).catch(() => {}),
       ]);
     } finally {
       setRefreshing(false);
@@ -594,7 +594,7 @@ export function MealsScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSearchError(null);
     api.addMeal({
-      user_id: USER_ID,
+      ,
       meal_type: mealType,
       source_food_id: pendingFood.source_food_id,
       source_db: pendingFood.source_db ?? "manual",
@@ -670,7 +670,7 @@ export function MealsScreen() {
   function handleLogSubstance(values: SubstancePending) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     api.logSubstance({
-      user_id: USER_ID,
+      ,
       substance_type: values.substance_type,
       name: values.name,
       caffeine_mg: values.caffeine_mg,

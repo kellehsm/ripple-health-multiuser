@@ -11,7 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
-import { USER_ID } from "../api/config";
+
 
 type CompletedItem = {
   id: string;
@@ -53,7 +53,7 @@ export function CompletedScreen() {
 
   const load = useCallback(async () => {
     try {
-      const data = await api.completed(USER_ID);
+      const data = await api.completed();
       setItems(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error("Failed to load completed", e);

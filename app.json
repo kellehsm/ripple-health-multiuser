@@ -53,7 +53,8 @@
           }
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-secure-store"
     ],
     "updates": {
       "url": "https://u.expo.dev/db5bae1a-d8dd-4c26-84e7-7711669de2e8",

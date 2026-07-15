@@ -16,7 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
-import { USER_ID } from "../api/config";
+
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -263,12 +263,12 @@ export function OverviewScreen() {
     try {
       const today = new Date().toISOString().split("T")[0];
       const [entries, weekly, pattern, dig, day, streakData] = await Promise.all([
-        api.journalToday(USER_ID),
-        api.weeklyMoodSummary(USER_ID),
-        api.pattern(USER_ID),
-        api.weeklyDigest(USER_ID),
-        api.dayView(USER_ID, today),
-        api.streaks(USER_ID),
+        api.journalToday(),
+        api.weeklyMoodSummary(),
+        api.pattern(),
+        api.weeklyDigest(),
+        api.dayView(today),
+        api.streaks(),
       ]);
       setTodayEntries(Array.isArray(entries) ? entries : []);
       setWeeklyData(Array.isArray(weekly) ? weekly : []);
@@ -315,9 +315,9 @@ export function OverviewScreen() {
     setSubmitting(true);
     try {
       if (activePicker === "moment") {
-        await api.logMoodMoment(USER_ID, score, pendingLabel, pendingNote.trim() || undefined);
+        await api.logMoodMoment(score, pendingLabel, pendingNote.trim() || undefined);
       } else {
-        await api.upsertPeriodMood(USER_ID, score, activePicker, pendingLabel, pendingNote.trim() || undefined);
+        await api.upsertPeriodMood(score, activePicker, pendingLabel, pendingNote.trim() || undefined);
       }
       setActivePicker(null);
       setPendingLabel(null);

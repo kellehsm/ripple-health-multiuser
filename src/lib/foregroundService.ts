@@ -1,7 +1,6 @@
 import notifee, { AndroidImportance } from "@notifee/react-native";
 import { initialize, aggregateRecord } from "react-native-health-connect";
 import { api } from "../api/client";
-import { USER_ID } from "../api/config";
 import {
   initSmartChannels,
   checkMealReminders,
@@ -20,7 +19,7 @@ let settingsFetchedAt = 0;
 async function getSettings(): Promise<any> {
   if (cachedSettings && Date.now() - settingsFetchedAt < 10 * 60 * 1000) return cachedSettings;
   try {
-    cachedSettings = await api.getSettings(USER_ID);
+    cachedSettings = await api.getSettings();
     settingsFetchedAt = Date.now();
   } catch (_) {}
   return cachedSettings;
@@ -66,7 +65,7 @@ async function syncAndUpdateNotification(notificationId: string) {
     const total = (agg as any).COUNT_TOTAL ?? 0;
     if (total > 0) {
       const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-      await api.syncSteps(USER_ID, today, total);
+      await api.syncSteps(today, total);
       stepsText = total.toLocaleString() + " steps today";
     }
   } catch (e) {
@@ -74,7 +73,7 @@ async function syncAndUpdateNotification(notificationId: string) {
   }
 
   try {
-    const status = await api.glucoseStatus(USER_ID);
+    const status = await api.glucoseStatus();
     if (status?.hasData && status?.mg_dl != null) {
       arrow = status.arrow ?? null;
       glucoseText =

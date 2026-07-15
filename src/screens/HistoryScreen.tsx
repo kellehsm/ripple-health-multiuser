@@ -5,7 +5,7 @@ import {
 } from "react-native";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
-import { USER_ID } from "../api/config";
+
 
 type FilterMode = "glucose" | "meals" | "mood" | "spending";
 
@@ -36,22 +36,22 @@ export function HistoryScreen() {
     try {
       let data: any[] = [];
       if (mode === "glucose") {
-        data = await api.searchGlucose(USER_ID, {
+        data = await api.searchGlucose({
           threshold: glThreshold ? parseInt(glThreshold) : undefined,
           bucket: glBucket || undefined,
         });
       } else if (mode === "meals") {
-        data = await api.searchMeals(USER_ID, {
+        data = await api.searchMeals({
           q: mealQ || undefined,
           min_carbs: mealMinCarbs ? parseFloat(mealMinCarbs) : undefined,
         });
       } else if (mode === "mood") {
-        data = await api.searchMood(USER_ID, {
+        data = await api.searchMood({
           min_score: moodMin ? parseInt(moodMin) : undefined,
           max_score: moodMax ? parseInt(moodMax) : undefined,
         });
       } else if (mode === "spending") {
-        data = await api.searchSpending(USER_ID, {
+        data = await api.searchSpending({
           min_amount: spendMin ? parseFloat(spendMin) : undefined,
           category: spendCategory || undefined,
         });

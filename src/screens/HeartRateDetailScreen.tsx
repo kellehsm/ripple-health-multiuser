@@ -11,7 +11,7 @@ import {
 import Svg, { Line, Polyline, Text as SvgText } from "react-native-svg";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
-import { USER_ID } from "../api/config";
+
 
 type HRReading = { recorded_at: string; bpm: number };
 type DayRow = {
@@ -57,7 +57,7 @@ export function HeartRateDetailScreen() {
     try {
       const now = new Date();
       const start = new Date(now.getTime() - hours * 3600 * 1000);
-      const data = await api.heartRateRange(USER_ID, start.toISOString(), now.toISOString());
+      const data = await api.heartRateRange(start.toISOString(), now.toISOString());
       setReadings(Array.isArray(data) ? data : []);
     } catch (_) {}
     finally { setLoadingChart(false); }
@@ -66,7 +66,7 @@ export function HeartRateDetailScreen() {
   useEffect(function () { loadChart(rangeHours); }, [loadChart, rangeHours]);
 
   useEffect(function () {
-    api.heartRateDaily(USER_ID, 7)
+    api.heartRateDaily(7)
       .then((rows: DayRow[]) => setDailyRows(Array.isArray(rows) ? rows : []))
       .catch(() => {})
       .finally(() => setLoadingDaily(false));

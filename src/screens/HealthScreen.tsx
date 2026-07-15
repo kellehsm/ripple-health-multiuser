@@ -9,7 +9,7 @@ import { useTheme } from "../theme/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
 import { MetricCard } from "../components/MetricCard";
 import { api } from "../api/client";
-import { USER_ID } from "../api/config";
+
 import { requestHealthPermissions, syncHealthData } from "../lib/healthConnect";
 import {
   startForegroundService,
@@ -146,16 +146,16 @@ export function HealthScreen() {
     const _now = new Date();
     const today = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, "0")}-${String(_now.getDate()).padStart(2, "0")}`;
     try {
-      const s = await api.stepsToday(USER_ID, today);
+      const s = await api.stepsToday(today);
       setStepsCount(s?.steps ?? null);
     } catch (e) {
       console.error("Failed to load steps", e);
     }
     try {
-      const stepsList = await api.getStepsMetric(USER_ID);
+      const stepsList = await api.getStepsMetric();
       if (stepsList && stepsList.length > 0) {
         setStepsMetricId(stepsList[0].id);
-        const settings = await api.getSettings(USER_ID).catch(() => null);
+        const settings = await api.getSettings().catch(() => null);
         const wsd = settings?.week_start?.steps ?? 1;
         setWeekStepsStart(wsd);
         const weekly = await api.stepsWeeklyTotal(stepsList[0].id, wsd);
@@ -163,7 +163,7 @@ export function HealthScreen() {
       }
     } catch (_) {}
     try {
-      const session = await api.sleepToday(USER_ID, today);
+      const session = await api.sleepToday(today);
       if (session?.start_time && session?.end_time) {
         setSleepDisplay(formatSleepDuration(session.start_time, session.end_time));
       } else {
@@ -173,7 +173,7 @@ export function HealthScreen() {
       console.error("Failed to load sleep", e);
     }
     try {
-      const stats = await api.sleepStats(USER_ID);
+      const stats = await api.sleepStats();
       const fmt = (s: number) => {
         const h = Math.floor(s / 3600);
         const m = Math.floor((s % 3600) / 60);
@@ -189,7 +189,7 @@ export function HealthScreen() {
 
   const loadWater = useCallback(async function () {
     try {
-      const metric = await api.getOrCreateWaterMetric(USER_ID);
+      const metric = await api.getOrCreateWaterMetric();
       setWaterMetricId(metric.id);
       const logs = await api.todaysWaterCount(metric.id);
       setWaterCount(sumTodayLogs(Array.isArray(logs) ? logs : []));
@@ -209,7 +209,7 @@ export function HealthScreen() {
     try {
       const now = new Date();
       const start = new Date(now.getTime() - hours * 60 * 60 * 1000);
-      const readings = await api.heartRateRange(USER_ID, start.toISOString(), now.toISOString());
+      const readings = await api.heartRateRange(start.toISOString(), now.toISOString());
       setHrReadings(Array.isArray(readings) ? readings : []);
     } catch (e) {
       console.error("Failed to load heart rate", e);
@@ -303,9 +303,9 @@ export function HealthScreen() {
     const yestEnd = new Date(now - dayMs).toISOString();
 
     Promise.all([
-      api.glucoseRange(USER_ID, todayStart, todayEnd),
-      api.glucoseRange(USER_ID, yestStart, yestEnd),
-      api.glucoseStatus(USER_ID),
+      api.glucoseRange(todayStart, todayEnd),
+      api.glucoseRange(yestStart, yestEnd),
+      api.glucoseStatus(),
     ])
       .then(function (results) {
         const todayData = results[0];

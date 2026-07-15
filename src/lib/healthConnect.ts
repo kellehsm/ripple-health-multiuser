@@ -1,6 +1,5 @@
 import { initialize, requestPermission, readRecords, aggregateGroupByPeriod } from "react-native-health-connect";
 import { api } from "../api/client";
-import { USER_ID } from "../api/config";
 
 export async function requestHealthPermissions(): Promise<boolean> {
   try {
@@ -64,7 +63,7 @@ export async function syncHealthData(): Promise<SyncResult> {
       if (count <= 0) continue;
       const d = new Date(bucket.startTime);
       const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      await api.syncSteps(USER_ID, localDate, count);
+      await api.syncSteps(localDate, count);
       if (localDate === todayLocal) steps = count;
     }
   } catch (e: any) {
@@ -86,7 +85,7 @@ export async function syncHealthData(): Promise<SyncResult> {
         end_time: s.endTime,
         quality_score: null,
       }));
-      await api.syncSleep(USER_ID, sessions);
+      await api.syncSleep(sessions);
       const totalMs = (result.records as any[]).reduce(
         (sum, s) => sum + (new Date(s.endTime).getTime() - new Date(s.startTime).getTime()),
         0
@@ -113,7 +112,7 @@ export async function syncHealthData(): Promise<SyncResult> {
       }))
     );
     if (readings.length > 0) {
-      await api.syncHeartRate(USER_ID, readings);
+      await api.syncHeartRate(readings);
       heartRate = readings[readings.length - 1].bpm;
     }
   } catch (e: any) {
