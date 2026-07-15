@@ -61,6 +61,22 @@ function buildPoints(readings: GlucoseReading[], windowStart: number, windowEnd:
     .join(" ");
 }
 
+function getTimeTicks(windowStart: number, windowEnd: number, rangeHours: number): Array<{ t: number; label: string }> {
+  const intervalMins = rangeHours <= 3 ? 15 : rangeHours <= 6 ? 30 : rangeHours <= 12 ? 60 : 120;
+  const intervalMs = intervalMins * 60 * 1000;
+  const showMins = rangeHours <= 6;
+  const ticks: Array<{ t: number; label: string }> = [];
+  for (let t = Math.ceil(windowStart / intervalMs) * intervalMs; t <= windowEnd; t += intervalMs) {
+    const d = new Date(t);
+    const h = d.getHours();
+    const m = d.getMinutes();
+    const ap = h >= 12 ? "p" : "a";
+    const h12 = h % 12 || 12;
+    ticks.push({ t, label: showMins ? `${h12}:${String(m).padStart(2, "0")}${ap}` : `${h12}${ap}` });
+  }
+  return ticks;
+}
+
 const WATER_GOAL = 8;
 
 function formatSleepDuration(start: string, end: string): string {
@@ -80,6 +96,7 @@ function sumTodayLogs(logs: Array<{ logged_at: string; value: number }>): number
 export function HealthScreen() {
   const themeCtx = useTheme();
   const theme = themeCtx.theme;
+  const mode = themeCtx.mode;
   const ink = theme.ink;
   const card = theme.card;
   const styles = useMemo(() => makeStyles(ink, card), [ink, card]);
@@ -473,7 +490,7 @@ export function HealthScreen() {
               const gy = PAD_TOP + chartInnerHeight - ((v - minVal) / (maxVal - minVal)) * chartInnerHeight;
               return (
                 <React.Fragment key={v}>
-                  <Line x1={PAD_LEFT} x2={CHART_WIDTH} y1={gy} y2={gy} stroke={theme.cardBorder} strokeDasharray="2,3" strokeWidth={0.5} />
+                  <Line x1={PAD_LEFT} x2={CHART_WIDTH} y1={gy} y2={gy} stroke={theme.textSoft} strokeDasharray="2,3" strokeWidth={0.5} opacity={0.35} />
                   <SvgText x={PAD_LEFT - 4} y={gy + 4} fontSize={9} fill={theme.textSoft} textAnchor="end">{v}</SvgText>
                 </React.Fragment>
               );
@@ -485,8 +502,8 @@ export function HealthScreen() {
               y={highY}
               width={CHART_WIDTH - PAD_LEFT}
               height={lowY - highY}
-              fill={theme.berry.tint}
-              opacity={0.4}
+              fill={mode === "dark" ? theme.berry.sub : theme.berry.tint}
+              opacity={mode === "dark" ? 0.25 : 0.4}
               stroke={ink}
               strokeWidth={1}
               strokeDasharray="5,5"
@@ -504,6 +521,16 @@ export function HealthScreen() {
                 <Polyline points={todayPoints} fill="none" stroke={theme.berry.bar} strokeWidth={2} />
               </>
             ) : null}
+
+            {/* X-axis time labels */}
+            {getTimeTicks(windowStart, now, rangeHours).map(function ({ t, label }) {
+              const x = PAD_LEFT + ((t - windowStart) / (now - windowStart)) * (CHART_WIDTH - PAD_LEFT);
+              return (
+                <SvgText key={t} x={x} y={CHART_HEIGHT - 4} fontSize={8} fill={theme.textSoft} textAnchor="middle" opacity={0.8}>
+                  {label}
+                </SvgText>
+              );
+            })}
           </Svg>
         )}
 

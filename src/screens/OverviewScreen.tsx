@@ -234,7 +234,7 @@ function buildGlanceSummary(
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function OverviewScreen() {
-  const { theme } = useTheme();
+  const { theme, mode } = useTheme();
   const navigation = useNavigation<any>();
   const ink = theme.ink;
   const card = theme.card;
@@ -741,8 +741,8 @@ export function OverviewScreen() {
                 y={highBandY}
                 width={CHART_W - PAD_L}
                 height={lowBandY - highBandY}
-                fill={theme.berry.tint}
-                opacity={0.4}
+                fill={mode === "dark" ? theme.berry.sub : theme.berry.tint}
+                opacity={mode === "dark" ? 0.25 : 0.4}
                 stroke={ink}
                 strokeWidth={1}
                 strokeDasharray="5,5"
