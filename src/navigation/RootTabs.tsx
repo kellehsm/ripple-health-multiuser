@@ -14,6 +14,7 @@ import { HistoryScreen } from "../screens/HistoryScreen";
 import { StepsDetailScreen } from "../screens/StepsDetailScreen";
 import { HeartRateDetailScreen } from "../screens/HeartRateDetailScreen";
 import { TrendsScreen } from "../screens/TrendsScreen";
+import { CompletedScreen } from "../screens/CompletedScreen";
 import { useTheme } from "../theme/ThemeContext";
 import { navigationRef } from "./navigationRef";
 
@@ -178,6 +179,7 @@ export function RootTabs() {
         <Stack.Screen name="StepsDetail" component={StepsDetailScreen} options={{ title: "Steps" }} />
         <Stack.Screen name="HeartRateDetail" component={HeartRateDetailScreen} options={{ title: "Heart Rate" }} />
         <Stack.Screen name="Trends" component={TrendsScreen} options={{ title: "Trends & Insights" }} />
+        <Stack.Screen name="Completed" component={CompletedScreen} options={{ title: "Completed" }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

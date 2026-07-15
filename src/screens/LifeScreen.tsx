@@ -10,9 +10,11 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
+  ToastAndroid,
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { USER_ID } from "../api/config";
@@ -30,6 +32,7 @@ type Hobby = {
   id: string;
   name: string;
   unit_label: string;
+  status: string;
 };
 
 type HobbyStats = {
@@ -75,6 +78,7 @@ export function LifeScreen() {
   const ink = theme.ink;
   const card = theme.card;
   const styles = useMemo(() => makeStyles(ink, card), [ink, card]);
+  const navigation = useNavigation<any>();
 
   const [books, setBooks] = useState<Book[]>([]);
   const [loadingBooks, setLoadingBooks] = useState(true);
@@ -95,15 +99,15 @@ export function LifeScreen() {
   const [creatingHobby, setCreatingHobby] = useState(false);
   const [createHobbyError, setCreateHobbyError] = useState<string | null>(null);
   const [logHobbyError, setLogHobbyError] = useState<string | null>(null);
+  const [completedCount, setCompletedCount] = useState(0);
 
   const loadBooks = useCallback(async () => {
     setLoadingBooks(true);
     try {
-      const data = await api.books(USER_ID);
+      const data = await api.books(USER_ID, "reading");
       setBooks(data);
-      const reading = data.filter((b: Book) => b.status === "reading");
       const entries = await Promise.all(
-        reading.map(async (b: Book) => {
+        data.map(async (b: Book) => {
           const p = await api.bookProgress(b.id);
           return [b.id, p] as [string, Progress];
         })
@@ -139,14 +143,24 @@ export function LifeScreen() {
     }
   }, []);
 
+  const loadCompletedCount = useCallback(async () => {
+    try {
+      const data = await api.completed(USER_ID);
+      setCompletedCount(Array.isArray(data) ? data.length : 0);
+    } catch (_) {
+      setCompletedCount(0);
+    }
+  }, []);
+
   useEffect(() => {
     loadBooks();
     loadHobbies();
-  }, [loadBooks, loadHobbies]);
+    loadCompletedCount();
+  }, [loadBooks, loadHobbies, loadCompletedCount]);
 
   async function handleRefresh() {
     setRefreshing(true);
-    try { await Promise.all([loadBooks(), loadHobbies()]); } finally { setRefreshing(false); }
+    try { await Promise.all([loadBooks(), loadHobbies(), loadCompletedCount()]); } finally { setRefreshing(false); }
   }
 
   async function handleSearch() {
@@ -186,6 +200,13 @@ export function LifeScreen() {
       await api.logPages(bookId, pages);
       const p = await api.bookProgress(bookId);
       setProgress((prev) => ({ ...prev, [bookId]: p }));
+      if (p.percent_complete != null && p.percent_complete >= 100) {
+        await api.updateBook(bookId, { status: "finished" });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        ToastAndroid.show("🎉 Finished! Moved to Completed.", ToastAndroid.LONG);
+        loadBooks();
+        loadCompletedCount();
+      }
     } catch (e) {
       console.error("Failed to log pages", e);
     }
@@ -194,8 +215,20 @@ export function LifeScreen() {
   async function handleManualPages(bookId: string) {
     const n = parseInt(pageInputs[bookId] ?? "", 10);
     if (!n || n <= 0) return;
-    await handleLogPages(bookId, n);
     setPageInputs((prev) => ({ ...prev, [bookId]: "" }));
+    await handleLogPages(bookId, n);
+  }
+
+  async function handleMarkBookFinished(bookId: string) {
+    try {
+      await api.updateBook(bookId, { status: "finished" });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      ToastAndroid.show("🎉 Marked as finished!", ToastAndroid.SHORT);
+      loadBooks();
+      loadCompletedCount();
+    } catch (e) {
+      console.error("Failed to mark book finished", e);
+    }
   }
 
   function handleDeleteBook(bookId: string, title: string) {
@@ -206,6 +239,26 @@ export function LifeScreen() {
         onPress: async () => {
           try { await api.deleteBook(bookId); loadBooks(); }
           catch (e) { console.error("Failed to delete book", e); }
+        },
+      },
+    ]);
+  }
+
+  async function handleMarkHobbyComplete(hobbyId: string, name: string) {
+    Alert.alert("Complete hobby", `Mark "${name}" as completed?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Complete", style: "default",
+        onPress: async () => {
+          try {
+            await api.updateHobby(hobbyId, { status: "completed" });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            ToastAndroid.show("✅ Hobby completed!", ToastAndroid.SHORT);
+            loadHobbies();
+            loadCompletedCount();
+          } catch (e) {
+            console.error("Failed to complete hobby", e);
+          }
         },
       },
     ]);
@@ -259,14 +312,23 @@ export function LifeScreen() {
     await handleLogHobby(hobbyId, n);
   }
 
-  const currentlyReading = books.filter((b) => b.status === "reading");
-
   return (
     <ScrollView
       style={{ backgroundColor: theme.page }}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
     >
+      {/* Completed banner */}
+      <Pressable
+        onPress={() => navigation.navigate("Completed")}
+        style={[styles.completedBtn, { backgroundColor: theme.teal.tint, borderColor: ink }]}
+      >
+        <Text style={{ color: theme.teal.fg, fontWeight: "800", fontSize: 13 }}>
+          Completed ({completedCount})
+        </Text>
+        <Ionicons name="chevron-forward" size={16} color={theme.teal.fg} />
+      </Pressable>
+
       {/* Add a book card */}
       <View style={[styles.card, { backgroundColor: theme.card }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Add a book</Text>
@@ -316,12 +378,12 @@ export function LifeScreen() {
       {/* Currently reading — each book its own card */}
       {loadingBooks ? (
         <ActivityIndicator style={{ marginTop: 10 }} color={theme.teal.bar} />
-      ) : currentlyReading.length === 0 ? (
-        <View style={[styles.card, { borderColor: theme.cardBorder, borderWidth: 1 }]}>
-          <Text style={{ color: theme.textSoft, fontSize: 13 }}>No books yet — search above to add one.</Text>
+      ) : books.length === 0 ? (
+        <View style={[styles.card, { borderColor: ink, borderWidth: 2 }]}>
+          <Text style={{ color: theme.textSoft, fontSize: 13 }}>No books in progress — search above to add one.</Text>
         </View>
       ) : (
-        currentlyReading.map((book) => {
+        books.map((book) => {
           const prog = progress[book.id];
           const pagesTotal = prog?.pages_read_total ?? 0;
           const totalPages = prog?.total_pages ?? null;
@@ -330,7 +392,6 @@ export function LifeScreen() {
           return (
             <View key={book.id} style={[styles.card, { backgroundColor: theme.coral.tint }]}>
               <View style={styles.bookRow}>
-                {/* Cover */}
                 {book.cover_url ? (
                   <Image source={{ uri: book.cover_url }} style={styles.coverThumb} />
                 ) : (
@@ -346,7 +407,6 @@ export function LifeScreen() {
                   </View>
                   {book.author ? <Text style={{ color: theme.textSoft, fontSize: 12 }}>{book.author}</Text> : null}
 
-                  {/* Progress bar with ink border */}
                   {totalPages ? (
                     <>
                       <View style={styles.progressOuter}>
@@ -363,7 +423,6 @@ export function LifeScreen() {
                     <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 4 }}>{pagesTotal} pages read</Text>
                   ) : null}
 
-                  {/* Quick log buttons */}
                   <View style={styles.quickBtnRow}>
                     {[10, 20, 30].map((n) => (
                       <Pressable key={n} onPress={() => handleLogPages(book.id, n)} style={[styles.quickBtn, { backgroundColor: theme.coral.tint }]}>
@@ -372,7 +431,6 @@ export function LifeScreen() {
                     ))}
                   </View>
 
-                  {/* Manual log row */}
                   <View style={styles.manualRow}>
                     <TextInput
                       placeholder="pages"
@@ -384,6 +442,12 @@ export function LifeScreen() {
                     />
                     <Pressable style={[styles.actionBtn, { backgroundColor: theme.teal.solid }]} onPress={() => handleManualPages(book.id)}>
                       <Text style={styles.actionBtnText}>LOG</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleMarkBookFinished(book.id)}
+                      style={[styles.actionBtn, { backgroundColor: theme.teal.tint, borderColor: ink }]}
+                    >
+                      <Text style={[styles.actionBtnText, { color: theme.teal.fg }]}>DONE ✓</Text>
                     </Pressable>
                   </View>
                 </View>
@@ -418,7 +482,7 @@ export function LifeScreen() {
       {loadingHobbies ? (
         <ActivityIndicator style={{ marginTop: 4 }} color={theme.teal.bar} />
       ) : hobbies.length === 0 ? (
-        <View style={[styles.card, { borderColor: theme.cardBorder, borderWidth: 1 }]}>
+        <View style={[styles.card, { borderColor: ink, borderWidth: 2 }]}>
           <Text style={{ color: theme.textSoft, fontSize: 13 }}>No hobbies yet — add one above.</Text>
         </View>
       ) : (
@@ -427,7 +491,6 @@ export function LifeScreen() {
           return (
             <View key={hobby.id} style={[styles.card, { backgroundColor: theme.coral.tint }]}>
               <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
-                {/* Coral icon tile */}
                 <View style={[styles.hobbyIconTile, { backgroundColor: theme.coral.solid }]}>
                   <Ionicons name="star" size={16} color="#fff" />
                 </View>
@@ -445,12 +508,18 @@ export function LifeScreen() {
                     </>
                   ) : null}
                 </View>
+                <Pressable
+                  onPress={() => handleMarkHobbyComplete(hobby.id, hobby.name)}
+                  hitSlop={8}
+                  style={{ marginRight: 10 }}
+                >
+                  <Ionicons name="checkmark-circle-outline" size={20} color={theme.teal.solid} />
+                </Pressable>
                 <Pressable onPress={() => handleDeleteHobby(hobby.id, hobby.name)} hitSlop={8}>
                   <Ionicons name="trash-outline" size={16} color={theme.textSoft} />
                 </Pressable>
               </View>
 
-              {/* Quick log buttons */}
               <View style={styles.quickBtnRow}>
                 {[15, 30, 60].map(function (mins) {
                   return (
@@ -465,7 +534,6 @@ export function LifeScreen() {
                 })}
               </View>
 
-              {/* Manual log */}
               <View style={[styles.manualRow, { marginTop: 8 }]}>
                 <TextInput
                   placeholder={hobby.unit_label}
@@ -490,6 +558,16 @@ export function LifeScreen() {
 function makeStyles(ink: string, card: string) {
   return StyleSheet.create({
   content: { padding: 16, gap: 12 },
+
+  completedBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderRadius: 12,
+    borderWidth: 2,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
 
   card: {
     borderRadius: 12,
@@ -527,7 +605,7 @@ function makeStyles(ink: string, card: string) {
     paddingVertical: 10,
     alignItems: "center",
     justifyContent: "center",
-    minWidth: 68,
+    minWidth: 60,
     shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
@@ -582,7 +660,7 @@ function makeStyles(ink: string, card: string) {
   },
   quickBtnText: { fontSize: 11, fontWeight: "800", color: ink, letterSpacing: 0.3 },
 
-  manualRow: { flexDirection: "row", gap: 8, marginTop: 6 },
+  manualRow: { flexDirection: "row", gap: 8, marginTop: 6, flexWrap: "wrap" },
   manualInput: {
     width: 80,
     borderWidth: 2,
@@ -599,7 +677,6 @@ function makeStyles(ink: string, card: string) {
     elevation: 2,
   },
 
-  // Hobby card
   hobbyIconTile: {
     width: 44,
     height: 44,

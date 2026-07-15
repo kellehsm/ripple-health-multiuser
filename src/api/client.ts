@@ -18,8 +18,8 @@ export const api = {
     return request("/summary/pattern?user_id=" + userId + (date ? "&date=" + date : ""));
   },
 
-  books: function (userId: string) {
-    return request("/books?user_id=" + userId);
+  books: function (userId: string, status?: string) {
+    return request("/books?user_id=" + userId + (status ? "&status=" + status : ""));
   },
   searchBooks: function (q: string) {
     return request("/books-search/search?q=" + encodeURIComponent(q));
@@ -37,8 +37,14 @@ export const api = {
     return request("/books/" + bookId, { method: "PATCH", body: JSON.stringify(payload) });
   },
 
-  hobbies: function (userId: string) {
-    return request("/hobbies?user_id=" + userId);
+  hobbies: function (userId: string, status?: string) {
+    return request("/hobbies?user_id=" + userId + (status ? "&status=" + status : ""));
+  },
+  updateHobby: function (hobbyId: string, payload: Record<string, unknown>) {
+    return request("/hobbies/" + hobbyId, { method: "PATCH", body: JSON.stringify(payload) });
+  },
+  completed: function (userId: string) {
+    return request("/completed?user_id=" + userId);
   },
   createHobby: function (payload: Record<string, unknown>) {
     return request("/hobbies", { method: "POST", body: JSON.stringify(payload) });
