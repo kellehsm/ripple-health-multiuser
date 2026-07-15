@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Ripple Wellness",
-    "slug": "ripple-wellness",
+    "slug": "ripple-health",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
