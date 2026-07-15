@@ -18,13 +18,12 @@ import { TrendsScreen } from "../screens/TrendsScreen";
 import { useTheme } from "../theme/ThemeContext";
 import { navigationRef } from "./navigationRef";
 
-const INK = "#111111";
-
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 function TabNavigator() {
   const { theme, toggle, mode } = useTheme();
+  const ink = theme.ink;
 
   return (
     <Tab.Navigator
@@ -44,14 +43,14 @@ function TabNavigator() {
         headerTitleStyle: { color: theme.textStrong, fontWeight: "800", fontSize: 19 },
         tabBarStyle: {
           backgroundColor: theme.page,
-          borderTopColor: INK,
+          borderTopColor: ink,
           borderTopWidth: 2,
           height: 64,
         },
-        tabBarActiveTintColor: theme.textStrong,
+        tabBarActiveTintColor: ink,
         tabBarInactiveTintColor: theme.textSoft,
         tabBarItemStyle: route.name !== "Finance"
-          ? { borderRightWidth: 1, borderRightColor: INK }
+          ? { borderRightWidth: 1, borderRightColor: ink }
           : {},
       })}
     >
@@ -59,8 +58,8 @@ function TabNavigator() {
         name="Health"
         component={HealthScreen}
         options={{
-          tabBarIcon: ({ focused }) => (
-            <Ionicons name="heart" size={22} color={focused ? theme.berry.solid : theme.textSoft} />
+          tabBarIcon: () => (
+            <Text style={{ fontSize: 22 }}>❤️</Text>
           ),
         }}
       />
@@ -68,8 +67,8 @@ function TabNavigator() {
         name="Meals"
         component={MealsScreen}
         options={{
-          tabBarIcon: ({ focused }) => (
-            <Ionicons name="restaurant" size={22} color={focused ? theme.coral.solid : theme.textSoft} />
+          tabBarIcon: () => (
+            <Text style={{ fontSize: 22 }}>🍜</Text>
           ),
         }}
       />
@@ -112,15 +111,15 @@ function TabNavigator() {
                   justifyContent: "center",
                   marginTop: -24,
                   borderWidth: 2.5,
-                  borderColor: INK,
-                  shadowColor: INK,
+                  borderColor: ink,
+                  shadowColor: ink,
                   shadowOffset: { width: 3, height: 3 },
                   shadowOpacity: 1,
                   shadowRadius: 0,
                   elevation: 4,
                 }}
               >
-                <Ionicons name="home" size={24} color="#fff" />
+                <Text style={{ fontSize: 24 }}>🏠</Text>
               </View>
               <Text style={{ color: theme.textSoft, fontSize: 10, marginTop: 3 }}>Home</Text>
             </Pressable>
@@ -132,8 +131,8 @@ function TabNavigator() {
         component={LifeScreen}
         options={{
           title: "Habits",
-          tabBarIcon: ({ focused }) => (
-            <Ionicons name="book" size={22} color={focused ? theme.teal.solid : theme.textSoft} />
+          tabBarIcon: () => (
+            <Text style={{ fontSize: 22 }}>📖</Text>
           ),
         }}
       />
@@ -141,8 +140,8 @@ function TabNavigator() {
         name="Finance"
         component={FinanceScreen}
         options={{
-          tabBarIcon: ({ focused }) => (
-            <Ionicons name="wallet" size={22} color={focused ? theme.purple.solid : theme.textSoft} />
+          tabBarIcon: () => (
+            <Text style={{ fontSize: 22 }}>👛</Text>
           ),
         }}
       />

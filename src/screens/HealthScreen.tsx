@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, Dimensions, Platform, Alert, RefreshControl } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
@@ -15,8 +15,6 @@ import {
   isForegroundServiceRunning,
 } from "../lib/foregroundService";
 import * as IntentLauncher from "expo-intent-launcher";
-
-const INK = "#111111";
 
 type GlucoseReading = {
   recorded_at: string;
@@ -82,6 +80,9 @@ function sumTodayLogs(logs: Array<{ logged_at: string; value: number }>): number
 export function HealthScreen() {
   const themeCtx = useTheme();
   const theme = themeCtx.theme;
+  const ink = theme.ink;
+  const card = theme.card;
+  const styles = useMemo(() => makeStyles(ink, card), [ink, card]);
   const navigation = useNavigation<any>();
   const [rangeHours, setRangeHours] = useState(6);
   const [todayReadings, setTodayReadings] = useState<GlucoseReading[]>([]);
@@ -394,7 +395,7 @@ export function HealthScreen() {
 
       {/* Glucose alert banner */}
       {status && status.alerts && status.alerts.length > 0 ? (
-        <View style={[styles.alertCard, { backgroundColor: theme.red.tint, borderColor: INK }]}>
+        <View style={[styles.alertCard, { backgroundColor: theme.red.tint, borderColor: ink }]}>
           {status.alerts.map(function (alert: string, i: number) {
             return (
               <Text key={i} style={{ color: theme.red.fg, fontSize: 13, fontWeight: "700" }}>
@@ -426,10 +427,10 @@ export function HealthScreen() {
                 onPress={function () { setRangeHours(hrs); }}
                 style={[
                   styles.rangeBtn,
-                  { backgroundColor: active ? INK : "#ffffff" },
+                  { backgroundColor: active ? ink : card },
                 ]}
               >
-                <Text style={[styles.rangeBtnText, { color: active ? "#ffffff" : INK }]}>
+                <Text style={[styles.rangeBtnText, { color: active ? "#ffffff" : ink }]}>
                   {hrs}H
                 </Text>
               </Pressable>
@@ -486,7 +487,7 @@ export function HealthScreen() {
               height={lowY - highY}
               fill={theme.berry.tint}
               opacity={0.4}
-              stroke={INK}
+              stroke={ink}
               strokeWidth={1}
               strokeDasharray="5,5"
             />
@@ -499,7 +500,7 @@ export function HealthScreen() {
             {/* Today — double stroke: ink outline below, color on top */}
             {todayPoints.length > 0 ? (
               <>
-                <Polyline points={todayPoints} fill="none" stroke={INK} strokeWidth={3.5} />
+                <Polyline points={todayPoints} fill="none" stroke={ink} strokeWidth={3.5} />
                 <Polyline points={todayPoints} fill="none" stroke={theme.berry.bar} strokeWidth={2} />
               </>
             ) : null}
@@ -508,7 +509,7 @@ export function HealthScreen() {
 
         <View style={styles.legendRow}>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: theme.berry.bar, borderWidth: 1.5, borderColor: INK }]} />
+            <View style={[styles.legendDot, { backgroundColor: theme.berry.bar, borderWidth: 1.5, borderColor: ink }]} />
             <Text style={{ color: theme.textSoft, fontSize: 11 }}>Today</Text>
           </View>
           <View style={styles.legendItem}>
@@ -566,9 +567,9 @@ export function HealthScreen() {
                   <Pressable
                     key={hrs}
                     onPress={function () { setHrRangeHours(hrs); }}
-                    style={[styles.rangeBtn, { backgroundColor: active ? INK : "#ffffff" }]}
+                    style={[styles.rangeBtn, { backgroundColor: active ? ink : card }]}
                   >
-                    <Text style={[styles.rangeBtnText, { color: active ? "#ffffff" : INK }]}>{hrs}H</Text>
+                    <Text style={[styles.rangeBtnText, { color: active ? "#ffffff" : ink }]}>{hrs}H</Text>
                   </Pressable>
                 );
               })}
@@ -582,7 +583,7 @@ export function HealthScreen() {
             ) : (
               <Svg width={CHART_WIDTH} height={CHART_HEIGHT} style={{ marginTop: 12 }}>
                 {/* Double-stroke HR line */}
-                <Polyline points={hrPoints} fill="none" stroke={INK} strokeWidth={3.5} />
+                <Polyline points={hrPoints} fill="none" stroke={ink} strokeWidth={3.5} />
                 <Polyline points={hrPoints} fill="none" stroke={theme.berry.sub} strokeWidth={2} />
               </Svg>
             )}
@@ -635,16 +636,17 @@ export function HealthScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(ink: string, card: string) {
+  return StyleSheet.create({
   content: { padding: 16, gap: 12 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: CARD_GAP },
   halfCell: { width: HALF_CARD_WIDTH },
   card: {
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     padding: 14,
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -657,7 +659,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     padding: 12,
     gap: 4,
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 3, height: 3 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -665,21 +667,21 @@ const styles = StyleSheet.create({
   },
   peakBadge: {
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     borderRadius: 20,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    backgroundColor: "#ffffff",
+    backgroundColor: card,
   },
-  peakBadgeText: { fontSize: 10, fontWeight: "800", color: INK, letterSpacing: 0.5 },
+  peakBadgeText: { fontSize: 10, fontWeight: "800", color: ink, letterSpacing: 0.5 },
   rangeRow: { flexDirection: "row", gap: 8, marginTop: 10 },
   rangeBtn: {
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -689,12 +691,12 @@ const styles = StyleSheet.create({
   glucoseCurrentBox: {
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     padding: 14,
     marginTop: 12,
     flexDirection: "row",
     alignItems: "center",
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 3, height: 3 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -715,18 +717,19 @@ const styles = StyleSheet.create({
   legendDot: { width: 8, height: 8, borderRadius: 4 },
   hcBtn: {
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 14,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 10,
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
     elevation: 2,
   },
   hcBtnText: { fontSize: 11, fontWeight: "800", letterSpacing: 0.5 },
-});
+  });
+}

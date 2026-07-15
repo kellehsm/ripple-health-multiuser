@@ -34,11 +34,11 @@ export const lightTheme = {
 };
 
 export const darkTheme = {
-  ink: "#111111",
+  ink: "#E8E2D5",
   cream: "#1A1814",
   page: "#211F1B",
-  card: "#2A2824",
-  cardBorder: "#3a372f",
+  card: "#312E28",
+  cardBorder: "#4a4640",
   textStrong: "#F2F0EA",
   textSoft: "#B4B1A8",
 

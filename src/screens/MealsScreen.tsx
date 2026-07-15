@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   ScrollView,
   View,
@@ -19,8 +19,6 @@ import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { USER_ID } from "../api/config";
 import { BarcodeScannerModal } from "../components/BarcodeScannerModal";
-
-const INK = "#111111";
 
 // ── Substance types ───────────────────────────────────────────────────────────
 
@@ -72,6 +70,9 @@ function CaffeineForm({
   onCancel: () => void;
   theme: any;
 }) {
+  const ink = theme.ink;
+  const card = theme.card;
+  const styles = useMemo(() => makeStyles(ink, card), [ink, card]);
   const [name, setName] = useState(initial.name);
   const [mg, setMg] = useState(initial.caffeine_mg != null ? String(initial.caffeine_mg) : "");
 
@@ -131,6 +132,9 @@ function AlcoholForm({
   onCancel: () => void;
   theme: any;
 }) {
+  const ink = theme.ink;
+  const card = theme.card;
+  const styles = useMemo(() => makeStyles(ink, card), [ink, card]);
   const [name, setName] = useState(initial.name);
   const [abv, setAbv] = useState(initial.abv_percent != null ? String(initial.abv_percent) : "");
   const [vol, setVol] = useState(initial.volume_ml != null ? String(initial.volume_ml) : "");
@@ -313,6 +317,9 @@ function MacroEditForm({
   onCancel: () => void;
 }) {
   const { theme } = useTheme();
+  const ink = theme.ink;
+  const card = theme.card;
+  const styles = useMemo(() => makeStyles(ink, card), [ink, card]);
   const [name, setName] = useState(initial.name);
   const [carbs, setCarbs] = useState(initial.carbs_g != null ? String(initial.carbs_g) : "");
   const [sugar, setSugar] = useState(initial.sugar_g != null ? String(initial.sugar_g) : "");
@@ -424,7 +431,7 @@ function MiniGlucoseChart({
           <SvgText x={0} y={MC_PAD_TOP + 6} fontSize={9} fill={theme.textSoft}>{Math.round(maxVal)}</SvgText>
           <SvgText x={0} y={MINI_CHART_HEIGHT - MC_PAD_BOTTOM} fontSize={9} fill={theme.textSoft}>{Math.round(minVal)}</SvgText>
           {/* Double-stroke mini chart */}
-          <Polyline points={points} fill="none" stroke={INK} strokeWidth={2.5} />
+          <Polyline points={points} fill="none" stroke={ink} strokeWidth={2.5} />
           <Polyline points={points} fill="none" stroke={theme.berry.sub} strokeWidth={1.5} />
         </Svg>
       )}
@@ -435,6 +442,9 @@ function MiniGlucoseChart({
 
 export function MealsScreen() {
   const { theme } = useTheme();
+  const ink = theme.ink;
+  const card = theme.card;
+  const styles = useMemo(() => makeStyles(ink, card), [ink, card]);
 
   const [mealType, setMealType] = useState<MealType>("breakfast");
   const [searchQuery, setSearchQuery] = useState("");
@@ -760,10 +770,10 @@ export function MealsScreen() {
                 onPress={function () { setMealType(type); }}
                 style={[
                   styles.typeChip,
-                  { backgroundColor: selected ? INK : "#ffffff" },
+                  { backgroundColor: selected ? ink : card },
                 ]}
               >
-                <Text style={{ color: selected ? "#ffffff" : INK, fontSize: 11, fontWeight: "800", letterSpacing: 0.3 }}>
+                <Text style={{ color: selected ? "#ffffff" : ink, fontSize: 11, fontWeight: "800", letterSpacing: 0.3 }}>
                   {type.toUpperCase()}
                 </Text>
               </Pressable>
@@ -795,7 +805,7 @@ export function MealsScreen() {
             onPress={function () { setScannerVisible(true); }}
             style={styles.secondaryBtn}
           >
-            <Ionicons name="barcode-outline" size={15} color={INK} />
+            <Ionicons name="barcode-outline" size={15} color={ink} />
             <Text style={styles.secondaryBtnText}>SCAN BARCODE</Text>
           </Pressable>
           <Pressable
@@ -829,7 +839,7 @@ export function MealsScreen() {
                 <Pressable
                   key={food.source_food_id ?? String(i)}
                   onPress={function () { handleSelectFood(food); }}
-                  style={[styles.resultRow, { borderColor: INK }]}
+                  style={[styles.resultRow, { borderColor: ink }]}
                 >
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: theme.textStrong, fontSize: 13, fontWeight: "600" }} numberOfLines={1}>{food.name}</Text>
@@ -866,7 +876,7 @@ export function MealsScreen() {
             const mealColor = MEAL_TYPE_COLORS[meal.meal_type] ?? "#3FA0A6";
 
             return (
-              <View key={meal.id} style={[styles.mealCard, { borderColor: INK, backgroundColor: theme.coral.tint }]}>
+              <View key={meal.id} style={[styles.mealCard, { borderColor: ink, backgroundColor: theme.coral.tint }]}>
                 <View style={styles.mealContent}>
                   {/* Colored icon tile */}
                   <View style={[styles.mealIconTile, { backgroundColor: mealColor }]}>
@@ -945,7 +955,7 @@ export function MealsScreen() {
             )}
             {subTotals.standard_drinks > 0 && (
               <View style={[styles.totalBlock, { backgroundColor: "#7B3FBF", flex: 1 }]}>
-                <Text style={styles.totalBlockLabel}>STD DRINKS TODAY</Text>
+                <Text style={styles.totalBlockLabel}>STD DRinkS TODAY</Text>
                 <Text style={styles.totalBlockValue}>{subTotals.standard_drinks}</Text>
               </View>
             )}
@@ -968,10 +978,10 @@ export function MealsScreen() {
                 }}
                 style={[
                   styles.typeChip,
-                  { backgroundColor: selected ? activeColor : "#ffffff", borderColor: selected ? activeColor : INK },
+                  { backgroundColor: selected ? activeColor : card, borderColor: selected ? activeColor : ink },
                 ]}
               >
-                <Text style={{ color: selected ? "#ffffff" : INK, fontSize: 11, fontWeight: "800", letterSpacing: 0.3 }}>
+                <Text style={{ color: selected ? "#ffffff" : ink, fontSize: 11, fontWeight: "800", letterSpacing: 0.3 }}>
                   {t === "caffeine" ? "CAFFEINE" : "ALCOHOL"}
                 </Text>
               </Pressable>
@@ -1033,7 +1043,7 @@ export function MealsScreen() {
                 <Pressable
                   key={r.source_food_id ?? String(i)}
                   onPress={function () { handleSelectSubResult(r); }}
-                  style={[styles.resultRow, { borderColor: INK }]}
+                  style={[styles.resultRow, { borderColor: ink }]}
                 >
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: theme.textStrong, fontSize: 13, fontWeight: "600" }} numberOfLines={1}>{r.name}</Text>
@@ -1077,7 +1087,7 @@ export function MealsScreen() {
                   : "alcohol");
               const iconColor = entry.substance_type === "caffeine" ? "#E8820E" : "#7B3FBF";
               return (
-                <View key={entry.id} style={[styles.resultRow, { borderColor: INK }]}>
+                <View key={entry.id} style={[styles.resultRow, { borderColor: ink }]}>
                   <View style={[styles.mealIconTile, { backgroundColor: iconColor, width: 32, height: 32 }]}>
                     <Ionicons
                       name={entry.substance_type === "caffeine" ? "cafe-outline" : "wine-outline"}
@@ -1110,7 +1120,8 @@ export function MealsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(ink: string, card: string) {
+  return StyleSheet.create({
   content: { padding: 16, gap: 12 },
 
   // Totals strip
@@ -1119,9 +1130,9 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     padding: 10,
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 3, height: 3 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -1134,9 +1145,9 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     padding: 14,
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -1150,12 +1161,12 @@ const styles = StyleSheet.create({
   frequentRow: { gap: 8, paddingBottom: 2 },
   frequentChip: {
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
     maxWidth: 150,
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -1165,11 +1176,11 @@ const styles = StyleSheet.create({
   chipRow: { flexDirection: "row", gap: 6, marginBottom: 10, flexWrap: "wrap" },
   typeChip: {
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -1179,13 +1190,13 @@ const styles = StyleSheet.create({
   searchRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
   textInput: {
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 10,
-    backgroundColor: "#ffffff",
+    backgroundColor: card,
     fontSize: 14,
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -1194,13 +1205,13 @@ const styles = StyleSheet.create({
   actionBtn: {
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     paddingHorizontal: 14,
     paddingVertical: 10,
     alignItems: "center",
     justifyContent: "center",
     minWidth: 72,
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -1214,18 +1225,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    backgroundColor: "#ffffff",
-    shadowColor: INK,
+    backgroundColor: card,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
     elevation: 2,
   },
-  secondaryBtnText: { color: INK, fontSize: 10, fontWeight: "800", letterSpacing: 0.4 },
+  secondaryBtnText: { color: ink, fontSize: 10, fontWeight: "800", letterSpacing: 0.4 },
 
   resultRow: {
     flexDirection: "row",
@@ -1234,8 +1245,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    shadowColor: INK,
+    backgroundColor: card,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -1247,13 +1258,13 @@ const styles = StyleSheet.create({
   macroInput: {
     flex: 1,
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 8,
     fontSize: 12,
-    backgroundColor: "#ffffff",
-    shadowColor: INK,
+    backgroundColor: card,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -1262,20 +1273,20 @@ const styles = StyleSheet.create({
   editFormButtons: { flexDirection: "row", gap: 8 },
   cancelBtn: {
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 9,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    shadowColor: INK,
+    backgroundColor: card,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
     elevation: 2,
   },
-  cancelBtnText: { color: INK, fontWeight: "800", fontSize: 11, letterSpacing: 0.4 },
+  cancelBtnText: { color: ink, fontWeight: "800", fontSize: 11, letterSpacing: 0.4 },
 
   // Meal row card
   mealCard: {
@@ -1283,7 +1294,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderRadius: 12,
     overflow: "hidden",
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 3, height: 3 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -1295,11 +1306,11 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 10,
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -1309,4 +1320,5 @@ const styles = StyleSheet.create({
   mealMain: { flex: 1, flexDirection: "row", alignItems: "flex-start" },
   iconBtn: { padding: 6, marginLeft: 2 },
   glucosePanel: { borderTopWidth: 1, marginHorizontal: 10, paddingTop: 10, paddingBottom: 10 },
-});
+  });
+}

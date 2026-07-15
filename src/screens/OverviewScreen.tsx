@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   ScrollView,
   View,
@@ -17,8 +17,6 @@ import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { USER_ID } from "../api/config";
-
-const INK = "#111111";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -238,6 +236,9 @@ function buildGlanceSummary(
 export function OverviewScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<any>();
+  const ink = theme.ink;
+  const card = theme.card;
+  const styles = useMemo(() => makeStyles(ink, card), [ink, card]);
 
   const [todayEntries, setTodayEntries] = useState<JournalEntry[]>([]);
   const [weeklyData, setWeeklyData] = useState<WeeklyDay[]>([]);
@@ -472,7 +473,7 @@ export function OverviewScreen() {
               onPress={function () { openPicker("moment"); }}
               style={styles.momentBtn}
             >
-              <Ionicons name="add" size={13} color={INK} />
+              <Ionicons name="add" size={13} color={ink} />
               <Text style={styles.momentBtnText}>MOMENT</Text>
             </Pressable>
           </View>
@@ -491,7 +492,7 @@ export function OverviewScreen() {
                   styles.periodTile,
                   {
                     backgroundColor: "#ffffff",
-                    borderColor: isNow && !entry ? theme.coral.solid : INK,
+                    borderColor: isNow && !entry ? theme.coral.solid : ink,
                     borderWidth: isNow && !entry ? 2.5 : 2,
                   },
                 ]}
@@ -530,7 +531,7 @@ export function OverviewScreen() {
                       styles.moodTile,
                       {
                         backgroundColor: selected ? c.tint : "#ffffff",
-                        borderColor: selected ? c.solid : INK,
+                        borderColor: selected ? c.solid : ink,
                         borderWidth: selected ? 2.5 : 2,
                       },
                     ]}
@@ -632,7 +633,7 @@ export function OverviewScreen() {
                     const data = digest.glucose_by_tod[b];
                     if (!data) return null;
                     return (
-                      <View key={b} style={[styles.todChip, { backgroundColor: theme.berry.tint, borderColor: INK }]}>
+                      <View key={b} style={[styles.todChip, { backgroundColor: theme.berry.tint, borderColor: ink }]}>
                         <Text style={{ color: theme.berry.fg, fontSize: 10, fontWeight: "800", letterSpacing: 0.5 }}>{b.slice(0, 3).toUpperCase()}</Text>
                         <Text style={{ color: theme.berry.fg, fontSize: 17, fontWeight: "800" }}>{data.avg}</Text>
                       </View>
@@ -658,7 +659,7 @@ export function OverviewScreen() {
 
             {/* Callout strip for flags */}
             {(digest.meal_flags.length > 0 || digest.spending_spikes.length > 0) ? (
-              <View style={[styles.calloutStrip, { backgroundColor: theme.coral.tint, borderColor: INK }]}>
+              <View style={[styles.calloutStrip, { backgroundColor: theme.coral.tint, borderColor: ink }]}>
                 {digest.meal_flags.map((f, i) => (
                   <Text key={"mf" + i} style={{ color: theme.coral.fg, fontSize: 12 }}>🍽 {f.label}</Text>
                 ))}
@@ -696,7 +697,7 @@ export function OverviewScreen() {
               onPress={function () { setCorrelation(correlation === "sleep" ? "spend" : "sleep"); }}
               style={styles.toggleChip}
             >
-              <Text style={{ color: INK, fontSize: 10, fontWeight: "800", letterSpacing: 0.4 }}>
+              <Text style={{ color: ink, fontSize: 10, fontWeight: "800", letterSpacing: 0.4 }}>
                 VS {correlation === "sleep" ? "SPENDING" : "SLEEP"}
               </Text>
             </Pressable>
@@ -742,7 +743,7 @@ export function OverviewScreen() {
                 height={lowBandY - highBandY}
                 fill={theme.berry.tint}
                 opacity={0.4}
-                stroke={INK}
+                stroke={ink}
                 strokeWidth={1}
                 strokeDasharray="5,5"
               />
@@ -752,7 +753,7 @@ export function OverviewScreen() {
               {/* Glucose — double stroke */}
               {glucosePoints ? (
                 <>
-                  <Polyline points={glucosePoints} fill="none" stroke={INK} strokeWidth={3.5} />
+                  <Polyline points={glucosePoints} fill="none" stroke={ink} strokeWidth={3.5} />
                   <Polyline points={glucosePoints} fill="none" stroke={theme.berry.bar} strokeWidth={2} />
                 </>
               ) : null}
@@ -776,8 +777,8 @@ export function OverviewScreen() {
 
                 return (
                   <React.Fragment key={i}>
-                    <Circle cx={x} cy={y} r={9} fill={markerBg} stroke={INK} strokeWidth={2} />
-                    <SvgText x={x} y={y + 4} fontSize={8} fill={INK} textAnchor="middle" fontWeight="bold">
+                    <Circle cx={x} cy={y} r={9} fill={markerBg} stroke={ink} strokeWidth={2} />
+                    <SvgText x={x} y={y + 4} fontSize={8} fill={ink} textAnchor="middle" fontWeight="bold">
                       {markerText}
                     </SvgText>
                   </React.Fragment>
@@ -788,25 +789,25 @@ export function OverviewScreen() {
             {/* Legend */}
             <View style={styles.legendRow}>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: theme.berry.bar, borderWidth: 1.5, borderColor: INK }]} />
+                <View style={[styles.legendDot, { backgroundColor: theme.berry.bar, borderWidth: 1.5, borderColor: ink }]} />
                 <Text style={{ color: theme.textSoft, fontSize: 10 }}>Glucose</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: theme.coral.tint, borderWidth: 1.5, borderColor: INK }]} />
+                <View style={[styles.legendDot, { backgroundColor: theme.coral.tint, borderWidth: 1.5, borderColor: ink }]} />
                 <Text style={{ color: theme.textSoft, fontSize: 10 }}>Meal</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: theme.violet.tint, borderWidth: 1.5, borderColor: INK }]} />
+                <View style={[styles.legendDot, { backgroundColor: theme.violet.tint, borderWidth: 1.5, borderColor: ink }]} />
                 <Text style={{ color: theme.textSoft, fontSize: 10 }}>Mood</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: theme.purple.tint, borderWidth: 1.5, borderColor: INK }]} />
+                <View style={[styles.legendDot, { backgroundColor: theme.purple.tint, borderWidth: 1.5, borderColor: ink }]} />
                 <Text style={{ color: theme.textSoft, fontSize: 10 }}>Spend</Text>
               </View>
             </View>
 
             {callout ? (
-              <View style={[styles.calloutBox, { backgroundColor: theme.coral.tint, borderColor: INK }]}>
+              <View style={[styles.calloutBox, { backgroundColor: theme.coral.tint, borderColor: ink }]}>
                 <Text style={{ color: theme.coral.fg, fontSize: 12, fontWeight: "600" }}>{callout}</Text>
               </View>
             ) : null}
@@ -856,7 +857,8 @@ export function OverviewScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+function makeStyles(ink: string, card: string) {
+  return StyleSheet.create({
   content: { padding: 16, gap: 12 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   greeting: { fontSize: 22, fontWeight: "800", marginBottom: 4 },
@@ -865,12 +867,12 @@ const styles = StyleSheet.create({
   streakPill: {
     backgroundColor: "#3FA0A6",
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 4,
     marginBottom: 8,
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -881,9 +883,9 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     padding: 14,
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -895,7 +897,7 @@ const styles = StyleSheet.create({
   dueNowPill: {
     backgroundColor: "#E8654E",
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     borderRadius: 20,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -907,18 +909,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 3,
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     borderRadius: 20,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    backgroundColor: "#ffffff",
-    shadowColor: INK,
+    backgroundColor: card,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
     elevation: 2,
   },
-  momentBtnText: { fontSize: 9, fontWeight: "800", color: INK, letterSpacing: 0.4 },
+  momentBtnText: { fontSize: 9, fontWeight: "800", color: ink, letterSpacing: 0.4 },
 
   periodRow: { flexDirection: "row", gap: 6 },
   periodTile: {
@@ -927,21 +929,21 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     alignItems: "center",
     gap: 1,
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
     elevation: 2,
   },
-  periodLabel: { fontSize: 9, fontWeight: "800", color: INK, letterSpacing: 0.5 },
+  periodLabel: { fontSize: 9, fontWeight: "800", color: ink, letterSpacing: 0.5 },
 
   pickerBox: {
     marginTop: 12,
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     borderRadius: 12,
     padding: 12,
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 3, height: 3 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -954,7 +956,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 10,
     alignItems: "center",
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -964,14 +966,14 @@ const styles = StyleSheet.create({
 
   noteInput: {
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 13,
     marginBottom: 10,
-    backgroundColor: "#ffffff",
-    shadowColor: INK,
+    backgroundColor: card,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -980,27 +982,27 @@ const styles = StyleSheet.create({
   pickerActions: { flexDirection: "row", gap: 8, justifyContent: "flex-end" },
   cancelBtn: {
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: "#ffffff",
-    shadowColor: INK,
+    backgroundColor: card,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
     elevation: 2,
   },
-  cancelBtnText: { color: INK, fontSize: 11, fontWeight: "800", letterSpacing: 0.4 },
+  cancelBtnText: { color: ink, fontSize: 11, fontWeight: "800", letterSpacing: 0.4 },
   logBtn: {
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     paddingHorizontal: 20,
     paddingVertical: 8,
     minWidth: 60,
     alignItems: "center",
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -1015,9 +1017,9 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     padding: 8,
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -1041,7 +1043,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     alignItems: "center",
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -1053,12 +1055,12 @@ const styles = StyleSheet.create({
   legendDot: { width: 8, height: 8, borderRadius: 4 },
   toggleChip: {
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     borderRadius: 20,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    backgroundColor: "#ffffff",
-    shadowColor: INK,
+    backgroundColor: card,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -1069,6 +1071,7 @@ const styles = StyleSheet.create({
 
   timelineRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 4 },
   timelineTime: { fontSize: 12, width: 38 },
-  timelineDot: { width: 8, height: 8, borderRadius: 4, borderWidth: 1.5, borderColor: INK },
+  timelineDot: { width: 8, height: 8, borderRadius: 4, borderWidth: 1.5, borderColor: ink },
   showMoreBtn: { paddingTop: 6 },
-});
+  });
+}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   ScrollView,
   View,
@@ -16,8 +16,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { USER_ID } from "../api/config";
-
-const INK = "#111111";
 
 type Book = {
   id: string;
@@ -74,6 +72,9 @@ type Progress = {
 
 export function LifeScreen() {
   const { theme } = useTheme();
+  const ink = theme.ink;
+  const card = theme.card;
+  const styles = useMemo(() => makeStyles(ink, card), [ink, card]);
 
   const [books, setBooks] = useState<Book[]>([]);
   const [loadingBooks, setLoadingBooks] = useState(true);
@@ -333,7 +334,7 @@ export function LifeScreen() {
                 {book.cover_url ? (
                   <Image source={{ uri: book.cover_url }} style={styles.coverThumb} />
                 ) : (
-                  <View style={[styles.coverThumb, { backgroundColor: theme.teal.tint, borderWidth: 2, borderColor: INK }]} />
+                  <View style={[styles.coverThumb, { backgroundColor: theme.teal.tint, borderWidth: 2, borderColor: ink }]} />
                 )}
 
                 <View style={{ flex: 1 }}>
@@ -435,10 +436,12 @@ export function LifeScreen() {
                   {stats ? (
                     <>
                       <Text style={[styles.hobbyStatLabel, { color: theme.textSoft }]}>THIS WEEK</Text>
-                      <Text style={[styles.hobbyStatValue, { color: theme.textStrong }]}>
-                        {formatAmount(stats.this_week_total, hobby.unit_label)}
-                      </Text>
-                      <Text style={{ color: theme.textSoft, fontSize: 11 }}>{weekCompareText(stats, hobby.unit_label)}</Text>
+                      <View style={styles.hobbyStatBadge}>
+                        <Text style={styles.hobbyStatValue}>
+                          {formatAmount(stats.this_week_total, hobby.unit_label)}
+                        </Text>
+                      </View>
+                      <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 4 }}>{weekCompareText(stats, hobby.unit_label)}</Text>
                     </>
                   ) : null}
                 </View>
@@ -484,15 +487,16 @@ export function LifeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(ink: string, card: string) {
+  return StyleSheet.create({
   content: { padding: 16, gap: 12 },
 
   card: {
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     padding: 14,
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -503,13 +507,13 @@ const styles = StyleSheet.create({
   searchRow: { flexDirection: "row", gap: 8 },
   textInput: {
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 10,
-    backgroundColor: "#ffffff", // keep white per spec (inputs stay white in both modes)
+    backgroundColor: card,
     fontSize: 14,
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -518,13 +522,13 @@ const styles = StyleSheet.create({
   actionBtn: {
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     paddingHorizontal: 14,
     paddingVertical: 10,
     alignItems: "center",
     justifyContent: "center",
     minWidth: 68,
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -536,11 +540,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 10,
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     borderRadius: 10,
     padding: 10,
     alignItems: "center",
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -555,7 +559,7 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     overflow: "hidden",
     marginTop: 8,
     backgroundColor: "#fff",
@@ -566,29 +570,29 @@ const styles = StyleSheet.create({
   quickBtn: {
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     paddingHorizontal: 10,
     paddingVertical: 6,
     backgroundColor: "#fff",
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
     elevation: 2,
   },
-  quickBtnText: { fontSize: 11, fontWeight: "800", color: INK, letterSpacing: 0.3 },
+  quickBtnText: { fontSize: 11, fontWeight: "800", color: ink, letterSpacing: 0.3 },
 
   manualRow: { flexDirection: "row", gap: 8, marginTop: 6 },
   manualInput: {
     width: 80,
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
     fontSize: 13,
-    backgroundColor: "#ffffff",
-    shadowColor: INK,
+    backgroundColor: card,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -601,11 +605,11 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: INK,
+    borderColor: ink,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
-    shadowColor: INK,
+    shadowColor: ink,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -614,5 +618,21 @@ const styles = StyleSheet.create({
   },
   hobbyName: { fontSize: 16, fontWeight: "800", marginBottom: 2 },
   hobbyStatLabel: { fontSize: 9, fontWeight: "800", letterSpacing: 0.7, marginTop: 2 },
-  hobbyStatValue: { fontSize: 18, fontWeight: "800" },
-});
+  hobbyStatBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#E8654E",
+    borderWidth: 2,
+    borderColor: ink,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginTop: 3,
+    shadowColor: ink,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+  hobbyStatValue: { fontSize: 15, fontWeight: "800", color: "#fff" },
+  });
+}
