@@ -22,7 +22,7 @@ const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 function TabNavigator() {
-  const { theme, toggle, mode } = useTheme();
+  const { theme } = useTheme();
   const ink = theme.ink;
 
   return (
@@ -33,10 +33,6 @@ function TabNavigator() {
           <View style={{ flexDirection: "row", marginRight: 12, alignItems: "center" }}>
             <Pressable onPress={() => (navigation as any).getParent()?.navigate("Settings")} style={{ padding: 8 }}>
               <Text style={{ fontSize: 19 }}>⚙️</Text>
-            </Pressable>
-            <View style={{ width: 1, height: 22, backgroundColor: ink }} />
-            <Pressable onPress={toggle} style={{ padding: 8 }}>
-              <Text style={{ fontSize: 19 }}>{mode === "light" ? "🌙" : "☀️"}</Text>
             </Pressable>
           </View>
         ),
@@ -89,10 +85,6 @@ function TabNavigator() {
               <View style={{ width: 1, height: 22, backgroundColor: ink }} />
               <Pressable onPress={() => (navigation as any).getParent()?.navigate("Settings")} style={{ padding: 8 }}>
                 <Text style={{ fontSize: 19 }}>⚙️</Text>
-              </Pressable>
-              <View style={{ width: 1, height: 22, backgroundColor: ink }} />
-              <Pressable onPress={toggle} style={{ padding: 8 }}>
-                <Text style={{ fontSize: 19 }}>{mode === "light" ? "🌙" : "☀️"}</Text>
               </Pressable>
             </View>
           ),

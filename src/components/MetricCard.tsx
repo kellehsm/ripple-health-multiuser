@@ -3,8 +3,6 @@ import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
 
-const INK = "#111111";
-
 type ColorKey = "teal" | "blue" | "amber" | "coral" | "pink" | "green" | "red" | "berry" | "violet" | "purple";
 
 type Props = {
@@ -20,6 +18,7 @@ type Props = {
 
 export function MetricCard({ label, value, icon, colorKey, sublabel, onAction, variant = "tint" }: Props) {
   const { theme } = useTheme();
+  const ink = theme.ink;
   const c = (theme as any)[colorKey];
 
   const bg = variant === "solid" ? c.solid : c.tint;
@@ -28,7 +27,7 @@ export function MetricCard({ label, value, icon, colorKey, sublabel, onAction, v
   const iconColor = variant === "solid" ? "rgba(255,255,255,0.9)" : c.fg;
 
   return (
-    <View style={[styles.tile, { backgroundColor: bg }]}>
+    <View style={[styles.tile, { backgroundColor: bg, borderColor: ink, shadowColor: ink }]}>
       <View style={styles.labelRow}>
         <Ionicons name={icon} size={11} color={iconColor} />
         <Text style={[styles.label, { color: subColor }]}>{label.toUpperCase()}</Text>
@@ -42,7 +41,8 @@ export function MetricCard({ label, value, icon, colorKey, sublabel, onAction, v
             styles.actionButton,
             {
               backgroundColor: variant === "solid" ? "rgba(255,255,255,0.2)" : "#ffffff",
-              borderColor: variant === "solid" ? "rgba(255,255,255,0.5)" : INK,
+              borderColor: variant === "solid" ? "rgba(255,255,255,0.5)" : ink,
+              shadowColor: ink,
             },
           ]}
         >
@@ -58,11 +58,9 @@ const styles = StyleSheet.create({
   tile: {
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: INK,
     padding: 10,
     flexGrow: 1,
     minWidth: 130,
-    shadowColor: INK,
     shadowOffset: { width: 3, height: 3 },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -82,7 +80,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 2,
-    shadowColor: INK,
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 1,
     shadowRadius: 0,

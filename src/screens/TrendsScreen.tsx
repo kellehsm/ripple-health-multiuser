@@ -357,8 +357,8 @@ export function TrendsScreen() {
               yLabel="Avg glucose"
               xs={cgXs}
               ys={cgYs}
-              dotColor="#E8820E"
-              lineColor="#E8820E"
+              dotColor={theme.coral.sub}
+              lineColor={theme.coral.sub}
               insight={insightMetric(cgXs, cgYs, "higher-caffeine days", "lower-caffeine days", "Avg glucose")}
               theme={theme}
             />
@@ -371,8 +371,8 @@ export function TrendsScreen() {
               yLabel="Sleep hours"
               xs={asXs}
               ys={asYs}
-              dotColor="#7B3FBF"
-              lineColor="#7B3FBF"
+              dotColor={theme.purple.solid}
+              lineColor={theme.purple.solid}
               insight={insightMetric(asXs, asYs, "drinking days", "non-drinking days", "Sleep hours")}
               theme={theme}
             />
@@ -385,8 +385,8 @@ export function TrendsScreen() {
               yLabel="Mood"
               xs={cmXs}
               ys={cmYs}
-              dotColor="#E8820E"
-              lineColor="#E8820E"
+              dotColor={theme.coral.sub}
+              lineColor={theme.coral.sub}
               insight={insightMood(cmXs, cmYs, "Higher-caffeine days", "lower-caffeine days")}
               theme={theme}
             />

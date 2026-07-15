@@ -12,12 +12,14 @@ import {
 } from "react-native";
 import { api } from "../api/client";
 import { setToken } from "../lib/auth";
+import { useTheme } from "../theme/ThemeContext";
 
 interface Props {
   onLoginSuccess: () => void;
 }
 
 export function LoginScreen({ onLoginSuccess }: Props) {
+  const { theme } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,20 +50,22 @@ export function LoginScreen({ onLoginSuccess }: Props) {
     }
   }
 
+  const ink = theme.ink;
+
   return (
     <KeyboardAvoidingView
-      style={styles.root}
+      style={[styles.root, { backgroundColor: theme.page }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.logoBlock}>
-          <Text style={styles.appName}>Ripple{"\n"}Wellness</Text>
+          <Text style={[styles.appName, { color: ink }]}>Ripple{"\n"}Wellness</Text>
         </View>
 
         <View style={styles.form}>
-          <Text style={styles.label}>Email</Text>
+          <Text style={[styles.label, { color: ink }]}>Email</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: theme.card, borderColor: ink, color: theme.textStrong, shadowColor: ink }]}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -69,35 +73,35 @@ export function LoginScreen({ onLoginSuccess }: Props) {
             keyboardType="email-address"
             textContentType="emailAddress"
             placeholder="you@example.com"
-            placeholderTextColor="#A0997A"
+            placeholderTextColor={theme.textSoft}
             returnKeyType="next"
           />
 
-          <Text style={styles.label}>Password</Text>
+          <Text style={[styles.label, { color: ink }]}>Password</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: theme.card, borderColor: ink, color: theme.textStrong, shadowColor: ink }]}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
             textContentType="password"
             placeholder="••••••••"
-            placeholderTextColor="#A0997A"
+            placeholderTextColor={theme.textSoft}
             returnKeyType="done"
             onSubmitEditing={handleLogin}
           />
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? <Text style={[styles.error, { color: theme.danger }]}>{error}</Text> : null}
 
           <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
+            style={[styles.button, { backgroundColor: theme.teal.solid, borderColor: ink, shadowColor: ink }, loading && styles.buttonDisabled]}
             onPress={handleLogin}
             disabled={loading}
             activeOpacity={0.8}
           >
             {loading ? (
-              <ActivityIndicator color="#111111" />
+              <ActivityIndicator color={ink} />
             ) : (
-              <Text style={styles.buttonText}>Sign in</Text>
+              <Text style={[styles.buttonText, { color: ink }]}>Sign in</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -106,15 +110,8 @@ export function LoginScreen({ onLoginSuccess }: Props) {
   );
 }
 
-const INK = "#111111";
-const CREAM = "#F5F1E8";
-const CARD = "#FFFEF9";
-
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: CREAM,
-  },
+  root: { flex: 1 },
   scroll: {
     flexGrow: 1,
     justifyContent: "center",
@@ -128,63 +125,48 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 42,
     fontWeight: "900",
-    color: INK,
     lineHeight: 46,
     letterSpacing: -1,
   },
-  form: {
-    gap: 4,
-  },
+  form: { gap: 4 },
   label: {
     fontSize: 13,
     fontWeight: "700",
-    color: INK,
     textTransform: "uppercase",
     letterSpacing: 1,
     marginTop: 16,
     marginBottom: 6,
   },
   input: {
-    backgroundColor: CARD,
     borderWidth: 2,
-    borderColor: INK,
     borderRadius: 0,
     paddingHorizontal: 14,
     paddingVertical: 14,
     fontSize: 16,
-    color: INK,
-    shadowColor: INK,
     shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 1,
     shadowRadius: 0,
     elevation: 4,
   },
   error: {
-    color: "#C0392B",
     fontWeight: "700",
     fontSize: 14,
     marginTop: 12,
   },
   button: {
     marginTop: 28,
-    backgroundColor: "#3FA0A6",
     borderWidth: 2,
-    borderColor: INK,
     paddingVertical: 16,
     alignItems: "center",
-    shadowColor: INK,
     shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 1,
     shadowRadius: 0,
     elevation: 4,
   },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
+  buttonDisabled: { opacity: 0.6 },
   buttonText: {
     fontSize: 17,
     fontWeight: "900",
-    color: INK,
     letterSpacing: 0.5,
   },
 });

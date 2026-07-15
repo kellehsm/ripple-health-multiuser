@@ -1,58 +1,56 @@
-// Color tokens for the Ripple Wellness palette.
-// Brand anchor: teal #3FA0A6 (activity), coral #E8654E (food), purple #7B3FBF (finance), berry #A62A50 (glucose/HR).
-// Bold Outline + Color Blocks design language: ink #111111 for all borders/shadows.
+// Ripple Wellness color system.
+// Theme defines all surface tokens and metric color family slots.
+// Family names (teal, coral, etc.) are semantic roles, not literal hues —
+// each palette fills them with hues appropriate to its visual style.
 
-export const lightTheme = {
-  ink: "#111111",
-  cream: "#FBFAF7",
-  page: "#F5F1E8",
-  card: "#ffffff",
-  cardBorder: "#e7e3d8",
-  textStrong: "#2C2C2A",
-  textSoft: "#6b6a63",
-
-  // Activity — steps, books, hobbies — solid: saturated fill for solid-fill tiles; tint: light bg for tint tiles
-  teal:   { bg: "#C2E9EB", fg: "#1A5C62", sub: "#2A8490", bar: "#3FA0A6", solid: "#3FA0A6", tint: "#CDEAEB" },
-  // Food / meals
-  coral:  { bg: "#FFE4C2", fg: "#6A3800", sub: "#C46210", solid: "#E8654E", tint: "#F9D9D0" },
-  // Water
-  blue:   { bg: "#C0DAF2", fg: "#0D3E70", sub: "#1A5AA0", solid: "#3D7BC4", tint: "#D3E2F4" },
-  // Sleep — lavender-purple, clearly distinct from water's blue (key name "amber" kept for backward compat)
-  amber:  { bg: "#DDD0F5", fg: "#3A1870", sub: "#6040A8", solid: "#9060D0", tint: "#E4D8F9" },
-  // Finance
-  purple: { bg: "#E0CEFB", fg: "#3A1870", sub: "#5A2A9C", solid: "#7B3FBF", tint: "#E4D4F5" },
-  // Glucose & heart rate (normal/in-range)
-  berry:  { bg: "#F2C8D5", fg: "#5A0E24", sub: "#821E3C", bar: "#A62A50", solid: "#A62A50", tint: "#F2CBD8" },
-  // Mood — lighter violet
-  violet: { bg: "#E6D5FB", fg: "#48186E", sub: "#7040A8", solid: "#9B6BD4", tint: "#E8DCF7" },
-  // Glucose alert / danger states
-  red:    { bg: "#FBCBC8", fg: "#7A1408", sub: "#C0392B", solid: "#C0392B", tint: "#FBCBC8" },
-  // Backward-compat aliases
-  pink:   { bg: "#F2C8D5", fg: "#5A0E24", sub: "#821E3C", solid: "#A62A50", tint: "#F2CBD8" },
-  green:  { bg: "#E0CEFB", fg: "#3A1870", sub: "#5A2A9C", solid: "#7B3FBF", tint: "#E4D4F5" },
-  brown:  { sub: "#6F4518", solid: "#6F4518", tint: "#F0E8E0" },
+export type ColorFamily = {
+  bg: string;     // light background for chips/badges
+  fg: string;     // text color on bg
+  sub: string;    // secondary/darker tone
+  bar?: string;   // bar/progress color (defaults to solid)
+  solid: string;  // primary color
+  tint: string;   // very light tint, often == bg
 };
 
-export const darkTheme = {
-  ink: "#E8E2D5",
-  cream: "#1A1814",
-  page: "#211F1B",
-  card: "#312E28",
-  cardBorder: "#4a4640",
-  textStrong: "#F2F0EA",
-  textSoft: "#B4B1A8",
-
-  teal:   { bg: "#0E3E44", fg: "#85D9E0", sub: "#5CC0C8", bar: "#4BB5BC", solid: "#3FA0A6", tint: "#0E3E44" },
-  coral:  { bg: "#452400", fg: "#FFB870", sub: "#E07A28", solid: "#E8654E", tint: "#452400" },
-  blue:   { bg: "#0A2E58", fg: "#8AC4F2", sub: "#5CA0DC", solid: "#3D7BC4", tint: "#0A2E58" },
-  amber:  { bg: "#28104A", fg: "#C8A8FB", sub: "#9868E0", solid: "#9060D0", tint: "#28104A" },
-  purple: { bg: "#2A1050", fg: "#C8A8F8", sub: "#A070E0", solid: "#7B3FBF", tint: "#2A1050" },
-  berry:  { bg: "#3E0A1A", fg: "#F0A0BC", sub: "#CE5A80", bar: "#C0607A", solid: "#A62A50", tint: "#3E0A1A" },
-  violet: { bg: "#280A45", fg: "#CCA8FB", sub: "#A874E8", solid: "#9B6BD4", tint: "#280A45" },
-  red:    { bg: "#5A1008", fg: "#F5A09A", sub: "#E04535", solid: "#C0392B", tint: "#5A1008" },
-  pink:   { bg: "#3E0A1A", fg: "#F0A0BC", sub: "#CE5A80", solid: "#A62A50", tint: "#3E0A1A" },
-  green:  { bg: "#2A1050", fg: "#C8A8F8", sub: "#A070E0", solid: "#7B3FBF", tint: "#2A1050" },
-  brown:  { sub: "#C8956A", solid: "#C8956A", tint: "#2A1A08" },
+export type SparseFamily = {
+  sub: string;
+  solid: string;
+  tint: string;
 };
 
-export type Theme = typeof lightTheme;
+export type Theme = {
+  id: string;
+  name: string;
+  group: string;
+  isDark: boolean;
+
+  ink: string;         // borders, shadows, outlines
+  cream: string;       // subtlest background
+  page: string;        // main screen background
+  card: string;        // card / surface
+  cardBorder: string;  // card borders / dividers
+  textStrong: string;  // headings, primary values
+  textSoft: string;    // labels, captions, placeholders
+
+  primary: string;      // main CTA, active switches/chips
+  success: string;      // positive / in-range state
+  warning: string;      // caution / elevated values
+  danger: string;       // urgent alert
+  glucoseHigh: string;  // hyperglycemia indicator
+  glucoseLow: string;   // hypoglycemia indicator
+
+  // Metric color families — semantic slots that vary by palette
+  teal: ColorFamily & { bar: string };   // activity: steps, hobbies, books
+  coral: ColorFamily;                    // food / meals
+  blue: ColorFamily;                     // water
+  amber: ColorFamily;                    // sleep
+  purple: ColorFamily;                   // finance / spending
+  berry: ColorFamily & { bar: string };  // glucose & heart rate (in-range)
+  violet: ColorFamily;                   // mood
+  red: ColorFamily;                      // danger / glucose alerts
+
+  // Backward-compat aliases used by legacy code
+  pink: ColorFamily & { bar?: string };
+  green: ColorFamily;
+  brown: SparseFamily;
+};

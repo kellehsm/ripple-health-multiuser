@@ -497,7 +497,7 @@ export function LifeScreen() {
                   {stats ? (
                     <>
                       <Text style={[styles.hobbyStatLabel, { color: theme.textSoft }]}>THIS WEEK</Text>
-                      <View style={styles.hobbyStatBadge}>
+                      <View style={[styles.hobbyStatBadge, { backgroundColor: theme.coral.solid }]}>
                         <Text style={styles.hobbyStatValue}>
                           {formatAmount(stats.this_week_total, hobby.unit_label)}
                         </Text>
@@ -700,7 +700,6 @@ function makeStyles(ink: string, card: string) {
   hobbyStatLabel: { fontSize: 9, fontWeight: "800", letterSpacing: 0.7, marginTop: 2 },
   hobbyStatBadge: {
     alignSelf: "flex-start",
-    backgroundColor: "#E8654E",
     borderWidth: 2,
     borderColor: ink,
     borderRadius: 8,

@@ -258,6 +258,7 @@ function computeInsights(params: {
 // ─── Skeleton box component ───────────────────────────────────────────────────
 
 function SkeletonBox({ style }: { style?: object }) {
+  const { theme } = useTheme();
   const anim = useRef(new Animated.Value(0.35)).current;
   useEffect(() => {
     Animated.loop(
@@ -267,7 +268,7 @@ function SkeletonBox({ style }: { style?: object }) {
       ])
     ).start();
   }, [anim]);
-  return <Animated.View style={[{ backgroundColor: "#ccc", borderRadius: 10, opacity: anim }, style]} />;
+  return <Animated.View style={[{ backgroundColor: theme.cardBorder, borderRadius: 10, opacity: anim }, style]} />;
 }
 
 // ─── Correlation chart constants ──────────────────────────────────────────────
@@ -465,8 +466,8 @@ export function OverviewScreen() {
       case "meal": return theme.coral.solid;
       case "mood": return theme.violet.solid;
       case "spend": return theme.purple.solid;
-      case "glucose_spike": return (theme as any).red?.solid ?? "#C0392B";
-      case "water": return (theme as any).blue?.solid ?? "#378ADD";
+      case "glucose_spike": return theme.red.solid;
+      case "water": return theme.blue.solid;
       case "hobby": return theme.teal.solid;
       default: return theme.textSoft;
     }
@@ -528,7 +529,7 @@ export function OverviewScreen() {
         ? fmtSleep(sleepStats.yesterday_seconds)
         : "--",
       sub: "last night",
-      color: (theme as any).indigo?.solid ?? "#6C5CE7",
+      color: theme.amber.solid,
       icon: "moon-outline",
       empty: !sleepStats || sleepStats.yesterday_seconds === 0,
     },
@@ -536,7 +537,7 @@ export function OverviewScreen() {
       label: "WATER",
       value: waterCount > 0 ? String(waterCount) : "--",
       sub: "glasses",
-      color: (theme as any).blue?.solid ?? "#378ADD",
+      color: theme.blue.solid,
       icon: "water-outline",
       empty: waterCount === 0,
     },
@@ -708,7 +709,7 @@ export function OverviewScreen() {
                     onPress={() => setPendingLabel(opt.label)}
                     style={[
                       styles.moodTile,
-                      { backgroundColor: selected ? c.tint : "#ffffff", borderColor: selected ? c.solid : ink, borderWidth: selected ? 2.5 : 2 },
+                      { backgroundColor: selected ? c.tint : theme.card, borderColor: selected ? c.solid : ink, borderWidth: selected ? 2.5 : 2 },
                     ]}
                     accessibilityRole="radio"
                     accessibilityState={{ checked: selected }}
@@ -987,7 +988,7 @@ export function OverviewScreen() {
               <Text style={{ color: theme.textSoft, fontSize: 11 }}>Mood (1–5)</Text>
             </View>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: correlation === "sleep" ? theme.amber?.solid ?? "#F0B429" : theme.purple.solid }]} />
+              <View style={[styles.legendDot, { backgroundColor: correlation === "sleep" ? theme.amber.solid : theme.purple.solid }]} />
               <Text style={{ color: theme.textSoft, fontSize: 11 }}>{correlation === "sleep" ? "Sleep (hrs)" : "Spending ($)"}</Text>
             </View>
             <View style={{ flex: 1 }} />
@@ -1009,7 +1010,7 @@ export function OverviewScreen() {
               const groupX = i * STEP;
               const moodX = groupX + STEP / 2 - BAR_W - 1;
               const compX = groupX + STEP / 2 + 1;
-              const compColor = correlation === "sleep" ? (theme.amber?.solid ?? "#F0B429") : theme.purple.solid;
+              const compColor = correlation === "sleep" ? theme.amber.solid : theme.purple.solid;
               return (
                 <React.Fragment key={d.date}>
                   {mH > 0 ? <Rect x={moodX} y={CORR_H - mH} width={BAR_W} height={mH} fill={theme.violet.solid} rx={3} /> : <Rect x={moodX} y={CORR_H - 2} width={BAR_W} height={2} fill={theme.cardBorder} rx={1} />}

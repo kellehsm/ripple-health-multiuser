@@ -114,7 +114,7 @@ function CaffeineForm({
         <Pressable onPress={onCancel} style={styles.cancelBtn}>
           <Text style={styles.cancelBtnText}>CANCEL</Text>
         </Pressable>
-        <Pressable onPress={handleSave} style={[styles.actionBtn, { backgroundColor: "#E8820E", flex: 1 }]}>
+        <Pressable onPress={handleSave} style={[styles.actionBtn, { backgroundColor: theme.coral.sub, flex: 1 }]}>
           <Text style={styles.actionBtnText}>LOG IT</Text>
         </Pressable>
       </View>
@@ -197,7 +197,7 @@ function AlcoholForm({
         <Pressable onPress={onCancel} style={styles.cancelBtn}>
           <Text style={styles.cancelBtnText}>CANCEL</Text>
         </Pressable>
-        <Pressable onPress={handleSave} style={[styles.actionBtn, { backgroundColor: "#7B3FBF", flex: 1 }]}>
+        <Pressable onPress={handleSave} style={[styles.actionBtn, { backgroundColor: theme.purple.solid, flex: 1 }]}>
           <Text style={styles.actionBtnText}>LOG IT</Text>
         </Pressable>
       </View>
@@ -268,13 +268,15 @@ const MC_PAD_TOP = 10;
 
 const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
 
-// Color and icon per meal type for the icon tile
-const MEAL_TYPE_COLORS: Record<string, string> = {
-  breakfast: "#3FA0A6",  // teal
-  lunch: "#E8654E",      // coral
-  dinner: "#A62A50",     // berry
-  snack: "#7B3FBF",      // purple
-};
+function mealSolidColor(type: string, theme: any): string {
+  const map: Record<string, string> = {
+    breakfast: theme.teal.solid,
+    lunch: theme.coral.solid,
+    dinner: theme.berry.solid,
+    snack: theme.purple.solid,
+  };
+  return map[type] ?? theme.teal.solid;
+}
 
 function mealTintColor(type: string, theme: any): string {
   const map: Record<string, string> = {
@@ -894,13 +896,13 @@ export function MealsScreen() {
         {(subTotals.caffeine_mg > 0 || subTotals.standard_drinks > 0) && (
           <View style={{ flexDirection: "row", gap: 8, marginBottom: 10 }}>
             {subTotals.caffeine_mg > 0 && (
-              <View style={[styles.totalBlock, { backgroundColor: "#E8820E", flex: 1 }]}>
+              <View style={[styles.totalBlock, { backgroundColor: theme.coral.sub, flex: 1 }]}>
                 <Text style={styles.totalBlockLabel}>CAFFEINE TODAY</Text>
                 <Text style={styles.totalBlockValue}>{subTotals.caffeine_mg}mg</Text>
               </View>
             )}
             {subTotals.standard_drinks > 0 && (
-              <View style={[styles.totalBlock, { backgroundColor: "#7B3FBF", flex: 1 }]}>
+              <View style={[styles.totalBlock, { backgroundColor: theme.purple.solid, flex: 1 }]}>
                 <Text style={styles.totalBlockLabel}>STD DRINKS TODAY</Text>
                 <Text style={styles.totalBlockValue}>{subTotals.standard_drinks}</Text>
               </View>
@@ -912,7 +914,7 @@ export function MealsScreen() {
         <View style={[styles.chipRow, { marginBottom: 10 }]}>
           {(["caffeine", "alcohol"] as SubstanceType[]).map(function (t) {
             const selected = subType === t;
-            const activeColor = t === "caffeine" ? "#E8820E" : "#7B3FBF";
+            const activeColor = t === "caffeine" ? theme.coral.sub : theme.purple.solid;
             return (
               <Pressable
                 key={t}
@@ -946,7 +948,7 @@ export function MealsScreen() {
             placeholderTextColor={theme.textSoft}
           />
           <Pressable
-            style={[styles.actionBtn, { backgroundColor: subType === "caffeine" ? "#E8820E" : "#7B3FBF" }]}
+            style={[styles.actionBtn, { backgroundColor: subType === "caffeine" ? theme.coral.sub : theme.purple.solid }]}
             onPress={handleSubSearch}
           >
             {subSearching ? (
@@ -1004,7 +1006,7 @@ export function MealsScreen() {
                     <Text style={{ color: theme.textStrong, fontSize: 13, fontWeight: "600" }} numberOfLines={1}>{r.name}</Text>
                     {detail ? <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 2 }}>{detail}</Text> : null}
                   </View>
-                  <Ionicons name="create-outline" size={18} color={subType === "caffeine" ? "#E8820E" : "#7B3FBF"} />
+                  <Ionicons name="create-outline" size={18} color={subType === "caffeine" ? theme.coral.sub : theme.purple.solid} />
                 </Pressable>
               );
             })}
@@ -1040,7 +1042,7 @@ export function MealsScreen() {
                 : (entry.abv_percent != null && entry.volume_ml != null
                   ? entry.abv_percent + "% · " + entry.volume_ml + "mL"
                   : "alcohol");
-              const iconColor = entry.substance_type === "caffeine" ? "#E8820E" : "#7B3FBF";
+              const iconColor = entry.substance_type === "caffeine" ? theme.coral.sub : theme.purple.solid;
               return (
                 <View key={entry.id} style={[styles.resultRow, { borderColor: ink }]}>
                   <View style={[styles.mealIconTile, { backgroundColor: iconColor, width: 32, height: 32 }]}>
@@ -1086,7 +1088,7 @@ export function MealsScreen() {
             const readings = glucoseData[meal.id] ?? [];
             const isLoadingG = loadingGlucose[meal.id] ?? false;
             const gError = glucoseErrors[meal.id];
-            const mealColor = MEAL_TYPE_COLORS[meal.meal_type] ?? "#3FA0A6";
+            const mealColor = mealSolidColor(meal.meal_type, theme);
 
             return (
               <View key={meal.id} style={[styles.mealCard, { borderColor: ink, backgroundColor: mealTintColor(meal.meal_type, theme) }]}>

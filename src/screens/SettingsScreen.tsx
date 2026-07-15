@@ -21,6 +21,8 @@ import { SchedulableTriggerInputTypes } from "expo-notifications";
 import { useFocusEffect } from "@react-navigation/core";
 import { getGrantedPermissions } from "react-native-health-connect";
 import { useTheme } from "../theme/ThemeContext";
+import { ThemePickerModal } from "./ThemePickerModal";
+import { PALETTES } from "../theme/palettes";
 import { api } from "../api/client";
 import { logout } from "../lib/auth";
 
@@ -83,7 +85,8 @@ const REMINDER_PERIODS: { key: string; label: string; hour: number; minute: numb
 ];
 
 export function SettingsScreen() {
-  const { theme } = useTheme();
+  const { theme, paletteId, setPalette } = useTheme();
+  const [themePickerVisible, setThemePickerVisible] = useState(false);
   const [settings, setSettings] = useState<Settings>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -508,6 +511,27 @@ export function SettingsScreen() {
 
   return (
     <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content}>
+      <ThemePickerModal visible={themePickerVisible} onClose={() => setThemePickerVisible(false)} />
+
+      {/* Appearance */}
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+        <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Appearance</Text>
+        <Pressable
+          onPress={() => setThemePickerVisible(true)}
+          style={[styles.themeRow, { borderColor: theme.cardBorder }]}
+        >
+          <View style={styles.themeSwatches}>
+            {[theme.teal.solid, theme.coral.solid, theme.berry.solid, theme.purple.solid, theme.blue.solid].map((c, i) => (
+              <View key={i} style={[styles.themeSwatch, { backgroundColor: c }]} />
+            ))}
+          </View>
+          <Text style={[styles.themeRowName, { color: theme.textStrong }]}>
+            {PALETTES[paletteId]?.name ?? "Choose theme"}
+          </Text>
+          <Text style={[styles.themeRowChevron, { color: theme.textSoft }]}>›</Text>
+        </Pressable>
+      </View>
+
       {/* Always-on tracking notification */}
       {Platform.OS === "android" ? (
         <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
@@ -1144,4 +1168,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
     gap: 2,
   },
+  themeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 4,
+  },
+  themeSwatches: { flexDirection: "row", gap: 3 },
+  themeSwatch: { width: 14, height: 14, borderRadius: 7 },
+  themeRowName: { flex: 1, fontSize: 14, fontWeight: "600" },
+  themeRowChevron: { fontSize: 20, lineHeight: 22 },
 });

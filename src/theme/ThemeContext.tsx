@@ -1,19 +1,50 @@
-import React, { createContext, useContext, useState } from "react";
-import { lightTheme, darkTheme, Theme } from "./theme";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import * as SecureStore from "expo-secure-store";
+import type { Theme } from "./theme";
+import { PALETTES, DEFAULT_PALETTE_ID } from "./palettes";
+
+const STORAGE_KEY = "ripple_palette_id";
 
 type ThemeContextValue = {
   theme: Theme;
-  mode: "light" | "dark";
-  toggle: () => void;
+  paletteId: string;
+  setPalette: (id: string) => void;
+  mode: "light" | "dark";   // derived from theme.isDark — backward compat
+  toggle: () => void;        // backward compat: cycles light ↔ dark
 };
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setMode] = useState<"light" | "dark">("light");
-  const theme = mode === "light" ? lightTheme : darkTheme;
-  const toggle = () => setMode((m) => (m === "light" ? "dark" : "light"));
-  return <ThemeContext.Provider value={{ theme, mode, toggle }}>{children}</ThemeContext.Provider>;
+  const [paletteId, setPaletteId] = useState(DEFAULT_PALETTE_ID);
+
+  // Load persisted palette on mount (after first render, avoids flicker)
+  useEffect(() => {
+    SecureStore.getItemAsync(STORAGE_KEY)
+      .then((stored) => {
+        if (stored && PALETTES[stored]) setPaletteId(stored);
+      })
+      .catch(() => {});
+  }, []);
+
+  const setPalette = useCallback((id: string) => {
+    if (!PALETTES[id]) return;
+    setPaletteId(id);
+    SecureStore.setItemAsync(STORAGE_KEY, id).catch(() => {});
+  }, []);
+
+  const theme = PALETTES[paletteId] ?? PALETTES[DEFAULT_PALETTE_ID];
+  const mode: "light" | "dark" = theme.isDark ? "dark" : "light";
+
+  const toggle = useCallback(() => {
+    setPalette(theme.isDark ? "morning-mist" : "midnight-neon");
+  }, [theme.isDark, setPalette]);
+
+  return (
+    <ThemeContext.Provider value={{ theme, paletteId, setPalette, mode, toggle }}>
+      {children}
+    </ThemeContext.Provider>
+  );
 }
 
 export function useTheme() {

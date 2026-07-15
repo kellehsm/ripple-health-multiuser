@@ -38,12 +38,6 @@ type Props = {
   onManual?: () => void;
 };
 
-const ACCENT: Record<string, string> = {
-  food: "#E8654E",
-  caffeine: "#E8820E",
-  alcohol: "#7B3FBF",
-};
-
 const HEADER_LABEL: Record<string, string> = {
   food: "Scan food barcode",
   caffeine: "Scan caffeine barcode",
@@ -59,6 +53,9 @@ export function BarcodeScannerModal({
   onManual,
 }: Props) {
   const { theme } = useTheme();
+  const accent = mode === "caffeine" ? theme.coral.sub
+               : mode === "alcohol" ? theme.purple.solid
+               : theme.coral.solid;
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -137,7 +134,6 @@ export function BarcodeScannerModal({
     onManual?.();
   }
 
-  const accent = ACCENT[mode] ?? ACCENT.food;
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
@@ -183,7 +179,7 @@ export function BarcodeScannerModal({
                 </>
               ) : notFound ? (
                 <>
-                  <Text style={[styles.statusText, { color: "#f87171" }]}>
+                  <Text style={[styles.statusText, { color: theme.danger }]}>
                     {mode === "caffeine"
                       ? "No caffeine data found for this product."
                       : "No alcohol data found for this product."}
@@ -195,7 +191,7 @@ export function BarcodeScannerModal({
                     <Text style={styles.btnText}>Enter manually</Text>
                   </Pressable>
                   <Pressable
-                    style={[styles.btn, { backgroundColor: "#333", marginTop: 8 }]}
+                    style={[styles.btn, { backgroundColor: theme.card, borderWidth: 1, borderColor: theme.cardBorder, marginTop: 8 }]}
                     onPress={handleRetry}
                   >
                     <Text style={styles.btnText}>Scan again</Text>
@@ -203,7 +199,7 @@ export function BarcodeScannerModal({
                 </>
               ) : error ? (
                 <>
-                  <Text style={[styles.statusText, { color: "#f87171" }]}>{error}</Text>
+                  <Text style={[styles.statusText, { color: theme.danger }]}>{error}</Text>
                   <Pressable style={[styles.btn, { backgroundColor: accent, marginTop: 12 }]} onPress={handleRetry}>
                     <Text style={styles.btnText}>Scan again</Text>
                   </Pressable>
