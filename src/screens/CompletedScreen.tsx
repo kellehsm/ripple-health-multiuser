@@ -6,6 +6,8 @@ import {
   Image,
   StyleSheet,
   ActivityIndicator,
+  Alert,
+  Pressable,
   RefreshControl,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -70,6 +72,24 @@ export function CompletedScreen() {
     setRefreshing(false);
   }
 
+  function handleDeleteBook(id: string, name: string) {
+    Alert.alert("Remove book", `Remove "${name}" from completed?`, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Remove", style: "destructive", onPress: async () => {
+        try { await api.deleteBook(id); load(); } catch (e) { console.error(e); }
+      }},
+    ]);
+  }
+
+  function handleDeleteHobby(id: string, name: string) {
+    Alert.alert("Remove hobby", `Remove "${name}" from completed?`, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Remove", style: "destructive", onPress: async () => {
+        try { await api.deleteHobby(id); load(); } catch (e) { console.error(e); }
+      }},
+    ]);
+  }
+
   const books = items.filter((i) => i.kind === "book");
   const hobbies = items.filter((i) => i.kind === "hobby");
 
@@ -101,7 +121,12 @@ export function CompletedScreen() {
                       <View style={[styles.cover, { backgroundColor: theme.teal.bg, borderWidth: 2, borderColor: ink }]} />
                     )}
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.title, { color: theme.textStrong }]}>{item.name}</Text>
+                      <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
+                        <Text style={[styles.title, { color: theme.textStrong, flex: 1 }]}>{item.name}</Text>
+                        <Pressable onPress={() => handleDeleteBook(item.id, item.name)} hitSlop={8} style={{ marginLeft: 8 }}>
+                          <Ionicons name="trash-outline" size={16} color={theme.textSoft} />
+                        </Pressable>
+                      </View>
                       {item.author ? (
                         <Text style={{ color: theme.textSoft, fontSize: 12 }}>{item.author}</Text>
                       ) : null}
@@ -135,6 +160,9 @@ export function CompletedScreen() {
                       </Text>
                     </View>
                     <Ionicons name="trophy" size={20} color={theme.coral.sub} />
+                    <Pressable onPress={() => handleDeleteHobby(item.id, item.name)} hitSlop={8} style={{ marginLeft: 4 }}>
+                      <Ionicons name="trash-outline" size={16} color={theme.textSoft} />
+                    </Pressable>
                   </View>
                 </View>
               ))}
