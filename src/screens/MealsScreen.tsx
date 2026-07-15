@@ -886,93 +886,6 @@ export function MealsScreen() {
         ) : null}
       </View>
 
-      {/* Today's meals list */}
-      <View style={[styles.card, { backgroundColor: theme.coral.tint }]}>
-        <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Today's meals</Text>
-
-        {mealsError ? (
-          <Text style={{ color: theme.coral.sub, fontSize: 12, marginTop: 6 }}>{mealsError}</Text>
-        ) : null}
-
-        {loadingMeals ? (
-          <ActivityIndicator style={{ marginTop: 10 }} />
-        ) : meals.length === 0 ? (
-          <Text style={{ color: theme.textSoft, fontSize: 12, marginTop: 10 }}>No meals logged yet today.</Text>
-        ) : (
-          meals.map(function (meal) {
-            const nutrition = formatNutrition(meal.carbs_g, meal.sugar_g, meal.calories);
-            const isExpanded = expandedMealId === meal.id;
-            const isEditing = editingMealId === meal.id;
-            const readings = glucoseData[meal.id] ?? [];
-            const isLoadingG = loadingGlucose[meal.id] ?? false;
-            const gError = glucoseErrors[meal.id];
-            const mealColor = MEAL_TYPE_COLORS[meal.meal_type] ?? "#3FA0A6";
-
-            return (
-              <View key={meal.id} style={[styles.mealCard, { borderColor: ink, backgroundColor: mealTintColor(meal.meal_type, theme) }]}>
-                <View style={styles.mealContent}>
-                  {/* Colored icon tile */}
-                  <View style={[styles.mealIconTile, { backgroundColor: mealColor }]}>
-                    <Ionicons name="restaurant" size={16} color="#fff" />
-                  </View>
-
-                  <Pressable
-                    style={styles.mealMain}
-                    onPress={function () { handleToggleGlucose(meal); }}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: theme.textStrong, fontSize: 13, fontWeight: "700" }} numberOfLines={1}>
-                        {meal.name}
-                      </Text>
-                      <Text style={{ color: theme.textSoft, fontSize: 10, fontWeight: "800", letterSpacing: 0.4, marginTop: 1 }}>
-                        {meal.meal_type.toUpperCase()}
-                      </Text>
-                      {nutrition ? (
-                        <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 2 }}>{nutrition}</Text>
-                      ) : null}
-                    </View>
-                    <Ionicons
-                      name={isExpanded && !isEditing ? "chevron-up" : "pulse"}
-                      size={15}
-                      color={theme.berry.sub}
-                      style={{ marginLeft: 8 }}
-                    />
-                  </Pressable>
-
-                  <Pressable onPress={function () { handleOpenEdit(meal); }} style={styles.iconBtn} hitSlop={8}>
-                    <Ionicons name="pencil-outline" size={15} color={isEditing ? theme.coral.solid : theme.textSoft} />
-                  </Pressable>
-                  <Pressable onPress={function () { handleDeleteMeal(meal); }} style={styles.iconBtn} hitSlop={8}>
-                    <Ionicons name="trash-outline" size={15} color={theme.coral.solid} />
-                  </Pressable>
-                </View>
-
-                {isEditing ? (
-                  <View style={[styles.glucosePanel, { borderTopColor: theme.cardBorder }]}>
-                    <MacroEditForm
-                      initial={{ name: meal.name, carbs_g: meal.carbs_g, sugar_g: meal.sugar_g, calories: meal.calories }}
-                      saveLabel="Save"
-                      onSave={function (values) { handleSaveEdit(meal.id, values); }}
-                      onCancel={function () { setEditingMealId(null); }}
-                    />
-                  </View>
-                ) : isExpanded ? (
-                  <View style={[styles.glucosePanel, { borderTopColor: theme.cardBorder }]}>
-                    {isLoadingG ? (
-                      <ActivityIndicator style={{ marginVertical: 10 }} />
-                    ) : gError ? (
-                      <Text style={{ color: theme.coral.sub, fontSize: 12 }}>{gError}</Text>
-                    ) : (
-                      <MiniGlucoseChart readings={readings} mealLoggedAt={meal.logged_at ?? null} />
-                    )}
-                  </View>
-                ) : null}
-              </View>
-            );
-          })
-        )}
-      </View>
-
       {/* Caffeine & Alcohol */}
       <View style={[styles.card, { backgroundColor: theme.coral.tint }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Caffeine & Alcohol</Text>
@@ -988,7 +901,7 @@ export function MealsScreen() {
             )}
             {subTotals.standard_drinks > 0 && (
               <View style={[styles.totalBlock, { backgroundColor: "#7B3FBF", flex: 1 }]}>
-                <Text style={styles.totalBlockLabel}>STD DRinkS TODAY</Text>
+                <Text style={styles.totalBlockLabel}>STD DRINKS TODAY</Text>
                 <Text style={styles.totalBlockValue}>{subTotals.standard_drinks}</Text>
               </View>
             )}
@@ -1142,6 +1055,93 @@ export function MealsScreen() {
             })}
           </View>
         ) : null}
+      </View>
+
+      {/* Today's meals list */}
+      <View style={[styles.card, { backgroundColor: theme.coral.tint }]}>
+        <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Today's meals</Text>
+
+        {mealsError ? (
+          <Text style={{ color: theme.coral.sub, fontSize: 12, marginTop: 6 }}>{mealsError}</Text>
+        ) : null}
+
+        {loadingMeals ? (
+          <ActivityIndicator style={{ marginTop: 10 }} />
+        ) : meals.length === 0 ? (
+          <Text style={{ color: theme.textSoft, fontSize: 12, marginTop: 10 }}>No meals logged yet today.</Text>
+        ) : (
+          meals.map(function (meal) {
+            const nutrition = formatNutrition(meal.carbs_g, meal.sugar_g, meal.calories);
+            const isExpanded = expandedMealId === meal.id;
+            const isEditing = editingMealId === meal.id;
+            const readings = glucoseData[meal.id] ?? [];
+            const isLoadingG = loadingGlucose[meal.id] ?? false;
+            const gError = glucoseErrors[meal.id];
+            const mealColor = MEAL_TYPE_COLORS[meal.meal_type] ?? "#3FA0A6";
+
+            return (
+              <View key={meal.id} style={[styles.mealCard, { borderColor: ink, backgroundColor: mealTintColor(meal.meal_type, theme) }]}>
+                <View style={styles.mealContent}>
+                  {/* Colored icon tile */}
+                  <View style={[styles.mealIconTile, { backgroundColor: mealColor }]}>
+                    <Ionicons name="restaurant" size={16} color="#fff" />
+                  </View>
+
+                  <Pressable
+                    style={styles.mealMain}
+                    onPress={function () { handleToggleGlucose(meal); }}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: theme.textStrong, fontSize: 13, fontWeight: "700" }} numberOfLines={1}>
+                        {meal.name}
+                      </Text>
+                      <Text style={{ color: theme.textSoft, fontSize: 10, fontWeight: "800", letterSpacing: 0.4, marginTop: 1 }}>
+                        {meal.meal_type.toUpperCase()}
+                      </Text>
+                      {nutrition ? (
+                        <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 2 }}>{nutrition}</Text>
+                      ) : null}
+                    </View>
+                    <Ionicons
+                      name={isExpanded && !isEditing ? "chevron-up" : "pulse"}
+                      size={15}
+                      color={theme.berry.sub}
+                      style={{ marginLeft: 8 }}
+                    />
+                  </Pressable>
+
+                  <Pressable onPress={function () { handleOpenEdit(meal); }} style={styles.iconBtn} hitSlop={8}>
+                    <Ionicons name="pencil-outline" size={15} color={isEditing ? theme.coral.solid : theme.textSoft} />
+                  </Pressable>
+                  <Pressable onPress={function () { handleDeleteMeal(meal); }} style={styles.iconBtn} hitSlop={8}>
+                    <Ionicons name="trash-outline" size={15} color={theme.coral.solid} />
+                  </Pressable>
+                </View>
+
+                {isEditing ? (
+                  <View style={[styles.glucosePanel, { borderTopColor: theme.cardBorder }]}>
+                    <MacroEditForm
+                      initial={{ name: meal.name, carbs_g: meal.carbs_g, sugar_g: meal.sugar_g, calories: meal.calories }}
+                      saveLabel="Save"
+                      onSave={function (values) { handleSaveEdit(meal.id, values); }}
+                      onCancel={function () { setEditingMealId(null); }}
+                    />
+                  </View>
+                ) : isExpanded ? (
+                  <View style={[styles.glucosePanel, { borderTopColor: theme.cardBorder }]}>
+                    {isLoadingG ? (
+                      <ActivityIndicator style={{ marginVertical: 10 }} />
+                    ) : gError ? (
+                      <Text style={{ color: theme.coral.sub, fontSize: 12 }}>{gError}</Text>
+                    ) : (
+                      <MiniGlucoseChart readings={readings} mealLoggedAt={meal.logged_at ?? null} />
+                    )}
+                  </View>
+                ) : null}
+              </View>
+            );
+          })
+        )}
       </View>
 
       <BarcodeScannerModal
