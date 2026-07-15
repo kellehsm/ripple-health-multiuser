@@ -17,7 +17,7 @@ export function FinanceScreen() {
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
     >
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Spending this week</Text>
         <Text style={{ color: theme.purple.sub, fontSize: 12, marginTop: 4 }}>$212 of $300 budget</Text>
         <View style={[styles.progressTrack, { backgroundColor: theme.purple.bg }]}>
@@ -25,7 +25,7 @@ export function FinanceScreen() {
         </View>
       </View>
 
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Stress-spend correlation</Text>
         {/* TODO: chart spending vs. inverted mood score over the last 14-30 days */}
         <Text style={{ color: theme.textSoft, fontSize: 12, marginTop: 10 }}>
@@ -38,7 +38,7 @@ export function FinanceScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
-  card: { borderRadius: 14, borderWidth: 0.5, padding: 16 },
+  card: { borderRadius: 14, borderWidth: 2, padding: 16 },
   cardTitle: { fontSize: 14, fontWeight: "500" },
   progressTrack: { height: 8, borderRadius: 6, overflow: "hidden", marginTop: 10 },
   progressFill: { height: "100%" },

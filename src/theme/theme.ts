@@ -17,8 +17,8 @@ export const lightTheme = {
   coral:  { bg: "#FFE4C2", fg: "#6A3800", sub: "#C46210", solid: "#E8654E", tint: "#F9D9D0" },
   // Water
   blue:   { bg: "#C0DAF2", fg: "#0D3E70", sub: "#1A5AA0", solid: "#3D7BC4", tint: "#D3E2F4" },
-  // Sleep — muted indigo-lavender (key name "amber" kept for backward compat)
-  amber:  { bg: "#D0D4F3", fg: "#2E3070", sub: "#4C52A0", solid: "#4A4A8C", tint: "#D8D8EC" },
+  // Sleep — lavender-purple, clearly distinct from water's blue (key name "amber" kept for backward compat)
+  amber:  { bg: "#DDD0F5", fg: "#3A1870", sub: "#6040A8", solid: "#9060D0", tint: "#E4D8F9" },
   // Finance
   purple: { bg: "#E0CEFB", fg: "#3A1870", sub: "#5A2A9C", solid: "#7B3FBF", tint: "#E4D4F5" },
   // Glucose & heart rate (normal/in-range)
@@ -45,7 +45,7 @@ export const darkTheme = {
   teal:   { bg: "#0E3E44", fg: "#85D9E0", sub: "#5CC0C8", bar: "#4BB5BC", solid: "#3FA0A6", tint: "#0E3E44" },
   coral:  { bg: "#452400", fg: "#FFB870", sub: "#E07A28", solid: "#E8654E", tint: "#452400" },
   blue:   { bg: "#0A2E58", fg: "#8AC4F2", sub: "#5CA0DC", solid: "#3D7BC4", tint: "#0A2E58" },
-  amber:  { bg: "#1E224A", fg: "#B0B5F5", sub: "#8085DC", solid: "#4A4A8C", tint: "#1E224A" },
+  amber:  { bg: "#28104A", fg: "#C8A8FB", sub: "#9868E0", solid: "#9060D0", tint: "#28104A" },
   purple: { bg: "#2A1050", fg: "#C8A8F8", sub: "#A070E0", solid: "#7B3FBF", tint: "#2A1050" },
   berry:  { bg: "#3E0A1A", fg: "#F0A0BC", sub: "#CE5A80", bar: "#C0607A", solid: "#A62A50", tint: "#3E0A1A" },
   violet: { bg: "#280A45", fg: "#CCA8FB", sub: "#A874E8", solid: "#9B6BD4", tint: "#280A45" },

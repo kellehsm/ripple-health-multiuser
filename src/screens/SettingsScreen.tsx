@@ -509,7 +509,7 @@ export function SettingsScreen() {
     <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content}>
       {/* Always-on tracking notification */}
       {Platform.OS === "android" ? (
-        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
           <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Always-on Tracking</Text>
           <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
             Shows a persistent notification with live glucose and steps. Keeps syncing in the background.
@@ -530,7 +530,7 @@ export function SettingsScreen() {
             }
           </View>
 
-          <View style={[styles.statusBox, { backgroundColor: theme.page, borderColor: theme.cardBorder }]}>
+          <View style={[styles.statusBox, { backgroundColor: theme.page, borderColor: theme.ink }]}>
             <StatusRow
               label="Notification permission"
               status={notifGranted === null ? "unknown" : notifGranted ? "granted" : "denied"}
@@ -567,7 +567,7 @@ export function SettingsScreen() {
       ) : null}
 
       {/* Mood check-in reminders */}
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Mood Check-in Reminders</Text>
         <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
           Daily reminders to log your mood for each time-of-day period.
@@ -599,7 +599,7 @@ export function SettingsScreen() {
       </View>
 
       {/* Week start preferences */}
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Week Start Day</Text>
         <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
           Controls the "this week" calculation for each section.
@@ -620,7 +620,7 @@ export function SettingsScreen() {
                       styles.dayChip,
                       {
                         backgroundColor: current === i ? theme.teal.bar : theme.page,
-                        borderColor: theme.cardBorder,
+                        borderColor: theme.ink,
                       },
                     ]}
                   >
@@ -636,7 +636,7 @@ export function SettingsScreen() {
       </View>
 
       {/* Health Connect sync toggles */}
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Health Connect Sync</Text>
         {saving ? <ActivityIndicator size="small" style={styles.savingIndicator} /> : null}
         <ToggleRow
@@ -679,7 +679,7 @@ export function SettingsScreen() {
       </View>
 
       {/* Dexcom credentials */}
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Dexcom Share</Text>
         <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
           Credentials are stored on the server and never returned to the app after saving.
@@ -693,7 +693,7 @@ export function SettingsScreen() {
           placeholderTextColor={theme.textSoft}
           autoCapitalize="none"
           autoCorrect={false}
-          style={[styles.textInput, { color: theme.textStrong, borderColor: theme.cardBorder, backgroundColor: theme.page }]}
+          style={[styles.textInput, { color: theme.textStrong, borderColor: theme.ink, backgroundColor: theme.page }]}
         />
 
         <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>
@@ -707,7 +707,7 @@ export function SettingsScreen() {
           secureTextEntry
           autoCapitalize="none"
           autoCorrect={false}
-          style={[styles.textInput, { color: theme.textStrong, borderColor: theme.cardBorder, backgroundColor: theme.page }]}
+          style={[styles.textInput, { color: theme.textStrong, borderColor: theme.ink, backgroundColor: theme.page }]}
         />
 
         <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>Region</Text>
@@ -720,7 +720,7 @@ export function SettingsScreen() {
                 styles.regionChip,
                 {
                   backgroundColor: dexcomRegion === r ? theme.teal.bar : theme.page,
-                  borderColor: theme.cardBorder,
+                  borderColor: theme.ink,
                 },
               ]}
             >
@@ -741,7 +741,7 @@ export function SettingsScreen() {
       </View>
 
       {/* Smart notifications */}
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Smart Notifications</Text>
         <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
           Requires Always-on Tracking to be enabled.
@@ -781,7 +781,7 @@ export function SettingsScreen() {
                           <Pressable
                             key={h}
                             onPress={() => save({ smart_notifications: { ...(settings.smart_notifications ?? {}), meal_reminders: { ...(settings.smart_notifications?.meal_reminders ?? {}), [meal]: { ...mealCfg, hour: h } } } })}
-                            style={[styles.dayChip, { backgroundColor: currentH === h ? theme.coral.sub : theme.page, borderColor: theme.cardBorder }]}
+                            style={[styles.dayChip, { backgroundColor: currentH === h ? theme.coral.sub : theme.page, borderColor: theme.ink }]}
                           >
                             <Text style={{ color: currentH === h ? "#fff" : theme.textSoft, fontSize: 12 }}>{label12}</Text>
                           </Pressable>
@@ -826,7 +826,7 @@ export function SettingsScreen() {
                   <Pressable
                     key={h}
                     onPress={() => save({ smart_notifications: { ...(settings.smart_notifications ?? {}), evening_checkin: { ...(settings.smart_notifications?.evening_checkin ?? {}), hour: h } } })}
-                    style={[styles.dayChip, { backgroundColor: currentH === h ? theme.teal.bar : theme.page, borderColor: theme.cardBorder }]}
+                    style={[styles.dayChip, { backgroundColor: currentH === h ? theme.teal.bar : theme.page, borderColor: theme.ink }]}
                   >
                     <Text style={{ color: currentH === h ? "#fff" : theme.textSoft, fontSize: 12 }}>{label12}</Text>
                   </Pressable>
@@ -858,7 +858,7 @@ export function SettingsScreen() {
                     <Pressable
                       key={g}
                       onPress={() => save({ smart_notifications: { ...(settings.smart_notifications ?? {}), water_reminder: { ...(settings.smart_notifications?.water_reminder ?? {}), goal: g } } })}
-                      style={[styles.dayChip, { backgroundColor: currentGoal === g ? theme.blue.sub : theme.page, borderColor: theme.cardBorder }]}
+                      style={[styles.dayChip, { backgroundColor: currentGoal === g ? theme.blue.sub : theme.page, borderColor: theme.ink }]}
                     >
                       <Text style={{ color: currentGoal === g ? "#fff" : theme.textSoft, fontSize: 12 }}>{g} glasses</Text>
                     </Pressable>
@@ -876,7 +876,7 @@ export function SettingsScreen() {
                     <Pressable
                       key={h}
                       onPress={() => save({ smart_notifications: { ...(settings.smart_notifications ?? {}), water_reminder: { ...(settings.smart_notifications?.water_reminder ?? {}), start_hour: h } } })}
-                      style={[styles.dayChip, { backgroundColor: currentH === h ? theme.blue.sub : theme.page, borderColor: theme.cardBorder }]}
+                      style={[styles.dayChip, { backgroundColor: currentH === h ? theme.blue.sub : theme.page, borderColor: theme.ink }]}
                     >
                       <Text style={{ color: currentH === h ? "#fff" : theme.textSoft, fontSize: 12 }}>{label12}</Text>
                     </Pressable>
@@ -909,7 +909,7 @@ export function SettingsScreen() {
                   <Pressable
                     key={h}
                     onPress={() => save({ smart_notifications: { ...(settings.smart_notifications ?? {}), streak_protection: { ...(settings.smart_notifications?.streak_protection ?? {}), hour: h } } })}
-                    style={[styles.dayChip, { backgroundColor: currentH === h ? theme.coral.sub : theme.page, borderColor: theme.cardBorder }]}
+                    style={[styles.dayChip, { backgroundColor: currentH === h ? theme.coral.sub : theme.page, borderColor: theme.ink }]}
                   >
                     <Text style={{ color: currentH === h ? "#fff" : theme.textSoft, fontSize: 12 }}>{label12}</Text>
                   </Pressable>
@@ -921,7 +921,7 @@ export function SettingsScreen() {
       </View>
 
       {/* Doctor PDF export */}
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Export Health Report</Text>
         <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
           Generates a PDF with glucose trends and meal timing — useful to bring to a doctor's appointment.
@@ -934,7 +934,7 @@ export function SettingsScreen() {
           placeholderTextColor={theme.textSoft}
           autoCapitalize="none"
           autoCorrect={false}
-          style={[styles.textInput, { color: theme.textStrong, borderColor: theme.cardBorder, backgroundColor: theme.page }]}
+          style={[styles.textInput, { color: theme.textStrong, borderColor: theme.ink, backgroundColor: theme.page }]}
         />
         <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>End date</Text>
         <TextInput
@@ -944,7 +944,7 @@ export function SettingsScreen() {
           placeholderTextColor={theme.textSoft}
           autoCapitalize="none"
           autoCorrect={false}
-          style={[styles.textInput, { color: theme.textStrong, borderColor: theme.cardBorder, backgroundColor: theme.page }]}
+          style={[styles.textInput, { color: theme.textStrong, borderColor: theme.ink, backgroundColor: theme.page }]}
         />
         <Pressable
           onPress={handleExportReport}
@@ -958,7 +958,7 @@ export function SettingsScreen() {
         </Pressable>
       </View>
 
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Export My Data</Text>
         <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
           Full backup of all your data as JSON — glucose, meals, mood, spending, books, hobbies, sleep, and heart rate.
@@ -976,7 +976,7 @@ export function SettingsScreen() {
       </View>
 
       {/* Google Drive backups */}
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Google Drive Backups</Text>
         <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
           Automatically backs up your full database to Google Drive every night at 2 AM. Keeps the last 14 days.
@@ -1088,18 +1088,18 @@ function ToggleRow({
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  card: { borderRadius: 14, borderWidth: 0.5, padding: 16, gap: 8 },
+  card: { borderRadius: 14, borderWidth: 2, padding: 16, gap: 8 },
   sectionTitle: { fontSize: 14, fontWeight: "600", marginBottom: 2 },
   sectionDesc: { fontSize: 12, marginBottom: 4 },
   subHead: { fontSize: 13, fontWeight: "500", marginTop: 8, marginBottom: 2 },
   weekRow: { gap: 6 },
   weekLabel: { fontSize: 13 },
   dayScroll: { flexGrow: 0 },
-  dayChip: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, marginRight: 6 },
+  dayChip: { borderWidth: 2, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, marginRight: 6 },
   toggleRow: { flexDirection: "row", alignItems: "center", paddingVertical: 4 },
   fieldLabel: { fontSize: 12, marginTop: 8 },
   textInput: {
-    borderWidth: 1,
+    borderWidth: 2,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 9,
@@ -1107,9 +1107,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   regionRow: { flexDirection: "row", gap: 8, marginTop: 4 },
-  regionChip: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7 },
+  regionChip: { borderWidth: 2, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7 },
   saveButton: {
-    borderWidth: 1,
+    borderWidth: 2,
     borderRadius: 10,
     paddingVertical: 10,
     alignItems: "center",
@@ -1117,7 +1117,7 @@ const styles = StyleSheet.create({
   },
   savingIndicator: { alignSelf: "flex-end" },
   statusBox: {
-    borderWidth: 0.5,
+    borderWidth: 2,
     borderRadius: 10,
     padding: 10,
     marginTop: 8,

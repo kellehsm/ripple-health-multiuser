@@ -119,7 +119,7 @@ export function StepsDetailScreen() {
   return (
     <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={s.content}>
       {/* Summary stats */}
-      <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+      <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <View style={s.statsRow}>
           <View style={s.stat}>
             <Text style={[s.statVal, { color: theme.teal.bar }]}>{fmt(this_week_total)}</Text>
@@ -147,7 +147,7 @@ export function StepsDetailScreen() {
       </View>
 
       {/* Bar chart */}
-      <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+      <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[s.sectionTitle, { color: theme.textStrong }]}>Week Comparison</Text>
         <WeekComparisonChart
           days={chartDays}
@@ -169,7 +169,7 @@ export function StepsDetailScreen() {
       </View>
 
       {/* Day-by-day list */}
-      <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+      <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[s.sectionTitle, { color: theme.textStrong }]}>Day by Day</Text>
         {this_week.map((tw, i) => {
           const lw = last_week[i];
@@ -222,7 +222,7 @@ export function StepsDetailScreen() {
       </View>
 
       {/* Averages block */}
-      <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+      <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[s.sectionTitle, { color: theme.textStrong }]}>Daily Averages</Text>
         <View style={s.avgsRow}>
           <View style={s.avgCell}>
@@ -243,7 +243,7 @@ export function StepsDetailScreen() {
 
       {/* Monthly comparison — 4 recent weeks vs same weeks from prior month */}
       {monthlyData && monthlyData.length > 0 && (
-        <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
           <Text style={[s.sectionTitle, { color: theme.textStrong }]}>Month-over-Month</Text>
           <View style={s.monthColHeaders}>
             <Text style={[s.monthColWeek, { color: theme.textSoft }]}>Week of</Text>
@@ -286,7 +286,7 @@ export function StepsDetailScreen() {
 const s = StyleSheet.create({
   content: { padding: 16, gap: 12, paddingBottom: 32 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  card: { borderRadius: 14, borderWidth: 0.5, padding: 16 },
+  card: { borderRadius: 14, borderWidth: 2, padding: 16 },
   sectionTitle: { fontSize: 13, fontWeight: "500", marginBottom: 12 },
 
   statsRow: { flexDirection: "row", flexWrap: "wrap", gap: 12 },

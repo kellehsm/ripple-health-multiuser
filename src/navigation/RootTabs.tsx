@@ -3,7 +3,6 @@ import { Pressable, View, Text } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { Ionicons } from "@expo/vector-icons";
 
 import { OverviewScreen } from "../screens/OverviewScreen";
 import { HealthScreen } from "../screens/HealthScreen";
@@ -30,12 +29,13 @@ function TabNavigator() {
       initialRouteName="Home"
       screenOptions={({ route, navigation }) => ({
         headerRight: () => (
-          <View style={{ flexDirection: "row", gap: 16, marginRight: 16, alignItems: "center" }}>
-            <Pressable onPress={() => (navigation as any).getParent()?.navigate("Settings")}>
-              <Ionicons name="settings-outline" size={20} color={theme.textStrong} />
+          <View style={{ flexDirection: "row", marginRight: 12, alignItems: "center" }}>
+            <Pressable onPress={() => (navigation as any).getParent()?.navigate("Settings")} style={{ padding: 8 }}>
+              <Text style={{ fontSize: 19 }}>⚙️</Text>
             </Pressable>
-            <Pressable onPress={toggle}>
-              <Ionicons name={mode === "light" ? "moon" : "sunny"} size={20} color={theme.textStrong} />
+            <View style={{ width: 1, height: 22, backgroundColor: ink }} />
+            <Pressable onPress={toggle} style={{ padding: 8 }}>
+              <Text style={{ fontSize: 19 }}>{mode === "light" ? "🌙" : "☀️"}</Text>
             </Pressable>
           </View>
         ),
@@ -77,18 +77,21 @@ function TabNavigator() {
         component={OverviewScreen}
         options={({ navigation }) => ({
           headerRight: () => (
-            <View style={{ flexDirection: "row", gap: 16, marginRight: 16, alignItems: "center" }}>
-              <Pressable onPress={() => (navigation as any).getParent()?.navigate("Trends")}>
-                <Ionicons name="stats-chart-outline" size={20} color={theme.textStrong} />
+            <View style={{ flexDirection: "row", marginRight: 12, alignItems: "center" }}>
+              <Pressable onPress={() => (navigation as any).getParent()?.navigate("Trends")} style={{ padding: 8 }}>
+                <Text style={{ fontSize: 19 }}>📈</Text>
               </Pressable>
-              <Pressable onPress={() => (navigation as any).getParent()?.navigate("History")}>
-                <Ionicons name="search" size={20} color={theme.textStrong} />
+              <View style={{ width: 1, height: 22, backgroundColor: ink }} />
+              <Pressable onPress={() => (navigation as any).getParent()?.navigate("History")} style={{ padding: 8 }}>
+                <Text style={{ fontSize: 19 }}>🔍</Text>
               </Pressable>
-              <Pressable onPress={() => (navigation as any).getParent()?.navigate("Settings")}>
-                <Ionicons name="settings-outline" size={20} color={theme.textStrong} />
+              <View style={{ width: 1, height: 22, backgroundColor: ink }} />
+              <Pressable onPress={() => (navigation as any).getParent()?.navigate("Settings")} style={{ padding: 8 }}>
+                <Text style={{ fontSize: 19 }}>⚙️</Text>
               </Pressable>
-              <Pressable onPress={toggle}>
-                <Ionicons name={mode === "light" ? "moon" : "sunny"} size={20} color={theme.textStrong} />
+              <View style={{ width: 1, height: 22, backgroundColor: ink }} />
+              <Pressable onPress={toggle} style={{ padding: 8 }}>
+                <Text style={{ fontSize: 19 }}>{mode === "light" ? "🌙" : "☀️"}</Text>
               </Pressable>
             </View>
           ),
@@ -106,9 +109,7 @@ function TabNavigator() {
                   width: 52,
                   height: 52,
                   borderRadius: 26,
-                  backgroundColor: theme.teal.bar,
-                  alignItems: "center",
-                  justifyContent: "center",
+                  overflow: "hidden",
                   marginTop: -24,
                   borderWidth: 2.5,
                   borderColor: ink,
@@ -119,7 +120,17 @@ function TabNavigator() {
                   elevation: 4,
                 }}
               >
-                <Text style={{ fontSize: 24 }}>🏠</Text>
+                <View style={{ flexDirection: "row", height: 26 }}>
+                  <View style={{ flex: 1, backgroundColor: theme.teal.solid }} />
+                  <View style={{ flex: 1, backgroundColor: theme.coral.solid }} />
+                </View>
+                <View style={{ flexDirection: "row", height: 26 }}>
+                  <View style={{ flex: 1, backgroundColor: theme.purple.solid }} />
+                  <View style={{ flex: 1, backgroundColor: theme.berry.solid }} />
+                </View>
+                <View style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ fontSize: 24 }}>🏠</Text>
+                </View>
               </View>
               <Text style={{ color: theme.textSoft, fontSize: 10, marginTop: 3 }}>Home</Text>
             </Pressable>
@@ -130,7 +141,7 @@ function TabNavigator() {
         name="Life"
         component={LifeScreen}
         options={{
-          title: "Habits",
+          title: "Hobbies",
           tabBarIcon: () => (
             <Text style={{ fontSize: 22 }}>📖</Text>
           ),
@@ -141,7 +152,7 @@ function TabNavigator() {
         component={FinanceScreen}
         options={{
           tabBarIcon: () => (
-            <Text style={{ fontSize: 22 }}>👛</Text>
+            <Text style={{ fontSize: 22 }}>💳</Text>
           ),
         }}
       />

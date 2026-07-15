@@ -109,7 +109,7 @@ export function HeartRateDetailScreen() {
     <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={s.content}>
 
       {/* Summary stats */}
-      <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+      <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <View style={s.statsRow}>
           <View style={s.stat}>
             <Text style={[s.statVal, { color: theme.red.sub }]}>{resting ?? "--"}</Text>
@@ -134,7 +134,7 @@ export function HeartRateDetailScreen() {
       </View>
 
       {/* Chart */}
-      <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+      <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <View style={s.rowBetween}>
           <Text style={[s.sectionTitle, { color: theme.textStrong }]}>Heart Rate</Text>
           {peak !== null && (
@@ -149,7 +149,7 @@ export function HeartRateDetailScreen() {
               onPress={() => setRangeHours(hrs)}
               style={[s.rangeBtn, {
                 backgroundColor: rangeHours === hrs ? theme.red.sub : theme.page,
-                borderColor: theme.cardBorder,
+                borderColor: theme.ink,
               }]}
             >
               <Text style={{ color: rangeHours === hrs ? "#fff" : theme.textSoft, fontSize: 12 }}>
@@ -187,7 +187,7 @@ export function HeartRateDetailScreen() {
       </View>
 
       {/* 7-day history */}
-      <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+      <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[s.sectionTitle, { color: theme.textStrong }]}>7-Day History</Text>
 
         {loadingDaily ? (
@@ -249,7 +249,7 @@ export function HeartRateDetailScreen() {
 
 const s = StyleSheet.create({
   content: { padding: 16, gap: 12, paddingBottom: 32 },
-  card: { borderRadius: 14, borderWidth: 0.5, padding: 16 },
+  card: { borderRadius: 14, borderWidth: 2, padding: 16 },
   sectionTitle: { fontSize: 13, fontWeight: "500", marginBottom: 10 },
   rowBetween: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 2 },
 
@@ -260,7 +260,7 @@ const s = StyleSheet.create({
   subNote: { fontSize: 11, marginTop: 8 },
 
   rangeRow: { flexDirection: "row", gap: 6, marginBottom: 4 },
-  rangeBtn: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+  rangeBtn: { borderWidth: 2, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
 
   emptyBox: { paddingVertical: 24, alignItems: "center" },
 

@@ -77,7 +77,7 @@ export function HistoryScreen() {
             onPress={() => { setMode(m); setResults([]); }}
             style={[styles.modeChip, {
               backgroundColor: mode === m ? theme.teal.bar : theme.page,
-              borderColor: mode === m ? theme.teal.bar : theme.cardBorder,
+              borderColor: theme.ink,
             }]}
           >
             <Text style={{ color: mode === m ? "#fff" : theme.textSoft, fontSize: 13 }}>
@@ -87,7 +87,7 @@ export function HistoryScreen() {
         ))}
       </View>
 
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         {mode === "glucose" && (
           <>
             <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>Average above (mg/dL)</Text>
@@ -97,14 +97,14 @@ export function HistoryScreen() {
               keyboardType="numeric"
               placeholder="180"
               placeholderTextColor={theme.textSoft}
-              style={[styles.input, { color: theme.textStrong, borderColor: theme.cardBorder, backgroundColor: theme.page }]}
+              style={[styles.input, { color: theme.textStrong, borderColor: theme.ink, backgroundColor: theme.page }]}
             />
             <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>Time of day (optional)</Text>
             <View style={styles.bucketRow}>
               {["", "morning", "afternoon", "evening", "night"].map(b => (
                 <Pressable key={b || "any"}
                   onPress={() => setGlBucket(b)}
-                  style={[styles.bucketChip, { backgroundColor: glBucket === b ? theme.berry.bg : theme.page, borderColor: glBucket === b ? theme.berry.sub : theme.cardBorder }]}
+                  style={[styles.bucketChip, { backgroundColor: glBucket === b ? theme.berry.bg : theme.page, borderColor: glBucket === b ? theme.berry.sub : theme.ink }]}
                 >
                   <Text style={{ color: glBucket === b ? theme.berry.fg : theme.textSoft, fontSize: 12 }}>
                     {b || "Any"}
@@ -123,7 +123,7 @@ export function HistoryScreen() {
               onChangeText={setMealQ}
               placeholder="e.g. rice, pasta..."
               placeholderTextColor={theme.textSoft}
-              style={[styles.input, { color: theme.textStrong, borderColor: theme.cardBorder, backgroundColor: theme.page }]}
+              style={[styles.input, { color: theme.textStrong, borderColor: theme.ink, backgroundColor: theme.page }]}
             />
             <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>Min carbs (g)</Text>
             <TextInput
@@ -132,7 +132,7 @@ export function HistoryScreen() {
               keyboardType="numeric"
               placeholder="e.g. 60"
               placeholderTextColor={theme.textSoft}
-              style={[styles.input, { color: theme.textStrong, borderColor: theme.cardBorder, backgroundColor: theme.page }]}
+              style={[styles.input, { color: theme.textStrong, borderColor: theme.ink, backgroundColor: theme.page }]}
             />
           </>
         )}
@@ -147,7 +147,7 @@ export function HistoryScreen() {
                 keyboardType="numeric"
                 placeholder="Min"
                 placeholderTextColor={theme.textSoft}
-                style={[styles.input, { flex: 1, color: theme.textStrong, borderColor: theme.cardBorder, backgroundColor: theme.page }]}
+                style={[styles.input, { flex: 1, color: theme.textStrong, borderColor: theme.ink, backgroundColor: theme.page }]}
               />
               <TextInput
                 value={moodMax}
@@ -155,7 +155,7 @@ export function HistoryScreen() {
                 keyboardType="numeric"
                 placeholder="Max"
                 placeholderTextColor={theme.textSoft}
-                style={[styles.input, { flex: 1, color: theme.textStrong, borderColor: theme.cardBorder, backgroundColor: theme.page }]}
+                style={[styles.input, { flex: 1, color: theme.textStrong, borderColor: theme.ink, backgroundColor: theme.page }]}
               />
             </View>
           </>
@@ -170,7 +170,7 @@ export function HistoryScreen() {
               keyboardType="numeric"
               placeholder="e.g. 50"
               placeholderTextColor={theme.textSoft}
-              style={[styles.input, { color: theme.textStrong, borderColor: theme.cardBorder, backgroundColor: theme.page }]}
+              style={[styles.input, { color: theme.textStrong, borderColor: theme.ink, backgroundColor: theme.page }]}
             />
             <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>Category contains</Text>
             <TextInput
@@ -178,7 +178,7 @@ export function HistoryScreen() {
               onChangeText={setSpendCategory}
               placeholder="e.g. food, transport..."
               placeholderTextColor={theme.textSoft}
-              style={[styles.input, { color: theme.textStrong, borderColor: theme.cardBorder, backgroundColor: theme.page }]}
+              style={[styles.input, { color: theme.textStrong, borderColor: theme.ink, backgroundColor: theme.page }]}
             />
           </>
         )}
@@ -196,7 +196,7 @@ export function HistoryScreen() {
       </View>
 
       {results.length > 0 ? (
-        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
           <Text style={[styles.resultsHeader, { color: theme.textSoft }]}>{results.length} result{results.length === 1 ? "" : "s"}</Text>
           {results.map((r, i) => (
             <View key={i} style={[styles.resultRow, i > 0 && { borderTopWidth: 0.5, borderTopColor: theme.cardBorder }]}>
@@ -239,12 +239,12 @@ export function HistoryScreen() {
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
   modeRow: { flexDirection: "row", gap: 8 },
-  modeChip: { flex: 1, borderWidth: 1, borderRadius: 10, paddingVertical: 8, alignItems: "center" },
-  card: { borderRadius: 14, borderWidth: 0.5, padding: 16, gap: 10 },
+  modeChip: { flex: 1, borderWidth: 2, borderRadius: 10, paddingVertical: 8, alignItems: "center" },
+  card: { borderRadius: 14, borderWidth: 2, padding: 16, gap: 10 },
   fieldLabel: { fontSize: 12 },
-  input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14 },
+  input: { borderWidth: 2, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14 },
   bucketRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  bucketChip: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+  bucketChip: { borderWidth: 2, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
   searchBtn: { borderRadius: 10, paddingVertical: 12, alignItems: "center", marginTop: 4 },
   resultsHeader: { fontSize: 12, marginBottom: 4 },
   resultRow: { paddingVertical: 10, gap: 2 },

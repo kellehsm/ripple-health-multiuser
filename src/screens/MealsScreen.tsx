@@ -269,6 +269,26 @@ const MEAL_TYPE_COLORS: Record<string, string> = {
   snack: "#7B3FBF",      // purple
 };
 
+function mealTintColor(type: string, theme: any): string {
+  const map: Record<string, string> = {
+    breakfast: theme.teal.tint,
+    lunch: theme.coral.tint,
+    dinner: theme.berry.tint,
+    snack: theme.purple.tint,
+  };
+  return map[type] ?? theme.coral.tint;
+}
+
+function chipColors(i: number, theme: any): { bg: string; fg: string; sub: string } {
+  const palette = [
+    { bg: theme.teal.tint, fg: theme.teal.fg, sub: theme.teal.sub },
+    { bg: theme.coral.tint, fg: theme.coral.fg, sub: theme.coral.sub },
+    { bg: theme.purple.tint, fg: theme.purple.fg, sub: theme.purple.sub },
+    { bg: theme.berry.tint, fg: theme.berry.fg, sub: theme.berry.sub },
+  ];
+  return palette[i % palette.length];
+}
+
 function buildMiniPoints(
   readings: GlucoseReading[],
   windowStart: number,
@@ -741,15 +761,16 @@ export function MealsScreen() {
             <Text style={[styles.sectionLabel, { color: theme.textSoft }]}>YOUR USUAL</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.frequentRow}>
               {frequentMeals.map(function (meal, i) {
+                const cc = chipColors(i, theme);
                 return (
                   <Pressable
                     key={meal.source_food_id ?? meal.name + i}
                     onPress={function () { handleSelectFrequent(meal); }}
-                    style={[styles.frequentChip, { backgroundColor: theme.coral.tint }]}
+                    style={[styles.frequentChip, { backgroundColor: cc.bg }]}
                   >
-                    <Text style={{ color: theme.coral.fg, fontSize: 13, fontWeight: "700" }} numberOfLines={1}>{meal.name}</Text>
+                    <Text style={{ color: cc.fg, fontSize: 13, fontWeight: "700" }} numberOfLines={1}>{meal.name}</Text>
                     {(meal.calories != null || meal.carbs_g != null) ? (
-                      <Text style={{ color: theme.coral.sub, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
+                      <Text style={{ color: cc.sub, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
                         {meal.calories != null ? meal.calories + " cal" : meal.carbs_g + "g carbs"}
                       </Text>
                     ) : null}
@@ -876,7 +897,7 @@ export function MealsScreen() {
             const mealColor = MEAL_TYPE_COLORS[meal.meal_type] ?? "#3FA0A6";
 
             return (
-              <View key={meal.id} style={[styles.mealCard, { borderColor: ink, backgroundColor: theme.coral.tint }]}>
+              <View key={meal.id} style={[styles.mealCard, { borderColor: ink, backgroundColor: mealTintColor(meal.meal_type, theme) }]}>
                 <View style={styles.mealContent}>
                   {/* Colored icon tile */}
                   <View style={[styles.mealIconTile, { backgroundColor: mealColor }]}>

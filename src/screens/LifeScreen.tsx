@@ -328,7 +328,7 @@ export function LifeScreen() {
           const pct = prog?.percent_complete ?? null;
 
           return (
-            <View key={book.id} style={[styles.card, { backgroundColor: theme.card }]}>
+            <View key={book.id} style={[styles.card, { backgroundColor: theme.coral.tint }]}>
               <View style={styles.bookRow}>
                 {/* Cover */}
                 {book.cover_url ? (
@@ -366,8 +366,8 @@ export function LifeScreen() {
                   {/* Quick log buttons */}
                   <View style={styles.quickBtnRow}>
                     {[10, 20, 30].map((n) => (
-                      <Pressable key={n} onPress={() => handleLogPages(book.id, n)} style={styles.quickBtn}>
-                        <Text style={styles.quickBtnText}>+{n}</Text>
+                      <Pressable key={n} onPress={() => handleLogPages(book.id, n)} style={[styles.quickBtn, { backgroundColor: theme.coral.tint }]}>
+                        <Text style={[styles.quickBtnText, { color: theme.coral.fg }]}>+{n}</Text>
                       </Pressable>
                     ))}
                   </View>

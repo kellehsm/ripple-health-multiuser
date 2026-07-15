@@ -130,7 +130,7 @@ function CorrCard({ title, xLabel, yLabel, xs, ys, insight, dotColor, lineColor,
   const badge = badgeColors(r, theme);
 
   return (
-    <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+    <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
       <View style={s.cardHead}>
         <Text style={[s.cardTitle, { color: theme.textStrong }]}>{title}</Text>
         {!isNaN(r) && (
@@ -272,7 +272,7 @@ export function TrendsScreen() {
               s.chip,
               {
                 backgroundColor: days === n ? theme.textStrong : theme.card,
-                borderColor: theme.cardBorder,
+                borderColor: theme.ink,
               },
             ]}
           >
@@ -402,9 +402,9 @@ export function TrendsScreen() {
 const s = StyleSheet.create({
   page:       { padding: 16, paddingBottom: 32, gap: 14 },
   periodRow:  { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 2 },
-  chip:       { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
+  chip:       { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 2 },
   periodNote: { fontSize: 13, marginLeft: 2 },
-  card:       { borderRadius: 14, borderWidth: 1, padding: 16, gap: 10 },
+  card:       { borderRadius: 14, borderWidth: 2, padding: 16, gap: 10 },
   cardHead:   { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 8 },
   cardTitle:  { fontSize: 15, fontWeight: "600", flex: 1 },
   badge:      { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, flexShrink: 1 },
