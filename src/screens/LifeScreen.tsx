@@ -179,7 +179,6 @@ export function LifeScreen() {
   async function handleAddBook(result: BookSearchResult) {
     try {
       await api.createBook({
-        ,
         title: result.title,
         author: result.author,
         cover_url: result.cover_url,
@@ -282,7 +281,6 @@ export function LifeScreen() {
     setCreatingHobby(true);
     setCreateHobbyError(null);
     api.createHobby({
-      ,
       name: hobbyName.trim(),
       unit_label: "minutes",
       icon: "star",

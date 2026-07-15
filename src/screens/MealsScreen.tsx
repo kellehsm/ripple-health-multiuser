@@ -594,7 +594,6 @@ export function MealsScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSearchError(null);
     api.addMeal({
-      ,
       meal_type: mealType,
       source_food_id: pendingFood.source_food_id,
       source_db: pendingFood.source_db ?? "manual",
@@ -670,7 +669,6 @@ export function MealsScreen() {
   function handleLogSubstance(values: SubstancePending) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     api.logSubstance({
-      ,
       substance_type: values.substance_type,
       name: values.name,
       caffeine_mg: values.caffeine_mg,
