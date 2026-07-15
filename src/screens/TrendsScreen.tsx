@@ -182,6 +182,8 @@ type DayRow = {
   sleep_hours: number;
   total_spent: number;
   avg_mg_dl: number | null;
+  caffeine_mg: number;
+  standard_drinks: number;
 };
 
 export function TrendsScreen() {
@@ -195,14 +197,24 @@ export function TrendsScreen() {
     try {
       const end = new Date().toISOString().slice(0, 10);
       const start = new Date(Date.now() - (n - 1) * 86400000).toISOString().slice(0, 10);
-      const [moodData, glucoseData] = await Promise.all([
+      const [moodData, glucoseData, substanceData] = await Promise.all([
         api.weeklyMoodSummary(USER_ID, n),
         api.searchGlucose(USER_ID, { start, end, threshold: 0 }).catch(() => [] as any[]),
+        api.substancesSummary(USER_ID, start, end).catch(() => [] as any[]),
       ]);
 
       const glucoseByDate = new Map<string, number>();
       if (Array.isArray(glucoseData)) {
         for (const g of glucoseData) glucoseByDate.set(g.date?.slice(0, 10), Number(g.avg_mg_dl));
+      }
+
+      const caffeineByDate = new Map<string, number>();
+      const drinksByDate = new Map<string, number>();
+      if (Array.isArray(substanceData)) {
+        for (const s of substanceData) {
+          caffeineByDate.set(s.date?.slice(0, 10), Number(s.caffeine_mg));
+          drinksByDate.set(s.date?.slice(0, 10), Number(s.standard_drinks));
+        }
       }
 
       setRows(
@@ -213,6 +225,8 @@ export function TrendsScreen() {
               sleep_hours: Number(r.sleep_hours),
               total_spent: Number(r.total_spent),
               avg_mg_dl: glucoseByDate.get(r.date?.slice(0, 10)) ?? null,
+              caffeine_mg: caffeineByDate.get(r.date?.slice(0, 10)) ?? 0,
+              standard_drinks: drinksByDate.get(r.date?.slice(0, 10)) ?? 0,
             }))
           : []
       );
@@ -230,11 +244,18 @@ export function TrendsScreen() {
   const spRows = rows.filter(r => r.avg_mood !== null);
   const gmRows = rows.filter(r => r.avg_mood !== null && r.avg_mg_dl !== null);
   const sgRows = rows.filter(r => r.avg_mg_dl !== null && r.sleep_hours > 0);
+  // Substance correlations — only include days that actually have logged data
+  const cgRows = rows.filter(r => r.caffeine_mg > 0 && r.avg_mg_dl !== null);
+  const asRows = rows.filter(r => r.standard_drinks > 0 && r.sleep_hours > 0);
+  const cmRows = rows.filter(r => r.caffeine_mg > 0 && r.avg_mood !== null);
 
-  const smXs = smRows.map(r => r.sleep_hours),  smYs = smRows.map(r => r.avg_mood!);
-  const spXs = spRows.map(r => r.total_spent),  spYs = spRows.map(r => r.avg_mood!);
-  const gmXs = gmRows.map(r => r.avg_mg_dl!),   gmYs = gmRows.map(r => r.avg_mood!);
-  const sgXs = sgRows.map(r => r.sleep_hours),  sgYs = sgRows.map(r => r.avg_mg_dl!);
+  const smXs = smRows.map(r => r.sleep_hours),       smYs = smRows.map(r => r.avg_mood!);
+  const spXs = spRows.map(r => r.total_spent),        spYs = spRows.map(r => r.avg_mood!);
+  const gmXs = gmRows.map(r => r.avg_mg_dl!),         gmYs = gmRows.map(r => r.avg_mood!);
+  const sgXs = sgRows.map(r => r.sleep_hours),        sgYs = sgRows.map(r => r.avg_mg_dl!);
+  const cgXs = cgRows.map(r => r.caffeine_mg),        cgYs = cgRows.map(r => r.avg_mg_dl!);
+  const asXs = asRows.map(r => r.standard_drinks),    asYs = asRows.map(r => r.sleep_hours);
+  const cmXs = cmRows.map(r => r.caffeine_mg),        cmYs = cmRows.map(r => r.avg_mood!);
 
   return (
     <ScrollView
@@ -321,6 +342,48 @@ export function TrendsScreen() {
               dotColor={theme.teal.sub}
               lineColor={theme.teal.sub}
               insight={insightMetric(sgXs, sgYs, "more sleep", "less sleep", "Avg glucose")}
+              theme={theme}
+            />
+          )}
+
+          {cgRows.length >= 3 && (
+            <CorrCard
+              title="Caffeine ↔ Glucose"
+              xLabel="Caffeine (mg)"
+              yLabel="Avg glucose"
+              xs={cgXs}
+              ys={cgYs}
+              dotColor="#E8820E"
+              lineColor="#E8820E"
+              insight={insightMetric(cgXs, cgYs, "higher-caffeine days", "lower-caffeine days", "Avg glucose")}
+              theme={theme}
+            />
+          )}
+
+          {asRows.length >= 3 && (
+            <CorrCard
+              title="Alcohol ↔ Sleep"
+              xLabel="Standard drinks"
+              yLabel="Sleep hours"
+              xs={asXs}
+              ys={asYs}
+              dotColor="#7B3FBF"
+              lineColor="#7B3FBF"
+              insight={insightMetric(asXs, asYs, "drinking days", "non-drinking days", "Sleep hours")}
+              theme={theme}
+            />
+          )}
+
+          {cmRows.length >= 3 && (
+            <CorrCard
+              title="Caffeine ↔ Mood"
+              xLabel="Caffeine (mg)"
+              yLabel="Mood"
+              xs={cmXs}
+              ys={cmYs}
+              dotColor="#E8820E"
+              lineColor="#E8820E"
+              insight={insightMood(cmXs, cmYs, "Higher-caffeine days", "lower-caffeine days")}
               theme={theme}
             />
           )}

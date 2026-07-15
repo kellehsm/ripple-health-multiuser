@@ -22,6 +22,180 @@ import { BarcodeScannerModal } from "../components/BarcodeScannerModal";
 
 const INK = "#111111";
 
+// ── Substance types ───────────────────────────────────────────────────────────
+
+type SubstanceType = "caffeine" | "alcohol";
+
+type SubstanceResult = {
+  source_food_id: string;
+  name: string;
+  caffeine_mg?: number | null;
+  abv_percent?: number | null;
+  source_db: string;
+};
+
+type SubstancePending = {
+  name: string;
+  substance_type: SubstanceType;
+  caffeine_mg: number | null;
+  abv_percent: number | null;
+  volume_ml: number | null;
+  source_food_id?: string;
+  source_db?: string;
+};
+
+type SubstanceEntry = {
+  id: string;
+  substance_type: SubstanceType;
+  name: string;
+  caffeine_mg: number | null;
+  abv_percent: number | null;
+  volume_ml: number | null;
+  logged_at: string;
+};
+
+type SubstanceTotals = {
+  caffeine_mg: number;
+  standard_drinks: number;
+};
+
+// ── Caffeine edit form ────────────────────────────────────────────────────────
+
+function CaffeineForm({
+  initial,
+  onSave,
+  onCancel,
+  theme,
+}: {
+  initial: SubstancePending;
+  onSave: (v: SubstancePending) => void;
+  onCancel: () => void;
+  theme: any;
+}) {
+  const [name, setName] = useState(initial.name);
+  const [mg, setMg] = useState(initial.caffeine_mg != null ? String(initial.caffeine_mg) : "");
+
+  function handleSave() {
+    if (!name.trim()) { Alert.alert("Name required"); return; }
+    const parsed = parseFloat(mg);
+    if (!mg.trim() || isNaN(parsed)) { Alert.alert("Enter caffeine in mg"); return; }
+    onSave({ ...initial, name: name.trim(), caffeine_mg: parsed });
+  }
+
+  return (
+    <View style={styles.editForm}>
+      <TextInput
+        value={name}
+        onChangeText={setName}
+        placeholder="Drink name"
+        placeholderTextColor={theme.textSoft}
+        style={[styles.textInput, { color: theme.textStrong }]}
+      />
+      <View style={styles.macroInputRow}>
+        <TextInput
+          value={mg}
+          onChangeText={setMg}
+          placeholder="Caffeine (mg)"
+          placeholderTextColor={theme.textSoft}
+          keyboardType="decimal-pad"
+          style={[styles.macroInput, { color: theme.textStrong, flex: 1 }]}
+        />
+      </View>
+      {initial.source_db === "usda" || initial.source_db === "openfoodfacts" ? (
+        <Text style={{ color: theme.textSoft, fontSize: 11 }}>
+          Value is per 100g — adjust for your actual serving.
+        </Text>
+      ) : null}
+      <View style={styles.editFormButtons}>
+        <Pressable onPress={onCancel} style={styles.cancelBtn}>
+          <Text style={styles.cancelBtnText}>CANCEL</Text>
+        </Pressable>
+        <Pressable onPress={handleSave} style={[styles.actionBtn, { backgroundColor: "#E8820E", flex: 1 }]}>
+          <Text style={styles.actionBtnText}>LOG IT</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+// ── Alcohol edit form ─────────────────────────────────────────────────────────
+
+function AlcoholForm({
+  initial,
+  onSave,
+  onCancel,
+  theme,
+}: {
+  initial: SubstancePending;
+  onSave: (v: SubstancePending) => void;
+  onCancel: () => void;
+  theme: any;
+}) {
+  const [name, setName] = useState(initial.name);
+  const [abv, setAbv] = useState(initial.abv_percent != null ? String(initial.abv_percent) : "");
+  const [vol, setVol] = useState(initial.volume_ml != null ? String(initial.volume_ml) : "");
+
+  function handleSave() {
+    if (!name.trim()) { Alert.alert("Name required"); return; }
+    const pAbv = parseFloat(abv);
+    const pVol = parseFloat(vol);
+    if (!abv.trim() || isNaN(pAbv)) { Alert.alert("Enter ABV %"); return; }
+    if (!vol.trim() || isNaN(pVol)) { Alert.alert("Enter volume in mL"); return; }
+    onSave({ ...initial, name: name.trim(), abv_percent: pAbv, volume_ml: pVol });
+  }
+
+  // Show computed standard drinks as live preview
+  const previewDrinks =
+    abv && vol && !isNaN(parseFloat(abv)) && !isNaN(parseFloat(vol))
+      ? Math.round(((parseFloat(abv) / 100) * parseFloat(vol) * 0.789) / 14 * 10) / 10
+      : null;
+
+  return (
+    <View style={styles.editForm}>
+      <TextInput
+        value={name}
+        onChangeText={setName}
+        placeholder="Drink name"
+        placeholderTextColor={theme.textSoft}
+        style={[styles.textInput, { color: theme.textStrong }]}
+      />
+      <View style={styles.macroInputRow}>
+        <TextInput
+          value={abv}
+          onChangeText={setAbv}
+          placeholder="ABV %"
+          placeholderTextColor={theme.textSoft}
+          keyboardType="decimal-pad"
+          style={[styles.macroInput, { color: theme.textStrong }]}
+        />
+        <TextInput
+          value={vol}
+          onChangeText={setVol}
+          placeholder="Volume (mL)"
+          placeholderTextColor={theme.textSoft}
+          keyboardType="decimal-pad"
+          style={[styles.macroInput, { color: theme.textStrong }]}
+        />
+      </View>
+      {previewDrinks != null ? (
+        <Text style={{ color: theme.textSoft, fontSize: 11 }}>
+          ≈ {previewDrinks} standard drink{previewDrinks !== 1 ? "s" : ""}
+        </Text>
+      ) : null}
+      <View style={styles.editFormButtons}>
+        <Pressable onPress={onCancel} style={styles.cancelBtn}>
+          <Text style={styles.cancelBtnText}>CANCEL</Text>
+        </Pressable>
+        <Pressable onPress={handleSave} style={[styles.actionBtn, { backgroundColor: "#7B3FBF", flex: 1 }]}>
+          <Text style={styles.actionBtnText}>LOG IT</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 type MealType = "breakfast" | "lunch" | "dinner" | "snack";
 
 type FrequentMeal = {
@@ -282,6 +456,17 @@ export function MealsScreen() {
   const [loadingGlucose, setLoadingGlucose] = useState<Record<string, boolean>>({});
   const [glucoseErrors, setGlucoseErrors] = useState<Record<string, string>>({});
 
+  // ── Substance state ───────────────────────────────────────────────────────
+  const [subType, setSubType] = useState<SubstanceType>("caffeine");
+  const [subQuery, setSubQuery] = useState("");
+  const [subResults, setSubResults] = useState<SubstanceResult[]>([]);
+  const [subSearching, setSubSearching] = useState(false);
+  const [subSearchError, setSubSearchError] = useState<string | null>(null);
+  const [pendingSub, setPendingSub] = useState<SubstancePending | null>(null);
+  const [subEntries, setSubEntries] = useState<SubstanceEntry[]>([]);
+  const [subTotals, setSubTotals] = useState<SubstanceTotals>({ caffeine_mg: 0, standard_drinks: 0 });
+  const [subLoading, setSubLoading] = useState(false);
+
   const loadMeals = useCallback(function () {
     const today = new Date().toISOString().split("T")[0];
     setLoadingMeals(true);
@@ -292,12 +477,25 @@ export function MealsScreen() {
       .finally(function () { setLoadingMeals(false); });
   }, []);
 
+  const loadSubstances = useCallback(function () {
+    const today = new Date().toISOString().split("T")[0];
+    setSubLoading(true);
+    api.substancesToday(USER_ID, today)
+      .then(function (data: { entries: SubstanceEntry[]; totals: SubstanceTotals }) {
+        setSubEntries(Array.isArray(data?.entries) ? data.entries : []);
+        if (data?.totals) setSubTotals(data.totals);
+      })
+      .catch(function () {})
+      .finally(function () { setSubLoading(false); });
+  }, []);
+
   useEffect(function () {
     loadMeals();
+    loadSubstances();
     api.frequentMeals(USER_ID)
       .then(function (data) { setFrequentMeals(Array.isArray(data) ? data : []); })
       .catch(function () {});
-  }, [loadMeals]);
+  }, [loadMeals, loadSubstances]);
 
   function handleSearch() {
     if (!searchQuery.trim()) return;
@@ -337,9 +535,11 @@ export function MealsScreen() {
   async function handleRefresh() {
     setRefreshing(true);
     try {
-      await loadMeals();
-      const freq = await api.frequentMeals(USER_ID).catch(() => []);
-      setFrequentMeals(Array.isArray(freq) ? freq : []);
+      await Promise.all([
+        loadMeals(),
+        loadSubstances(),
+        api.frequentMeals(USER_ID).then(d => setFrequentMeals(Array.isArray(d) ? d : [])).catch(() => {}),
+      ]);
     } finally {
       setRefreshing(false);
     }
@@ -395,6 +595,70 @@ export function MealsScreen() {
         },
       },
     ]);
+  }
+
+  // ── Substance handlers ────────────────────────────────────────────────────
+
+  function handleSubSearch() {
+    if (!subQuery.trim()) return;
+    setSubSearching(true);
+    setSubSearchError(null);
+    setPendingSub(null);
+    api.searchSubstances(subQuery, subType)
+      .then(function (data: SubstanceResult[]) { setSubResults(Array.isArray(data) ? data : []); })
+      .catch(function (e: Error) { setSubSearchError(e.message || "Search failed"); })
+      .finally(function () { setSubSearching(false); });
+  }
+
+  function handleSelectSubResult(result: SubstanceResult) {
+    setSubResults([]);
+    setPendingSub({
+      name: result.name,
+      substance_type: subType,
+      caffeine_mg: result.caffeine_mg ?? null,
+      abv_percent: result.abv_percent ?? null,
+      volume_ml: null,
+      source_food_id: result.source_food_id,
+      source_db: result.source_db,
+    });
+  }
+
+  function handleLogSubstance(values: SubstancePending) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    api.logSubstance({
+      user_id: USER_ID,
+      substance_type: values.substance_type,
+      name: values.name,
+      caffeine_mg: values.caffeine_mg,
+      abv_percent: values.abv_percent,
+      volume_ml: values.volume_ml,
+      source_db: values.source_db ?? "manual",
+    })
+      .then(function () {
+        setPendingSub(null);
+        setSubQuery("");
+        setSubResults([]);
+        loadSubstances();
+      })
+      .catch(function (e: Error) { setSubSearchError(e.message || "Failed to log"); });
+  }
+
+  function handleDeleteSubstance(entry: SubstanceEntry) {
+    Alert.alert(
+      "Remove entry",
+      `Remove "${entry.name}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove", style: "destructive",
+          onPress: function () {
+            api.deleteSubstance(entry.id)
+              .then(loadSubstances)
+              .catch(function () {});
+          },
+        },
+      ]
+    );
   }
 
   function handleToggleGlucose(meal: Meal) {
@@ -664,6 +928,177 @@ export function MealsScreen() {
             );
           })
         )}
+      </View>
+
+      {/* Caffeine & Alcohol */}
+      <View style={[styles.card, { backgroundColor: theme.card }]}>
+        <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Caffeine & Alcohol</Text>
+
+        {/* Totals strip */}
+        {(subTotals.caffeine_mg > 0 || subTotals.standard_drinks > 0) && (
+          <View style={{ flexDirection: "row", gap: 8, marginBottom: 10 }}>
+            {subTotals.caffeine_mg > 0 && (
+              <View style={[styles.totalBlock, { backgroundColor: "#E8820E", flex: 1 }]}>
+                <Text style={styles.totalBlockLabel}>CAFFEINE TODAY</Text>
+                <Text style={styles.totalBlockValue}>{subTotals.caffeine_mg}mg</Text>
+              </View>
+            )}
+            {subTotals.standard_drinks > 0 && (
+              <View style={[styles.totalBlock, { backgroundColor: "#7B3FBF", flex: 1 }]}>
+                <Text style={styles.totalBlockLabel}>STD DRINKS TODAY</Text>
+                <Text style={styles.totalBlockValue}>{subTotals.standard_drinks}</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Type toggle */}
+        <View style={[styles.chipRow, { marginBottom: 10 }]}>
+          {(["caffeine", "alcohol"] as SubstanceType[]).map(function (t) {
+            const selected = subType === t;
+            const activeColor = t === "caffeine" ? "#E8820E" : "#7B3FBF";
+            return (
+              <Pressable
+                key={t}
+                onPress={function () {
+                  setSubType(t);
+                  setSubResults([]);
+                  setPendingSub(null);
+                  setSubQuery("");
+                }}
+                style={[
+                  styles.typeChip,
+                  { backgroundColor: selected ? activeColor : "#ffffff", borderColor: selected ? activeColor : INK },
+                ]}
+              >
+                <Text style={{ color: selected ? "#ffffff" : INK, fontSize: 11, fontWeight: "800", letterSpacing: 0.3 }}>
+                  {t === "caffeine" ? "CAFFEINE" : "ALCOHOL"}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {/* Search */}
+        <View style={styles.searchRow}>
+          <TextInput
+            placeholder={subType === "caffeine" ? "search coffee, tea, energy drinks..." : "search beer, wine, spirits..."}
+            value={subQuery}
+            onChangeText={setSubQuery}
+            onSubmitEditing={handleSubSearch}
+            style={[styles.textInput, { color: theme.textStrong, flex: 1 }]}
+            placeholderTextColor={theme.textSoft}
+          />
+          <Pressable
+            style={[styles.actionBtn, { backgroundColor: subType === "caffeine" ? "#E8820E" : "#7B3FBF" }]}
+            onPress={handleSubSearch}
+          >
+            {subSearching ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.actionBtnText}>SEARCH</Text>
+            )}
+          </Pressable>
+        </View>
+
+        <Pressable
+          onPress={function () {
+            setPendingSub({
+              name: "",
+              substance_type: subType,
+              caffeine_mg: null,
+              abv_percent: null,
+              volume_ml: null,
+              source_db: "manual",
+            });
+            setSubResults([]);
+          }}
+          style={[styles.secondaryBtn, { marginBottom: 4 }]}
+        >
+          <Text style={styles.secondaryBtnText}>+ ADD MANUALLY</Text>
+        </Pressable>
+
+        {subSearchError ? (
+          <Text style={{ color: theme.coral.sub, fontSize: 12, marginTop: 4 }}>{subSearchError}</Text>
+        ) : null}
+
+        {/* Search results */}
+        {!pendingSub && subResults.length > 0 && (
+          <View style={{ marginTop: 8, gap: 8 }}>
+            {subResults.map(function (r, i) {
+              const detail = subType === "caffeine"
+                ? (r.caffeine_mg != null ? r.caffeine_mg + "mg per 100g" : null)
+                : (r.abv_percent != null ? r.abv_percent + "% ABV" : null);
+              return (
+                <Pressable
+                  key={r.source_food_id ?? String(i)}
+                  onPress={function () { handleSelectSubResult(r); }}
+                  style={[styles.resultRow, { borderColor: INK }]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: theme.textStrong, fontSize: 13, fontWeight: "600" }} numberOfLines={1}>{r.name}</Text>
+                    {detail ? <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 2 }}>{detail}</Text> : null}
+                  </View>
+                  <Ionicons name="create-outline" size={18} color={subType === "caffeine" ? "#E8820E" : "#7B3FBF"} />
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+
+        {/* Edit forms */}
+        {pendingSub && pendingSub.substance_type === "caffeine" ? (
+          <CaffeineForm
+            initial={pendingSub}
+            onSave={handleLogSubstance}
+            onCancel={function () { setPendingSub(null); }}
+            theme={theme}
+          />
+        ) : pendingSub && pendingSub.substance_type === "alcohol" ? (
+          <AlcoholForm
+            initial={pendingSub}
+            onSave={handleLogSubstance}
+            onCancel={function () { setPendingSub(null); }}
+            theme={theme}
+          />
+        ) : null}
+
+        {/* Today's logged substances */}
+        {subLoading ? (
+          <ActivityIndicator style={{ marginTop: 8 }} />
+        ) : subEntries.length > 0 ? (
+          <View style={{ marginTop: 10, gap: 6 }}>
+            <Text style={[styles.sectionLabel, { color: theme.textSoft }]}>TODAY</Text>
+            {subEntries.map(function (entry) {
+              const detail = entry.substance_type === "caffeine"
+                ? (entry.caffeine_mg != null ? entry.caffeine_mg + "mg caffeine" : "caffeine")
+                : (entry.abv_percent != null && entry.volume_ml != null
+                  ? entry.abv_percent + "% · " + entry.volume_ml + "mL"
+                  : "alcohol");
+              const iconColor = entry.substance_type === "caffeine" ? "#E8820E" : "#7B3FBF";
+              return (
+                <View key={entry.id} style={[styles.resultRow, { borderColor: INK }]}>
+                  <View style={[styles.mealIconTile, { backgroundColor: iconColor, width: 32, height: 32 }]}>
+                    <Ionicons
+                      name={entry.substance_type === "caffeine" ? "cafe-outline" : "wine-outline"}
+                      size={14}
+                      color="#fff"
+                    />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 8 }}>
+                    <Text style={{ color: theme.textStrong, fontSize: 13, fontWeight: "600" }} numberOfLines={1}>
+                      {entry.name || (entry.substance_type === "caffeine" ? "Caffeine" : "Alcohol")}
+                    </Text>
+                    <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 1 }}>{detail}</Text>
+                  </View>
+                  <Pressable onPress={function () { handleDeleteSubstance(entry); }} hitSlop={8}>
+                    <Ionicons name="trash-outline" size={15} color={theme.coral.solid} />
+                  </Pressable>
+                </View>
+              );
+            })}
+          </View>
+        ) : null}
       </View>
 
       <BarcodeScannerModal

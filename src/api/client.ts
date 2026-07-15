@@ -209,6 +209,22 @@ export const api = {
     return request("/settings/google-drive/disconnect", { method: "POST", body: JSON.stringify({ user_id: userId }) });
   },
 
+  searchSubstances: function (q: string, type: "caffeine" | "alcohol") {
+    return request("/substances/search?query=" + encodeURIComponent(q) + "&type=" + type);
+  },
+  logSubstance: function (payload: Record<string, unknown>) {
+    return request("/substances", { method: "POST", body: JSON.stringify(payload) });
+  },
+  substancesToday: function (userId: string, date: string) {
+    return request("/substances?user_id=" + userId + "&date=" + date);
+  },
+  substancesSummary: function (userId: string, start: string, end: string) {
+    return request("/substances/summary?user_id=" + userId + "&start=" + start + "&end=" + end);
+  },
+  deleteSubstance: function (id: string) {
+    return request("/substances/" + id, { method: "DELETE" });
+  },
+
   getOrCreateWaterMetric: async function (userId: string) {
     const list = await request("/metrics?user_id=" + userId + "&name=water");
     if (list && list.length > 0) return list[0];
