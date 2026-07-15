@@ -96,11 +96,14 @@ function CaffeineForm({
         <TextInput
           value={mg}
           onChangeText={setMg}
-          placeholder="Caffeine (mg)"
+          placeholder="mg"
           placeholderTextColor={theme.textSoft}
           keyboardType="decimal-pad"
           style={[styles.macroInput, { color: theme.textStrong, flex: 1 }]}
         />
+      </View>
+      <View style={styles.macroInputRow}>
+        <Text style={[styles.macroLabel, { color: ink }]}>CAFFEINE (mg)</Text>
       </View>
       {initial.source_db === "usda" || initial.source_db === "openfoodfacts" ? (
         <Text style={{ color: theme.textSoft, fontSize: 11 }}>
@@ -167,7 +170,7 @@ function AlcoholForm({
         <TextInput
           value={abv}
           onChangeText={setAbv}
-          placeholder="ABV %"
+          placeholder="%"
           placeholderTextColor={theme.textSoft}
           keyboardType="decimal-pad"
           style={[styles.macroInput, { color: theme.textStrong }]}
@@ -175,11 +178,15 @@ function AlcoholForm({
         <TextInput
           value={vol}
           onChangeText={setVol}
-          placeholder="Volume (mL)"
+          placeholder="mL"
           placeholderTextColor={theme.textSoft}
           keyboardType="decimal-pad"
           style={[styles.macroInput, { color: theme.textStrong }]}
         />
+      </View>
+      <View style={styles.macroInputRow}>
+        <Text style={[styles.macroLabel, { color: ink }]}>ABV %</Text>
+        <Text style={[styles.macroLabel, { color: ink }]}>VOLUME (mL)</Text>
       </View>
       {previewDrinks != null ? (
         <Text style={{ color: theme.textSoft, fontSize: 11 }}>
@@ -373,7 +380,7 @@ function MacroEditForm({
         <TextInput
           value={carbs}
           onChangeText={setCarbs}
-          placeholder="Carbs (g)"
+          placeholder="g"
           placeholderTextColor={theme.textSoft}
           keyboardType="decimal-pad"
           style={[styles.macroInput, { color: theme.textStrong }]}
@@ -381,7 +388,7 @@ function MacroEditForm({
         <TextInput
           value={sugar}
           onChangeText={setSugar}
-          placeholder="Sugar (g)"
+          placeholder="g"
           placeholderTextColor={theme.textSoft}
           keyboardType="decimal-pad"
           style={[styles.macroInput, { color: theme.textStrong }]}
@@ -389,11 +396,16 @@ function MacroEditForm({
         <TextInput
           value={cals}
           onChangeText={setCals}
-          placeholder="Calories"
+          placeholder="kcal"
           placeholderTextColor={theme.textSoft}
           keyboardType="decimal-pad"
           style={[styles.macroInput, { color: theme.textStrong }]}
         />
+      </View>
+      <View style={styles.macroInputRow}>
+        <Text style={[styles.macroLabel, { color: ink }]}>CARBS</Text>
+        <Text style={[styles.macroLabel, { color: ink }]}>SUGAR</Text>
+        <Text style={[styles.macroLabel, { color: ink }]}>CALORIES</Text>
       </View>
       <View style={styles.editFormButtons}>
         <Pressable onPress={onCancel} style={styles.cancelBtn}>
@@ -1291,6 +1303,7 @@ function makeStyles(ink: string, card: string) {
     shadowRadius: 0,
     elevation: 2,
   },
+  macroLabel: { flex: 1, fontSize: 9, fontWeight: "800", letterSpacing: 0.6, textAlign: "center" },
   editFormButtons: { flexDirection: "row", gap: 8 },
   cancelBtn: {
     borderWidth: 2,
