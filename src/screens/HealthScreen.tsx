@@ -1,8 +1,10 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, Dimensions, Platform, Alert, RefreshControl } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
-import Svg, { Polyline, Line, Text as SvgText, Rect } from "react-native-svg";
+import Svg, { Polyline, Line, Text as SvgText, Rect, Circle } from "react-native-svg";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { runOnJS } from "react-native-reanimated";
 import { useTheme } from "../theme/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
 import { MetricCard } from "../components/MetricCard";
@@ -122,6 +124,23 @@ export function HealthScreen() {
   const [hcResult, setHcResult] = useState<string | null>(null);
   const [liveTracking, setLiveTracking] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Glucose chart scrubbing
+  const [scrubInfo, setScrubInfo] = useState<{
+    px: number;
+    time: string;
+    todayVal: number | null;
+    yestVal: number | null;
+    delta: number | null;
+  } | null>(null);
+  // Ref holds latest chart data for the stable gesture callbacks
+  const scrubCtx = useRef({
+    todayReadings: [] as GlucoseReading[],
+    yesterdayReadings: [] as GlucoseReading[],
+    windowStart: 0,
+    windowEnd: 0,
+  });
+  const lastSnappedRef = useRef<string | null>(null);
 
   const loadStepsAndSleep = useCallback(async function () {
     const _now = new Date();
@@ -312,6 +331,73 @@ export function HealthScreen() {
       });
   }, []);
 
+  // Stable scrub callbacks — read fresh data from scrubCtx ref, never stale
+  const onScrub = useCallback(function (x: number) {
+    const ctx = scrubCtx.current;
+    if (ctx.todayReadings.length === 0) return;
+
+    const clampedX = Math.max(PAD_LEFT, Math.min(x, CHART_WIDTH));
+    const frac = (clampedX - PAD_LEFT) / (CHART_WIDTH - PAD_LEFT);
+    const t = ctx.windowStart + frac * (ctx.windowEnd - ctx.windowStart);
+    const windowMs = ctx.windowEnd - ctx.windowStart;
+    const usableW = CHART_WIDTH - PAD_LEFT;
+
+    let bestToday: GlucoseReading | null = null;
+    let bestTodayDiff = Infinity;
+    let snappedPx = clampedX;
+    for (const r of ctx.todayReadings) {
+      const rt = new Date(r.recorded_at).getTime();
+      const diff = Math.abs(rt - t);
+      if (diff < bestTodayDiff) {
+        bestTodayDiff = diff;
+        bestToday = r;
+        snappedPx = PAD_LEFT + ((rt - ctx.windowStart) / windowMs) * usableW;
+      }
+    }
+
+    let bestYest: GlucoseReading | null = null;
+    let bestYestDiff = Infinity;
+    for (const r of ctx.yesterdayReadings) {
+      const rt = new Date(r.recorded_at).getTime(); // already shifted +24h
+      const diff = Math.abs(rt - t);
+      if (diff < bestYestDiff) {
+        bestYestDiff = diff;
+        bestYest = r;
+      }
+    }
+
+    const todayVal = bestToday ? Number(bestToday.mg_dl) : null;
+    const yestVal = bestYest ? Number(bestYest.mg_dl) : null;
+    const delta = todayVal !== null && yestVal !== null ? todayVal - yestVal : null;
+
+    const d = bestToday ? new Date(bestToday.recorded_at) : new Date();
+    const h = d.getHours(), m = d.getMinutes();
+    const h12 = h % 12 || 12;
+    const timeStr = `${h12}:${String(m).padStart(2, "0")}${h >= 12 ? "pm" : "am"}`;
+
+    if (bestToday && bestToday.recorded_at !== lastSnappedRef.current) {
+      lastSnappedRef.current = bestToday.recorded_at;
+      Haptics.selectionAsync().catch(() => {});
+    }
+
+    setScrubInfo({ px: snappedPx, time: timeStr, todayVal, yestVal, delta });
+  }, []);
+
+  const onScrubEnd = useCallback(function () {
+    setScrubInfo(null);
+    lastSnappedRef.current = null;
+  }, []);
+
+  const panGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetX([-10, 10])
+        .failOffsetY([-5, 5])
+        .onUpdate((e) => { runOnJS(onScrub)(e.x); })
+        .onEnd(() => { runOnJS(onScrubEnd)(); }),
+    [onScrub, onScrubEnd]
+  );
+
   useEffect(function () {
     load(rangeHours);
     const interval = setInterval(function () {
@@ -339,6 +425,9 @@ export function HealthScreen() {
 
   const todayPoints = buildPoints(todayReadings, windowStart, now, minVal, maxVal);
   const yesterdayPoints = buildPoints(yesterdayReadings, windowStart, now, minVal, maxVal);
+
+  // Keep gesture callback ref in sync with latest render values
+  scrubCtx.current = { todayReadings, yesterdayReadings, windowStart, windowEnd: now };
 
   const chartInnerHeight = CHART_HEIGHT - PAD_TOP - PAD_BOTTOM;
   const highY = PAD_TOP + chartInnerHeight - ((180 - minVal) / (maxVal - minVal)) * chartInnerHeight;
@@ -485,53 +574,111 @@ export function HealthScreen() {
             No glucose readings in this window yet.
           </Text>
         ) : (
-          <Svg width={CHART_WIDTH} height={CHART_HEIGHT} style={{ marginTop: 12 }}>
-            {gridValues.map((v) => {
-              const gy = PAD_TOP + chartInnerHeight - ((v - minVal) / (maxVal - minVal)) * chartInnerHeight;
-              return (
-                <React.Fragment key={v}>
-                  <Line x1={PAD_LEFT} x2={CHART_WIDTH} y1={gy} y2={gy} stroke={theme.textSoft} strokeDasharray="2,3" strokeWidth={0.5} opacity={0.35} />
-                  <SvgText x={PAD_LEFT - 4} y={gy + 4} fontSize={9} fill={theme.textSoft} textAnchor="end">{v}</SvgText>
-                </React.Fragment>
-              );
-            })}
+          <GestureDetector gesture={panGesture}>
+            <View>
+              <Svg width={CHART_WIDTH} height={CHART_HEIGHT} style={{ marginTop: 12 }}>
+                {gridValues.map((v) => {
+                  const gy = PAD_TOP + chartInnerHeight - ((v - minVal) / (maxVal - minVal)) * chartInnerHeight;
+                  return (
+                    <React.Fragment key={v}>
+                      <Line x1={PAD_LEFT} x2={CHART_WIDTH} y1={gy} y2={gy} stroke={theme.textSoft} strokeDasharray="2,3" strokeWidth={0.5} opacity={0.35} />
+                      <SvgText x={PAD_LEFT - 4} y={gy + 4} fontSize={9} fill={theme.textSoft} textAnchor="end">{v}</SvgText>
+                    </React.Fragment>
+                  );
+                })}
 
-            {/* Target range band with dashed ink border */}
-            <Rect
-              x={PAD_LEFT}
-              y={highY}
-              width={CHART_WIDTH - PAD_LEFT}
-              height={lowY - highY}
-              fill={mode === "dark" ? theme.berry.sub : theme.berry.tint}
-              opacity={mode === "dark" ? 0.25 : 0.4}
-              stroke={ink}
-              strokeWidth={1}
-              strokeDasharray="5,5"
-            />
+                {/* Target range band with dashed ink border */}
+                <Rect
+                  x={PAD_LEFT}
+                  y={highY}
+                  width={CHART_WIDTH - PAD_LEFT}
+                  height={lowY - highY}
+                  fill={mode === "dark" ? theme.berry.sub : theme.berry.tint}
+                  opacity={mode === "dark" ? 0.25 : 0.4}
+                  stroke={ink}
+                  strokeWidth={1}
+                  strokeDasharray="5,5"
+                />
 
-            {/* Yesterday faded line */}
-            {yesterdayPoints.length > 0 ? (
-              <Polyline points={yesterdayPoints} fill="none" stroke={theme.textSoft} strokeWidth={1.5} opacity={0.25} />
-            ) : null}
+                {/* Yesterday — dotted, low opacity reference line */}
+                {yesterdayPoints.length > 0 ? (
+                  <Polyline points={yesterdayPoints} fill="none" stroke={theme.textSoft} strokeWidth={1.5} strokeDasharray="4,4" opacity={0.3} />
+                ) : null}
 
-            {/* Today — double stroke: ink outline below, color on top */}
-            {todayPoints.length > 0 ? (
-              <>
-                <Polyline points={todayPoints} fill="none" stroke={ink} strokeWidth={3.5} />
-                <Polyline points={todayPoints} fill="none" stroke={theme.berry.bar} strokeWidth={2} />
-              </>
-            ) : null}
+                {/* Today — double stroke: ink outline below, color on top */}
+                {todayPoints.length > 0 ? (
+                  <>
+                    <Polyline points={todayPoints} fill="none" stroke={ink} strokeWidth={3.5} />
+                    <Polyline points={todayPoints} fill="none" stroke={theme.berry.bar} strokeWidth={2} />
+                  </>
+                ) : null}
 
-            {/* X-axis time labels */}
-            {getTimeTicks(windowStart, now, rangeHours).map(function ({ t, label }) {
-              const x = PAD_LEFT + ((t - windowStart) / (now - windowStart)) * (CHART_WIDTH - PAD_LEFT);
-              return (
-                <SvgText key={t} x={x} y={CHART_HEIGHT - 4} fontSize={8} fill={theme.textSoft} textAnchor="middle" opacity={0.8}>
-                  {label}
-                </SvgText>
-              );
-            })}
-          </Svg>
+                {/* X-axis time labels */}
+                {getTimeTicks(windowStart, now, rangeHours).map(function ({ t, label }) {
+                  const x = PAD_LEFT + ((t - windowStart) / (now - windowStart)) * (CHART_WIDTH - PAD_LEFT);
+                  return (
+                    <SvgText key={t} x={x} y={CHART_HEIGHT - 4} fontSize={8} fill={theme.textSoft} textAnchor="middle" opacity={0.8}>
+                      {label}
+                    </SvgText>
+                  );
+                })}
+
+                {/* Scrub indicator: vertical line + hit dots */}
+                {scrubInfo ? (
+                  <>
+                    <Line
+                      x1={scrubInfo.px} x2={scrubInfo.px}
+                      y1={PAD_TOP} y2={CHART_HEIGHT - PAD_BOTTOM}
+                      stroke={ink} strokeWidth={1} strokeDasharray="3,3" opacity={0.7}
+                    />
+                    {scrubInfo.todayVal !== null ? (
+                      <Circle
+                        cx={scrubInfo.px}
+                        cy={PAD_TOP + chartInnerHeight - ((scrubInfo.todayVal - minVal) / (maxVal - minVal)) * chartInnerHeight}
+                        r={5} fill={theme.berry.bar} stroke={ink} strokeWidth={1.5}
+                      />
+                    ) : null}
+                    {scrubInfo.yestVal !== null ? (
+                      <Circle
+                        cx={scrubInfo.px}
+                        cy={PAD_TOP + chartInnerHeight - ((scrubInfo.yestVal - minVal) / (maxVal - minVal)) * chartInnerHeight}
+                        r={4} fill={theme.textSoft} stroke={ink} strokeWidth={1} opacity={0.5}
+                      />
+                    ) : null}
+                  </>
+                ) : null}
+              </Svg>
+
+              {/* Scrub readout card */}
+              {scrubInfo ? (
+                <View style={[styles.scrubCard, { backgroundColor: card, borderColor: ink }]}>
+                  <Text style={[styles.scrubTime, { color: theme.textSoft }]}>{scrubInfo.time}</Text>
+                  <View style={styles.scrubStats}>
+                    {scrubInfo.todayVal !== null ? (
+                      <View style={styles.scrubStat}>
+                        <Text style={[styles.scrubLabel, { color: theme.textSoft }]}>TODAY</Text>
+                        <Text style={[styles.scrubVal, { color: theme.berry.sub }]}>{scrubInfo.todayVal}</Text>
+                      </View>
+                    ) : null}
+                    {scrubInfo.yestVal !== null ? (
+                      <View style={styles.scrubStat}>
+                        <Text style={[styles.scrubLabel, { color: theme.textSoft }]}>YEST</Text>
+                        <Text style={[styles.scrubVal, { color: theme.textSoft }]}>{scrubInfo.yestVal}</Text>
+                      </View>
+                    ) : null}
+                    {scrubInfo.delta !== null ? (
+                      <View style={styles.scrubStat}>
+                        <Text style={[styles.scrubLabel, { color: theme.textSoft }]}>DELTA</Text>
+                        <Text style={[styles.scrubVal, { color: scrubInfo.delta > 0 ? theme.red.sub : theme.teal.bar }]}>
+                          {scrubInfo.delta > 0 ? "+" : ""}{scrubInfo.delta}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </View>
+              ) : null}
+            </View>
+          </GestureDetector>
         )}
 
         <View style={styles.legendRow}>
@@ -742,6 +889,16 @@ function makeStyles(ink: string, card: string) {
   legendRow: { flexDirection: "row", gap: 16, marginTop: 10 },
   legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
+  scrubCard: {
+    borderRadius: 10, borderWidth: 2, padding: 10, marginTop: 6,
+    flexDirection: "row", alignItems: "center", gap: 12,
+    shadowColor: ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2,
+  },
+  scrubTime: { fontSize: 11, minWidth: 44 },
+  scrubStats: { flexDirection: "row", gap: 16 },
+  scrubStat: { alignItems: "center" },
+  scrubLabel: { fontSize: 8, fontWeight: "800", letterSpacing: 0.5 },
+  scrubVal: { fontSize: 16, fontWeight: "800", marginTop: 1 },
   hcBtn: {
     borderWidth: 2,
     borderColor: ink,

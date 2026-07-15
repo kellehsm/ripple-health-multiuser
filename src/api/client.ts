@@ -8,6 +8,37 @@ async function request(path: string, options: RequestInit = {}): Promise<any> {
   if (!res.ok) throw new Error("API error " + res.status + ": " + (await res.text()));
   return res.json();
 }
+
+function isNetworkOrServerError(err: unknown): boolean {
+  const msg = (err as Error)?.message ?? "";
+  return (
+    msg.includes("Network request failed") ||
+    msg.includes("Failed to fetch") ||
+    msg.includes("network") ||
+    /API error 5\d\d/.test(msg)
+  );
+}
+
+// Wraps request() for mutating calls that should survive offline/5xx.
+// On network error or 5xx: queues the payload locally and returns null.
+// On 4xx (bad payload): propagates the error normally.
+async function requestQueued(
+  path: string,
+  options: RequestInit,
+  payload: Record<string, unknown>
+): Promise<any> {
+  try {
+    return await request(path, options);
+  } catch (err) {
+    // Lazy import avoids circular dep at module load time
+    const { queueOfflineRequest, isQueueableEndpoint } = await import("../utils/syncQueue");
+    if (isNetworkOrServerError(err) && isQueueableEndpoint(path)) {
+      queueOfflineRequest(path, options.method as string, payload);
+      return null;
+    }
+    throw err;
+  }
+}
 export const GOOGLE_CLIENT_ID =
   "629396147708-a40h3rld7t1bjt1nsm097g010p2jaai9.apps.googleusercontent.com";
 export const api = {
@@ -77,7 +108,7 @@ export const api = {
     return request("/meals?user_id=" + userId + "&date=" + date);
   },
   addMeal: function (payload: Record<string, unknown>) {
-    return request("/meals", { method: "POST", body: JSON.stringify(payload) });
+    return requestQueued("/meals", { method: "POST", body: JSON.stringify(payload) }, payload);
   },
   updateMeal: function (mealId: string, payload: Record<string, unknown>) {
     return request("/meals/" + mealId, { method: "PATCH", body: JSON.stringify(payload) });
@@ -96,7 +127,7 @@ export const api = {
     return request("/spending?user_id=" + userId + (since ? "&since=" + since : ""));
   },
   addSpending: function (payload: Record<string, unknown>) {
-    return request("/spending", { method: "POST", body: JSON.stringify(payload) });
+    return requestQueued("/spending", { method: "POST", body: JSON.stringify(payload) }, payload);
   },
 
   deleteBook: function (bookId: string) {
@@ -107,13 +138,16 @@ export const api = {
   },
 
   logMood: function (userId: string, mood_score: number, entry_text?: string) {
-    return request("/journal", { method: "POST", body: JSON.stringify({ user_id: userId, mood_score: mood_score, entry_text: entry_text }) });
+    const payload = { user_id: userId, mood_score, entry_text };
+    return requestQueued("/journal", { method: "POST", body: JSON.stringify(payload) }, payload);
   },
   upsertPeriodMood: function (userId: string, mood_score: number, period: string, mood_label?: string, entry_text?: string) {
-    return request("/journal", { method: "POST", body: JSON.stringify({ user_id: userId, mood_score, period, mood_label, entry_text, entry_type: "period" }) });
+    const payload = { user_id: userId, mood_score, period, mood_label, entry_text, entry_type: "period" };
+    return requestQueued("/journal", { method: "POST", body: JSON.stringify(payload) }, payload);
   },
   logMoodMoment: function (userId: string, mood_score: number, mood_label?: string, entry_text?: string) {
-    return request("/journal", { method: "POST", body: JSON.stringify({ user_id: userId, mood_score, mood_label, entry_text, entry_type: "moment" }) });
+    const payload = { user_id: userId, mood_score, mood_label, entry_text, entry_type: "moment" };
+    return requestQueued("/journal", { method: "POST", body: JSON.stringify(payload) }, payload);
   },
   dayView: function (userId: string, date: string) {
     return request("/summary/day?user_id=" + userId + "&date=" + date);
@@ -196,6 +230,10 @@ export const api = {
   exportAllUrl: function (userId: string): string {
     return BASE_URL + "/export/all?user_id=" + userId;
   },
+  contextCorrelation: function (userId: string, key: string, compareTo: "mood" | "glucose", days?: number) {
+    const qs = new URLSearchParams({ user_id: userId, key, compare_to: compareTo, ...(days ? { days: String(days) } : {}) });
+    return request("/analytics/context-correlation?" + qs.toString());
+  },
   getSettings: function (userId: string) {
     return request("/settings?user_id=" + userId);
   },
@@ -219,7 +257,7 @@ export const api = {
     return request("/substances/search?query=" + encodeURIComponent(q) + "&type=" + type);
   },
   logSubstance: function (payload: Record<string, unknown>) {
-    return request("/substances", { method: "POST", body: JSON.stringify(payload) });
+    return requestQueued("/substances", { method: "POST", body: JSON.stringify(payload) }, payload);
   },
   substancesToday: function (userId: string, date: string) {
     return request("/substances?user_id=" + userId + "&date=" + date);
@@ -240,10 +278,12 @@ export const api = {
     });
   },
   logWater: function (metricId: string) {
-    return request("/metrics/" + metricId + "/logs", {
-      method: "POST",
-      body: JSON.stringify({ value: 1, logged_at: new Date().toISOString() }),
-    });
+    const payload = { value: 1, logged_at: new Date().toISOString() };
+    return requestQueued(
+      "/metrics/" + metricId + "/logs",
+      { method: "POST", body: JSON.stringify(payload) },
+      payload
+    );
   },
   todaysWaterCount: function (metricId: string) {
     return request("/metrics/" + metricId + "/logs");
