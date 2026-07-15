@@ -1,13 +1,15 @@
-import React, { useEffect } from "react";
-import { Linking, Platform, ToastAndroid, Alert } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Linking, Platform, ToastAndroid, Alert, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import notifee, { EventType } from "@notifee/react-native";
 import { CommonActions } from "@react-navigation/native";
 import { ThemeProvider } from "./src/theme/ThemeContext";
 import { RootTabs } from "./src/navigation/RootTabs";
+import { OnboardingFlow } from "./src/screens/OnboardingFlow";
 import { navigationRef } from "./src/navigation/navigationRef";
 import { api } from "./src/api/client";
 import { USER_ID } from "./src/api/config";
+import { hasCompletedOnboarding, markOnboardingComplete } from "./src/lib/onboarding";
 
 function navigateWhenReady(name: "Meals" | "Health") {
   const attempt = () => {
@@ -54,7 +56,16 @@ function shouldGoToMeals(data: any, actionId?: string): boolean {
 }
 
 export default function App() {
+  const [ready, setReady] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
   useEffect(() => {
+    // Check onboarding flag on startup
+    hasCompletedOnboarding().then((done) => {
+      setShowOnboarding(!done);
+      setReady(true);
+    });
+
     // Notification cold-start (killed → tap notification)
     notifee.getInitialNotification().then((initial) => {
       if (!initial) return;
@@ -84,10 +95,22 @@ export default function App() {
     };
   }, []);
 
+  async function handleOnboardingComplete() {
+    await markOnboardingComplete();
+    setShowOnboarding(false);
+  }
+
   return (
     <ThemeProvider>
       <StatusBar style="auto" />
-      <RootTabs />
+      {!ready ? (
+        // Brief blank during flag check (masked by native splash screen in practice)
+        <View style={{ flex: 1, backgroundColor: "#F5F1E8" }} />
+      ) : showOnboarding ? (
+        <OnboardingFlow onComplete={handleOnboardingComplete} />
+      ) : (
+        <RootTabs />
+      )}
     </ThemeProvider>
   );
 }

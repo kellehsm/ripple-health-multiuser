@@ -427,6 +427,7 @@ function MiniGlucoseChart({
   mealLoggedAt: string | null;
 }) {
   const { theme } = useTheme();
+  const ink = theme.ink;
   if (readings.length === 0) {
     return (
       <Text style={{ color: theme.textSoft, fontSize: 12 }}>
@@ -489,6 +490,7 @@ export function MealsScreen() {
   const [mealsError, setMealsError] = useState<string | null>(null);
 
   const [scannerVisible, setScannerVisible] = useState(false);
+  const [subScannerVisible, setSubScannerVisible] = useState(false);
   const [pendingFood, setPendingFood] = useState<PendingFood | null>(null);
   const [editingMealId, setEditingMealId] = useState<string | null>(null);
   const [frequentMeals, setFrequentMeals] = useState<FrequentMeal[]>([]);
@@ -957,22 +959,31 @@ export function MealsScreen() {
           </Pressable>
         </View>
 
-        <Pressable
-          onPress={function () {
-            setPendingSub({
-              name: "",
-              substance_type: subType,
-              caffeine_mg: null,
-              abv_percent: null,
-              volume_ml: null,
-              source_db: "manual",
-            });
-            setSubResults([]);
-          }}
-          style={[styles.secondaryBtn, { marginBottom: 4 }]}
-        >
-          <Text style={styles.secondaryBtnText}>+ ADD MANUALLY</Text>
-        </Pressable>
+        <View style={[styles.belowSearchRow, { marginBottom: 4 }]}>
+          <Pressable
+            onPress={function () { setSubScannerVisible(true); }}
+            style={styles.secondaryBtn}
+          >
+            <Ionicons name="barcode-outline" size={15} color={ink} />
+            <Text style={styles.secondaryBtnText}>SCAN BARCODE</Text>
+          </Pressable>
+          <Pressable
+            onPress={function () {
+              setPendingSub({
+                name: "",
+                substance_type: subType,
+                caffeine_mg: null,
+                abv_percent: null,
+                volume_ml: null,
+                source_db: "manual",
+              });
+              setSubResults([]);
+            }}
+            style={styles.secondaryBtn}
+          >
+            <Text style={styles.secondaryBtnText}>+ ADD MANUALLY</Text>
+          </Pressable>
+        </View>
 
         {subSearchError ? (
           <Text style={{ color: theme.coral.sub, fontSize: 12, marginTop: 4 }}>{subSearchError}</Text>
@@ -1148,6 +1159,22 @@ export function MealsScreen() {
         visible={scannerVisible}
         onClose={function () { setScannerVisible(false); }}
         onResult={function (food) { handleSelectFood(food); }}
+      />
+      <BarcodeScannerModal
+        visible={subScannerVisible}
+        onClose={function () { setSubScannerVisible(false); }}
+        mode={subType}
+        onSubstanceResult={function (substance) { handleSelectSubResult(substance); }}
+        onManual={function () {
+          setPendingSub({
+            name: "",
+            substance_type: subType,
+            caffeine_mg: null,
+            abv_percent: null,
+            volume_ml: null,
+            source_db: "manual",
+          });
+        }}
       />
     </ScrollView>
   );

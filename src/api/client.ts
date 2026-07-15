@@ -70,8 +70,8 @@ export const api = {
   searchFood: function (q: string) {
     return request("/food/search?q=" + encodeURIComponent(q));
   },
-  lookupBarcode: function (code: string) {
-    return request("/food/barcode/" + code);
+  lookupBarcode: function (code: string, type?: "caffeine" | "alcohol") {
+    return request("/food/barcode/" + code + (type ? "?type=" + type : ""));
   },
   meals: function (userId: string, date: string) {
     return request("/meals?user_id=" + userId + "&date=" + date);

@@ -21,50 +21,104 @@ type FoodResult = {
   source_db?: string;
 };
 
+type SubstanceResult = {
+  source_food_id: string;
+  name: string;
+  caffeine_mg?: number | null;
+  abv_percent?: number | null;
+  source_db: string;
+};
+
 type Props = {
   visible: boolean;
   onClose: () => void;
-  onResult: (food: FoodResult) => void;
+  mode?: "food" | "caffeine" | "alcohol";
+  onResult?: (food: FoodResult) => void;
+  onSubstanceResult?: (substance: SubstanceResult) => void;
+  onManual?: () => void;
 };
 
-export function BarcodeScannerModal({ visible, onClose, onResult }: Props) {
+const ACCENT: Record<string, string> = {
+  food: "#E8654E",
+  caffeine: "#E8820E",
+  alcohol: "#7B3FBF",
+};
+
+const HEADER_LABEL: Record<string, string> = {
+  food: "Scan food barcode",
+  caffeine: "Scan caffeine barcode",
+  alcohol: "Scan alcohol barcode",
+};
+
+export function BarcodeScannerModal({
+  visible,
+  onClose,
+  mode = "food",
+  onResult,
+  onSubstanceResult,
+  onManual,
+}: Props) {
   const { theme } = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
 
   function handleClose() {
     setScanned(false);
     setError(null);
+    setNotFound(false);
     onClose();
   }
 
   function handleScan({ data }: { data: string }) {
     setScanned(true);
     setError(null);
+    setNotFound(false);
     setLoading(true);
+
+    const lookupType = mode === "food" ? undefined : (mode as "caffeine" | "alcohol");
+
     api
-      .lookupBarcode(data)
+      .lookupBarcode(data, lookupType)
       .then(function (result: any) {
+        setLoading(false);
+
         if (result?.error) {
-          setError(result.error === "product not found"
-            ? "Product not found. Try searching by name instead."
-            : result.error);
-          setLoading(false);
+          const isNotFound = result.error === "product not found";
+          if (isNotFound && mode !== "food") {
+            setNotFound(true);
+          } else {
+            setError(isNotFound
+              ? "Product not found. Try searching by name instead."
+              : result.error);
+          }
           return;
         }
-        const food: FoodResult = {
-          source_food_id: result.source_food_id,
-          name: result.name,
-          carbs_g: result.carbs_g ?? null,
-          sugar_g: result.sugar_g ?? null,
-          calories: result.calories ?? null,
-          source_db: result.source_db,
-        };
-        setLoading(false);
-        handleClose();
-        onResult(food);
+
+        if (mode === "food") {
+          const food: FoodResult = {
+            source_food_id: result.source_food_id,
+            name: result.name,
+            carbs_g: result.carbs_g ?? null,
+            sugar_g: result.sugar_g ?? null,
+            calories: result.calories ?? null,
+            source_db: result.source_db,
+          };
+          handleClose();
+          onResult?.(food);
+        } else {
+          const substance: SubstanceResult = {
+            source_food_id: result.source_food_id,
+            name: result.name,
+            caffeine_mg: result.caffeine_mg ?? null,
+            abv_percent: result.abv_percent ?? null,
+            source_db: result.source_db,
+          };
+          handleClose();
+          onSubstanceResult?.(substance);
+        }
       })
       .catch(function (e: Error) {
         setError(e.message || "Barcode lookup failed");
@@ -75,14 +129,21 @@ export function BarcodeScannerModal({ visible, onClose, onResult }: Props) {
   function handleRetry() {
     setScanned(false);
     setError(null);
+    setNotFound(false);
   }
+
+  function handleManualEntry() {
+    handleClose();
+    onManual?.();
+  }
+
+  const accent = ACCENT[mode] ?? ACCENT.food;
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
       <View style={[styles.container, { backgroundColor: "#000" }]}>
-        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerText}>Scan barcode</Text>
+          <Text style={styles.headerText}>{HEADER_LABEL[mode]}</Text>
           <Pressable onPress={handleClose} hitSlop={12}>
             <Ionicons name="close" size={24} color="#fff" />
           </Pressable>
@@ -95,7 +156,7 @@ export function BarcodeScannerModal({ visible, onClose, onResult }: Props) {
         ) : !permission.granted ? (
           <View style={styles.center}>
             <Text style={styles.permText}>Camera access is required to scan barcodes.</Text>
-            <Pressable style={[styles.btn, { backgroundColor: theme.amber.sub }]} onPress={requestPermission}>
+            <Pressable style={[styles.btn, { backgroundColor: accent }]} onPress={requestPermission}>
               <Text style={styles.btnText}>Grant permission</Text>
             </Pressable>
           </View>
@@ -110,22 +171,40 @@ export function BarcodeScannerModal({ visible, onClose, onResult }: Props) {
               onBarcodeScanned={scanned ? undefined : handleScan}
             />
 
-            {/* Viewfinder overlay */}
             <View style={styles.overlay} pointerEvents="none">
-              <View style={styles.finder} />
+              <View style={[styles.finder, { borderColor: accent }]} />
             </View>
 
-            {/* Status area */}
             <View style={styles.statusArea}>
               {loading ? (
                 <>
                   <ActivityIndicator color="#fff" />
                   <Text style={styles.statusText}>Looking up product…</Text>
                 </>
+              ) : notFound ? (
+                <>
+                  <Text style={[styles.statusText, { color: "#f87171" }]}>
+                    {mode === "caffeine"
+                      ? "No caffeine data found for this product."
+                      : "No alcohol data found for this product."}
+                  </Text>
+                  <Pressable
+                    style={[styles.btn, { backgroundColor: accent, marginTop: 12 }]}
+                    onPress={handleManualEntry}
+                  >
+                    <Text style={styles.btnText}>Enter manually</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.btn, { backgroundColor: "#333", marginTop: 8 }]}
+                    onPress={handleRetry}
+                  >
+                    <Text style={styles.btnText}>Scan again</Text>
+                  </Pressable>
+                </>
               ) : error ? (
                 <>
                   <Text style={[styles.statusText, { color: "#f87171" }]}>{error}</Text>
-                  <Pressable style={[styles.btn, { backgroundColor: theme.amber.sub, marginTop: 12 }]} onPress={handleRetry}>
+                  <Pressable style={[styles.btn, { backgroundColor: accent, marginTop: 12 }]} onPress={handleRetry}>
                     <Text style={styles.btnText}>Scan again</Text>
                   </Pressable>
                 </>
@@ -162,7 +241,6 @@ const styles = StyleSheet.create({
     width: 260,
     height: 160,
     borderWidth: 2,
-    borderColor: "#fff",
     borderRadius: 12,
     opacity: 0.6,
   },
@@ -170,7 +248,7 @@ const styles = StyleSheet.create({
     paddingVertical: 28,
     paddingHorizontal: 24,
     alignItems: "center",
-    minHeight: 100,
+    minHeight: 120,
   },
   statusText: { color: "#fff", fontSize: 14, textAlign: "center", marginTop: 10 },
   permText: { color: "#fff", fontSize: 14, textAlign: "center", marginBottom: 20 },
