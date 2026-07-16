@@ -75,22 +75,40 @@ function TabNavigator() {
         component={OverviewScreen}
         options={({ navigation }) => ({
           headerRight: () => (
-            <View style={{ flexDirection: "row", marginRight: 12, alignItems: "center" }}>
-              <Pressable onPress={() => (navigation as any).getParent()?.navigate("Insights")} style={{ padding: 8 }}>
-                <Text style={{ fontSize: 19 }}>💡</Text>
-              </Pressable>
-              <View style={{ width: 1, height: 22, backgroundColor: ink }} />
-              <Pressable onPress={() => (navigation as any).getParent()?.navigate("Trends")} style={{ padding: 8 }}>
-                <Text style={{ fontSize: 19 }}>📈</Text>
-              </Pressable>
-              <View style={{ width: 1, height: 22, backgroundColor: ink }} />
-              <Pressable onPress={() => (navigation as any).getParent()?.navigate("History")} style={{ padding: 8 }}>
-                <Text style={{ fontSize: 19 }}>🔍</Text>
-              </Pressable>
-              <View style={{ width: 1, height: 22, backgroundColor: ink }} />
-              <Pressable onPress={() => (navigation as any).getParent()?.navigate("Settings")} style={{ padding: 8 }}>
-                <Text style={{ fontSize: 19 }}>⚙️</Text>
-              </Pressable>
+            <View
+              style={{
+                flexDirection: "row",
+                marginRight: 12,
+                borderWidth: 2,
+                borderColor: ink,
+                borderRadius: 12,
+                backgroundColor: theme.card,
+                shadowColor: ink,
+                shadowOffset: { width: 4, height: 4 },
+                shadowOpacity: 1,
+                shadowRadius: 0,
+                elevation: 4,
+              }}
+            >
+              {([
+                { emoji: "💡", label: "INSIGHT", screen: "Insights" },
+                { emoji: "📈", label: "TRENDS", screen: "Trends" },
+                { emoji: "🔍", label: "SEARCH", screen: "History" },
+                { emoji: "⚙️", label: "SETTINGS", screen: "Settings" },
+              ] as const).map((btn, i) => (
+                <React.Fragment key={btn.label}>
+                  {i > 0 && <View style={{ width: 2, backgroundColor: ink }} />}
+                  <Pressable
+                    onPress={() => (navigation as any).getParent()?.navigate(btn.screen)}
+                    style={{ alignItems: "center", justifyContent: "center", paddingHorizontal: 10, paddingVertical: 6 }}
+                  >
+                    <Text style={{ fontSize: 18 }}>{btn.emoji}</Text>
+                    <Text style={{ fontSize: 8, fontWeight: "700", letterSpacing: 0.5, color: ink, marginTop: 2 }}>
+                      {btn.label}
+                    </Text>
+                  </Pressable>
+                </React.Fragment>
+              ))}
             </View>
           ),
           tabBarIcon: () => null,
