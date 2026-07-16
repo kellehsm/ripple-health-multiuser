@@ -10,13 +10,17 @@ import {
   Animated,
   Dimensions,
   RefreshControl,
+  PanResponder,
 } from "react-native";
 import * as Haptics from "expo-haptics";
-import Svg, { Rect, Text as SvgText, Polyline, Circle } from "react-native-svg";
+import Svg, { Rect, Text as SvgText, Polyline, Circle, Line as SvgLine } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
+import { DailySummaryCard, type DailySummaryData } from "../components/DailySummaryCard";
+import { InsightCard, type Insight } from "../components/InsightCard";
+import { toast, Msg } from "../lib/toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -307,6 +311,9 @@ export function OverviewScreen() {
   const [waterCount, setWaterCount] = useState<number>(0);
   const [todayMeals, setTodayMeals] = useState<any[]>([]);
 
+  const [dailySummary, setDailySummary] = useState<DailySummaryData | null>(null);
+  const [topInsight, setTopInsight] = useState<Insight | null>(null);
+
   // Mood picker state
   const [activePicker, setActivePicker] = useState<Bucket | "moment" | null>(null);
   const [pendingLabel, setPendingLabel] = useState<string | null>(null);
@@ -316,11 +323,36 @@ export function OverviewScreen() {
   // Correlation toggle
   const [correlation, setCorrelation] = useState<"sleep" | "spend">("sleep");
 
+  // Glucose chart scrub
+  const [scrub, setScrub] = useState<{ x: number; mgDl: number; time: number } | null>(null);
+  const scrubData = useRef({ windowStart: 0, windowEnd: 1, minVal: 60, maxVal: 200, dayGlucose: [] as GlucoseReading[] });
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => scrubData.current.dayGlucose.length > 0,
+      onMoveShouldSetPanResponder: () => scrubData.current.dayGlucose.length > 0,
+      onPanResponderGrant: (evt) => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        updateScrub(evt.nativeEvent.locationX);
+      },
+      onPanResponderMove: (evt) => updateScrub(evt.nativeEvent.locationX),
+      onPanResponderRelease: () => setScrub(null),
+      onPanResponderTerminate: () => setScrub(null),
+    })
+  ).current;
+
+  function updateScrub(touchX: number) {
+    const { windowStart, windowEnd, minVal, maxVal, dayGlucose } = scrubData.current;
+    const x = Math.max(PAD_L, Math.min(CHART_W, touchX));
+    const t = windowStart + ((x - PAD_L) / (CHART_W - PAD_L)) * (windowEnd - windowStart);
+    const raw = interpolateGlucose(dayGlucose, t);
+    if (raw !== null) setScrub({ x, mgDl: Math.round(raw), time: t });
+  }
+
   const load = useCallback(async function () {
     try {
       const today = new Date().toISOString().split("T")[0];
 
-      const [entries, weekly, pattern, dig, day, streakData, glucSt, meals, steps, sleep] =
+      const [entries, weekly, pattern, dig, day, streakData, glucSt, meals, steps, sleep, dse, insightsList] =
         await Promise.all([
           api.journalToday(),
           api.weeklyMoodSummary(),
@@ -332,6 +364,8 @@ export function OverviewScreen() {
           api.meals(today).catch(() => []),
           api.stepsToday(today).catch(() => null),
           api.sleepStats().catch(() => null),
+          api.dailySummary(today).catch(() => null),
+          api.getInsights().catch(() => null),
         ]);
 
       // Water count (sequential — needs metricId)
@@ -359,13 +393,16 @@ export function OverviewScreen() {
       setStepsCount(steps?.steps ?? null);
       setSleepStats(sleep ?? null);
       setWaterCount(wCount);
+      setDailySummary(dse ?? null);
+      const activeInsights: Insight[] = Array.isArray(insightsList) ? insightsList : [];
+      setTopInsight(activeInsights[0] ?? null);
 
       if (day) {
         setDayGlucose(Array.isArray(day.glucose) ? day.glucose : []);
         setDayEvents(Array.isArray(day.events) ? day.events : []);
       }
-    } catch (e) {
-      console.error("Overview load failed", e);
+    } catch {
+      toast(Msg.loadData, "error");
     } finally {
       setLoading(false);
     }
@@ -405,9 +442,11 @@ export function OverviewScreen() {
       setActivePicker(null);
       setPendingLabel(null);
       setPendingNote("");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      toast("Check-in saved.");
       await load();
-    } catch (e) {
-      console.error("Failed to log mood", e);
+    } catch {
+      toast(Msg.logMood, "error");
     } finally {
       setSubmitting(false);
     }
@@ -433,6 +472,7 @@ export function OverviewScreen() {
   const dayTimes = dayGlucose.map((r) => new Date(r.recorded_at).getTime());
   const windowStart = dayTimes.length ? Math.min(...dayTimes) : Date.now() - 8 * 3600000;
   const windowEnd = dayTimes.length ? Math.max(Math.max(...dayTimes), Date.now()) : Date.now();
+  scrubData.current = { windowStart, windowEnd, minVal, maxVal, dayGlucose };
   const glucosePoints = dayGlucose
     .map(r => eventX(new Date(r.recorded_at).getTime(), windowStart, windowEnd) + "," + glucoseY(Number(r.mg_dl), minVal, maxVal))
     .join(" ");
@@ -502,18 +542,10 @@ export function OverviewScreen() {
       value: glucoseStatus?.hasData && glucoseStatus.mg_dl != null
         ? String(glucoseStatus.mg_dl) + (glucoseStatus.arrow ? " " + glucoseStatus.arrow : "")
         : "--",
-      sub: "mg/dL",
+      sub: tir !== null ? tir + "% in range" : "mg/dL",
       color: theme.berry.solid,
       icon: "pulse",
       empty: !glucoseStatus?.hasData,
-    },
-    {
-      label: "IN RANGE",
-      value: tir !== null ? tir + "%" : "--",
-      sub: "today",
-      color: tir !== null ? (tir >= 70 ? theme.teal.solid : theme.coral.solid) : theme.textSoft,
-      icon: "stats-chart",
-      empty: tir === null,
     },
     {
       label: "STEPS",
@@ -583,24 +615,19 @@ export function OverviewScreen() {
         ) : null}
       </View>
 
-      {/* ── 2. Metric chips (horizontal scroll) ── */}
+      {/* ── 2. Metric chips (3×2 grid) ── */}
       {loading ? (
-        <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 2 }}>
-          {[1,2,3,4].map(i => <SkeletonBox key={i} style={{ width: 100, height: 84 }} />)}
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          {[1,2,3,4,5,6].map(i => <SkeletonBox key={i} style={{ width: "31%", height: 84 }} />)}
         </View>
       ) : (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 8, paddingRight: 4 }}
-          accessibilityLabel="Key metrics"
-        >
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }} accessibilityLabel="Key metrics">
           {chips.map((chip) => (
             <View
               key={chip.label}
               style={[
                 styles.metricChip,
-                { borderColor: ink, opacity: chip.empty ? 0.55 : 1 },
+                { width: "31%", borderColor: ink, opacity: chip.empty ? 0.55 : 1 },
               ]}
               accessibilityLabel={chip.label + ": " + chip.value}
             >
@@ -618,7 +645,7 @@ export function OverviewScreen() {
               <Text style={[styles.chipLabel, { color: theme.textSoft }]}>{chip.label}</Text>
             </View>
           ))}
-        </ScrollView>
+        </View>
       )}
 
       {/* ── Trends nav card ── */}
@@ -639,7 +666,25 @@ export function OverviewScreen() {
         </View>
       </Pressable>
 
-      {/* ── 3. Mood check-in ── */}
+      {/* ── 3. Daily Summary Card ── */}
+      {dailySummary && (
+        <DailySummaryCard data={dailySummary} />
+      )}
+
+      {/* ── 3b. Top Insight preview ── */}
+      {topInsight && (
+        <View>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <Text style={{ fontSize: 10, fontWeight: "800", letterSpacing: 0.8, color: theme.textSoft }}>TOP INSIGHT</Text>
+            <Pressable onPress={() => navigation.getParent()?.navigate("Insights")} accessibilityRole="button">
+              <Text style={{ fontSize: 11, color: theme.teal.solid, fontWeight: "700" }}>See all →</Text>
+            </Pressable>
+          </View>
+          <InsightCard insight={topInsight} compact onDismiss={undefined} />
+        </View>
+      )}
+
+      {/* ── 4. Mood check-in ── */}
       <View style={[styles.card, { backgroundColor: theme.coral.tint }]}>
         <View style={styles.cardTitleRow}>
           <Text style={[styles.cardTitle, { color: theme.coral.fg }]}>Mood check-in</Text>
@@ -776,38 +821,57 @@ export function OverviewScreen() {
           <SkeletonBox style={{ height: CHART_H, marginBottom: 8 }} />
         ) : dayGlucose.length > 0 ? (
           <>
-            <Svg width={CHART_W} height={CHART_H} style={{ marginBottom: 6 }} accessibilityLabel="Glucose chart">
-              <Rect
-                x={PAD_L} y={highBandY}
-                width={CHART_W - PAD_L} height={lowBandY - highBandY}
-                fill={mode === "dark" ? theme.berry.sub : theme.berry.tint}
-                opacity={mode === "dark" ? 0.25 : 0.4}
-                stroke={ink} strokeWidth={1} strokeDasharray="5,5"
-              />
-              <SvgText x={PAD_L - 3} y={highBandY + 4} fontSize={8} fill={theme.textSoft} textAnchor="end">180</SvgText>
-              <SvgText x={PAD_L - 3} y={lowBandY + 4} fontSize={8} fill={theme.textSoft} textAnchor="end">70</SvgText>
-              {glucosePoints ? (
-                <>
-                  <Polyline points={glucosePoints} fill="none" stroke={ink} strokeWidth={3.5} />
-                  <Polyline points={glucosePoints} fill="none" stroke={theme.berry.bar} strokeWidth={2} />
-                </>
-              ) : null}
-              {dayEvents.map(function (ev, i) {
-                const t = new Date(ev.time).getTime();
-                if (t < windowStart || t > windowEnd) return null;
-                const x = eventX(t, windowStart, windowEnd);
-                const gVal = interpolateGlucose(dayGlucose, t);
-                const y = gVal !== null ? glucoseY(gVal, minVal, maxVal) : PAD_T + usableH;
-                const markerText = ev.type === "spend" ? "$" : ev.type === "mood" && ev.mood_score ? SCORE_EMOJI[ev.mood_score] ?? "·" : ev.type === "mood" ? "·" : "M";
-                const markerBg = ev.type === "meal" ? theme.coral.tint : ev.type === "spend" ? theme.purple.tint : theme.violet.tint;
-                return (
-                  <React.Fragment key={i}>
-                    <Circle cx={x} cy={y} r={9} fill={markerBg} stroke={ink} strokeWidth={2} />
-                    <SvgText x={x} y={y + 4} fontSize={8} fill={ink} textAnchor="middle" fontWeight="bold">{markerText}</SvgText>
-                  </React.Fragment>
-                );
-              })}
-            </Svg>
+            <View {...panResponder.panHandlers} style={{ marginBottom: 6 }}>
+              <Svg width={CHART_W} height={CHART_H} accessibilityLabel="Glucose chart">
+                <Rect
+                  x={PAD_L} y={highBandY}
+                  width={CHART_W - PAD_L} height={lowBandY - highBandY}
+                  fill={mode === "dark" ? theme.berry.sub : theme.berry.tint}
+                  opacity={mode === "dark" ? 0.25 : 0.4}
+                  stroke={ink} strokeWidth={1} strokeDasharray="5,5"
+                />
+                <SvgText x={PAD_L - 3} y={highBandY + 4} fontSize={8} fill={theme.textSoft} textAnchor="end">180</SvgText>
+                <SvgText x={PAD_L - 3} y={lowBandY + 4} fontSize={8} fill={theme.textSoft} textAnchor="end">70</SvgText>
+                {glucosePoints ? (
+                  <>
+                    <Polyline points={glucosePoints} fill="none" stroke={ink} strokeWidth={3.5} />
+                    <Polyline points={glucosePoints} fill="none" stroke={theme.berry.bar} strokeWidth={2} />
+                  </>
+                ) : null}
+                {dayEvents.map(function (ev, i) {
+                  const t = new Date(ev.time).getTime();
+                  if (t < windowStart || t > windowEnd) return null;
+                  const x = eventX(t, windowStart, windowEnd);
+                  const gVal = interpolateGlucose(dayGlucose, t);
+                  const y = gVal !== null ? glucoseY(gVal, minVal, maxVal) : PAD_T + usableH;
+                  const markerText = ev.type === "spend" ? "$" : ev.type === "mood" && ev.mood_score ? SCORE_EMOJI[ev.mood_score] ?? "·" : ev.type === "mood" ? "·" : "M";
+                  const markerBg = ev.type === "meal" ? theme.coral.tint : ev.type === "spend" ? theme.purple.tint : theme.violet.tint;
+                  return (
+                    <React.Fragment key={i}>
+                      <Circle cx={x} cy={y} r={9} fill={markerBg} stroke={ink} strokeWidth={2} />
+                      <SvgText x={x} y={y + 4} fontSize={8} fill={ink} textAnchor="middle" fontWeight="bold">{markerText}</SvgText>
+                    </React.Fragment>
+                  );
+                })}
+                {scrub && (() => {
+                  const cy = glucoseY(scrub.mgDl, minVal, maxVal);
+                  const tipW = 68;
+                  const tipH = 30;
+                  const tipX = scrub.x + 10 + tipW > CHART_W ? scrub.x - tipW - 10 : scrub.x + 10;
+                  const tipY = PAD_T;
+                  const timeStr = new Date(scrub.time).getHours().toString().padStart(2, "0") + ":" + new Date(scrub.time).getMinutes().toString().padStart(2, "0");
+                  return (
+                    <>
+                      <SvgLine x1={scrub.x} y1={PAD_T} x2={scrub.x} y2={CHART_H - PAD_B} stroke={ink} strokeWidth={1.5} strokeDasharray="4,3" opacity={0.6} />
+                      <Circle cx={scrub.x} cy={cy} r={5} fill={theme.berry.solid} stroke={ink} strokeWidth={2} />
+                      <Rect x={tipX} y={tipY} width={tipW} height={tipH} rx={6} fill={theme.card} stroke={ink} strokeWidth={1.5} />
+                      <SvgText x={tipX + tipW / 2} y={tipY + 11} fontSize={11} fontWeight="800" fill={ink} textAnchor="middle">{scrub.mgDl} mg/dL</SvgText>
+                      <SvgText x={tipX + tipW / 2} y={tipY + 24} fontSize={9} fill={theme.textSoft} textAnchor="middle">{timeStr}</SvgText>
+                    </>
+                  );
+                })()}
+              </Svg>
+            </View>
             <View style={[styles.legendRow, { marginBottom: 12 }]}>
               {[
                 { color: theme.berry.bar, label: "Glucose" },
@@ -1053,7 +1117,6 @@ function makeStyles(ink: string, card: string) {
     streakPillText: { color: "#fff", fontSize: 11, fontWeight: "800", letterSpacing: 0.5 },
 
     metricChip: {
-      width: 100,
       borderRadius: 12,
       borderWidth: 2,
       padding: 10,

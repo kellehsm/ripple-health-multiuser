@@ -13,10 +13,15 @@ import { getToken, clearToken, registerLogoutHandler } from "./src/lib/auth";
 
 type AppState = "loading" | "login" | "onboarding" | "app";
 
-function navigateWhenReady(name: "Meals" | "Health") {
+type TabName = "Meals" | "Health" | "Home" | "Life" | "Finance";
+
+function navigateWhenReady(name: TabName, params?: Record<string, unknown>) {
   const attempt = () => {
     if (navigationRef.isReady()) {
-      navigationRef.dispatch(CommonActions.navigate({ name: "Tabs", params: { screen: name } }));
+      const screenParams = params ? { ...params } : undefined;
+      navigationRef.dispatch(
+        CommonActions.navigate({ name: "Tabs", params: { screen: name, params: screenParams } })
+      );
       return true;
     }
     return false;
@@ -53,6 +58,44 @@ function handleUrl(url: string | null) {
   }
 }
 
+function handleNotificationAction(data: any, actionId?: string) {
+  const target = data?.target;
+  const action = data?.action;
+
+  if (actionId === "log-water") {
+    logWaterFromShortcut();
+    return;
+  }
+  if (actionId === "log-meal" || target === "meals") {
+    navigateWhenReady("Meals", action === "add" ? { openAddMeal: true } : undefined);
+    return;
+  }
+  if (actionId === "log-mood" || target === "home") {
+    navigateWhenReady("Home");
+    return;
+  }
+  if (actionId === "review-today") {
+    navigateWhenReady("Home");
+    return;
+  }
+  if (actionId === "log-book" || target === "life") {
+    navigateWhenReady("Life");
+    return;
+  }
+  if (actionId === "log-hobby") {
+    navigateWhenReady("Life");
+    return;
+  }
+  if (actionId === "log-spend" || target === "finance") {
+    navigateWhenReady("Finance");
+    return;
+  }
+  if (target === "health") {
+    navigateWhenReady("Health");
+  }
+}
+
+// Keep for backward compat with existing references
 function shouldGoToMeals(data: any, actionId?: string): boolean {
   return data?.target === "meals" || actionId === "log-meal";
 }
@@ -69,9 +112,7 @@ export default function App() {
     // Notification cold-start
     notifee.getInitialNotification().then((initial) => {
       if (!initial) return;
-      if (shouldGoToMeals(initial.notification?.data, initial.pressAction?.id)) {
-        navigateWhenReady("Meals");
-      }
+      handleNotificationAction(initial.notification?.data, initial.pressAction?.id);
     });
 
     // Deep-link cold-start
@@ -79,9 +120,7 @@ export default function App() {
 
     const unsubscribeNotif = notifee.onForegroundEvent(({ type, detail }) => {
       if (type === EventType.PRESS || type === EventType.ACTION_PRESS) {
-        if (shouldGoToMeals(detail.notification?.data, detail.pressAction?.id)) {
-          navigateWhenReady("Meals");
-        }
+        handleNotificationAction(detail.notification?.data, detail.pressAction?.id);
       }
     });
 
@@ -103,9 +142,16 @@ export default function App() {
       const user = await api.me();
       if (!user) throw new Error("no user");
       setAppState(user.onboarding_completed ? "app" : "onboarding");
-    } catch {
-      await clearToken();
-      setAppState("login");
+    } catch (err: any) {
+      // Only clear the token on actual auth rejection (401/403). Network errors or
+      // server hiccups should not log the user out — just trust the stored token.
+      const msg: string = err?.message ?? "";
+      if (msg.includes("API error 401") || msg.includes("API error 403")) {
+        await clearToken();
+        setAppState("login");
+      } else {
+        setAppState("app");
+      }
     }
   }
 

@@ -8,6 +8,9 @@ import {
   checkEveningCheckin,
   checkWaterReminder,
   checkStreakProtection,
+  checkMoodReminder,
+  checkBookReminder,
+  checkHobbyReminder,
 } from "./smartNotifications";
 
 const CHANNEL_ID = "ripple-wellness-live";
@@ -106,6 +109,9 @@ async function syncAndUpdateNotification(notificationId: string) {
     await checkEveningCheckin(settings, now);
     await checkWaterReminder(settings, now);
     await checkStreakProtection(settings, now);
+    await checkMoodReminder(settings, now);
+    await checkBookReminder(settings, now);
+    await checkHobbyReminder(settings, now);
   } catch (_) {}
 }
 

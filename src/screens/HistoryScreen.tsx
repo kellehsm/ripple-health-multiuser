@@ -5,6 +5,7 @@ import {
 } from "react-native";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
+import { EmptyState } from "../components/EmptyState";
 
 
 type FilterMode = "glucose" | "meals" | "mood" | "spending";
@@ -16,6 +17,8 @@ export function HistoryScreen() {
   const styles = useMemo(() => makeStyles(ink, card), [ink, card]);
   const [mode, setMode] = useState<FilterMode>("glucose");
   const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
   const [results, setResults] = useState<any[]>([]);
 
   const [glThreshold, setGlThreshold] = useState("180");
@@ -33,6 +36,8 @@ export function HistoryScreen() {
   async function handleSearch() {
     setLoading(true);
     setResults([]);
+    setSearchError(null);
+    setHasSearched(true);
     try {
       let data: any[] = [];
       if (mode === "glucose") {
@@ -57,8 +62,8 @@ export function HistoryScreen() {
         });
       }
       setResults(data);
-    } catch (e) {
-      console.error("Search failed", e);
+    } catch {
+      setSearchError("Search couldn't complete. Check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -197,6 +202,20 @@ export function HistoryScreen() {
           }
         </Pressable>
       </View>
+
+      {searchError ? (
+        <View style={[styles.card, { backgroundColor: theme.coral.tint }]}>
+          <Text style={{ color: theme.coral.fg, fontSize: 13 }}>{searchError}</Text>
+        </View>
+      ) : null}
+
+      {!loading && hasSearched && !searchError && results.length === 0 ? (
+        <EmptyState
+          emoji="🔍"
+          title="No results found"
+          message={`No ${modeLabel[mode].toLowerCase()} entries match your filters. Try adjusting the search criteria.`}
+        />
+      ) : null}
 
       {results.length > 0 ? (
         <View style={styles.card}>

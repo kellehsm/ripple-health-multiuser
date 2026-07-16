@@ -24,7 +24,7 @@ import { useTheme } from "../theme/ThemeContext";
 import { ThemePickerModal } from "./ThemePickerModal";
 import { PALETTES } from "../theme/palettes";
 import { api } from "../api/client";
-import { logout } from "../lib/auth";
+import { logout, getUserId } from "../lib/auth";
 
 import { GOOGLE_CLIENT_ID } from "../api/client";
 import { requestHealthPermissions, syncHealthData } from "../lib/healthConnect";
@@ -319,6 +319,11 @@ export function SettingsScreen() {
     }
     setDriveConnecting(true);
     try {
+      const userId = await getUserId();
+      if (!userId) {
+        Alert.alert("Error", "Could not determine user ID. Please log out and back in.");
+        return;
+      }
       const redirectUri = "https://app.kels.gg/auth/google/callback";
       const scope = "https://www.googleapis.com/auth/drive.file";
       const authUrl =
@@ -330,6 +335,7 @@ export function SettingsScreen() {
           scope,
           access_type: "offline",
           prompt: "consent",
+          state: userId,
         }).toString();
 
       const result = await WebBrowser.openAuthSessionAsync(authUrl, "wellnessfresh://oauth");

@@ -15,6 +15,7 @@ import { StepsDetailScreen } from "../screens/StepsDetailScreen";
 import { HeartRateDetailScreen } from "../screens/HeartRateDetailScreen";
 import { TrendsScreen } from "../screens/TrendsScreen";
 import { CompletedScreen } from "../screens/CompletedScreen";
+import { InsightsScreen } from "../screens/InsightsScreen";
 import { useTheme } from "../theme/ThemeContext";
 import { navigationRef } from "./navigationRef";
 
@@ -75,6 +76,10 @@ function TabNavigator() {
         options={({ navigation }) => ({
           headerRight: () => (
             <View style={{ flexDirection: "row", marginRight: 12, alignItems: "center" }}>
+              <Pressable onPress={() => (navigation as any).getParent()?.navigate("Insights")} style={{ padding: 8 }}>
+                <Text style={{ fontSize: 19 }}>💡</Text>
+              </Pressable>
+              <View style={{ width: 1, height: 22, backgroundColor: ink }} />
               <Pressable onPress={() => (navigation as any).getParent()?.navigate("Trends")} style={{ padding: 8 }}>
                 <Text style={{ fontSize: 19 }}>📈</Text>
               </Pressable>
@@ -172,6 +177,7 @@ export function RootTabs() {
         <Stack.Screen name="HeartRateDetail" component={HeartRateDetailScreen} options={{ title: "Heart Rate" }} />
         <Stack.Screen name="Trends" component={TrendsScreen} options={{ title: "Trends & Insights" }} />
         <Stack.Screen name="Completed" component={CompletedScreen} options={{ title: "Completed" }} />
+        <Stack.Screen name="Insights" component={InsightsScreen} options={{ title: "Insights" }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

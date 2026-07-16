@@ -19,6 +19,7 @@ import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 
 import { BarcodeScannerModal } from "../components/BarcodeScannerModal";
+import { toast, Msg } from "../lib/toast";
 
 // ── Substance types ───────────────────────────────────────────────────────────
 
@@ -75,11 +76,15 @@ function CaffeineForm({
   const styles = useMemo(() => makeStyles(ink, card), [ink, card]);
   const [name, setName] = useState(initial.name);
   const [mg, setMg] = useState(initial.caffeine_mg != null ? String(initial.caffeine_mg) : "");
+  const [nameErr, setNameErr] = useState("");
+  const [mgErr, setMgErr] = useState("");
 
   function handleSave() {
-    if (!name.trim()) { Alert.alert("Name required"); return; }
+    let valid = true;
+    if (!name.trim()) { setNameErr("Drink name is required."); valid = false; } else setNameErr("");
     const parsed = parseFloat(mg);
-    if (!mg.trim() || isNaN(parsed)) { Alert.alert("Enter caffeine in mg"); return; }
+    if (!mg.trim() || isNaN(parsed) || parsed <= 0) { setMgErr("Enter caffeine amount in mg (e.g. 95)."); valid = false; } else setMgErr("");
+    if (!valid) return;
     onSave({ ...initial, name: name.trim(), caffeine_mg: parsed });
   }
 
@@ -87,21 +92,23 @@ function CaffeineForm({
     <View style={styles.editForm}>
       <TextInput
         value={name}
-        onChangeText={setName}
+        onChangeText={v => { setName(v); setNameErr(""); }}
         placeholder="Drink name"
         placeholderTextColor={theme.textSoft}
-        style={[styles.textInput, { color: theme.textStrong }]}
+        style={[styles.textInput, { color: theme.textStrong, borderColor: nameErr ? theme.coral.solid : ink }]}
       />
+      {nameErr ? <Text style={{ color: theme.coral.solid, fontSize: 11, marginTop: -4 }}>{nameErr}</Text> : null}
       <View style={styles.macroInputRow}>
         <TextInput
           value={mg}
-          onChangeText={setMg}
+          onChangeText={v => { setMg(v); setMgErr(""); }}
           placeholder="mg"
           placeholderTextColor={theme.textSoft}
           keyboardType="decimal-pad"
-          style={[styles.macroInput, { color: theme.textStrong, flex: 1 }]}
+          style={[styles.macroInput, { color: theme.textStrong, flex: 1, borderColor: mgErr ? theme.coral.solid : ink }]}
         />
       </View>
+      {mgErr ? <Text style={{ color: theme.coral.solid, fontSize: 11, marginTop: -4 }}>{mgErr}</Text> : null}
       <View style={styles.macroInputRow}>
         <Text style={[styles.macroLabel, { color: ink }]}>CAFFEINE (mg)</Text>
       </View>
@@ -141,13 +148,18 @@ function AlcoholForm({
   const [name, setName] = useState(initial.name);
   const [abv, setAbv] = useState(initial.abv_percent != null ? String(initial.abv_percent) : "");
   const [vol, setVol] = useState(initial.volume_ml != null ? String(initial.volume_ml) : "");
+  const [nameErr, setNameErr] = useState("");
+  const [abvErr, setAbvErr] = useState("");
+  const [volErr, setVolErr] = useState("");
 
   function handleSave() {
-    if (!name.trim()) { Alert.alert("Name required"); return; }
+    let valid = true;
+    if (!name.trim()) { setNameErr("Drink name is required."); valid = false; } else setNameErr("");
     const pAbv = parseFloat(abv);
     const pVol = parseFloat(vol);
-    if (!abv.trim() || isNaN(pAbv)) { Alert.alert("Enter ABV %"); return; }
-    if (!vol.trim() || isNaN(pVol)) { Alert.alert("Enter volume in mL"); return; }
+    if (!abv.trim() || isNaN(pAbv) || pAbv <= 0) { setAbvErr("Enter the ABV % (e.g. 5)."); valid = false; } else setAbvErr("");
+    if (!vol.trim() || isNaN(pVol) || pVol <= 0) { setVolErr("Enter the volume in mL (e.g. 355)."); valid = false; } else setVolErr("");
+    if (!valid) return;
     onSave({ ...initial, name: name.trim(), abv_percent: pAbv, volume_ml: pVol });
   }
 
@@ -161,32 +173,39 @@ function AlcoholForm({
     <View style={styles.editForm}>
       <TextInput
         value={name}
-        onChangeText={setName}
+        onChangeText={v => { setName(v); setNameErr(""); }}
         placeholder="Drink name"
         placeholderTextColor={theme.textSoft}
-        style={[styles.textInput, { color: theme.textStrong }]}
+        style={[styles.textInput, { color: theme.textStrong, borderColor: nameErr ? theme.coral.solid : ink }]}
       />
+      {nameErr ? <Text style={{ color: theme.coral.solid, fontSize: 11, marginTop: -4 }}>{nameErr}</Text> : null}
       <View style={styles.macroInputRow}>
         <TextInput
           value={abv}
-          onChangeText={setAbv}
+          onChangeText={v => { setAbv(v); setAbvErr(""); }}
           placeholder="%"
           placeholderTextColor={theme.textSoft}
           keyboardType="decimal-pad"
-          style={[styles.macroInput, { color: theme.textStrong }]}
+          style={[styles.macroInput, { color: theme.textStrong, borderColor: abvErr ? theme.coral.solid : ink }]}
         />
         <TextInput
           value={vol}
-          onChangeText={setVol}
+          onChangeText={v => { setVol(v); setVolErr(""); }}
           placeholder="mL"
           placeholderTextColor={theme.textSoft}
           keyboardType="decimal-pad"
-          style={[styles.macroInput, { color: theme.textStrong }]}
+          style={[styles.macroInput, { color: theme.textStrong, borderColor: volErr ? theme.coral.solid : ink }]}
         />
       </View>
       <View style={styles.macroInputRow}>
-        <Text style={[styles.macroLabel, { color: ink }]}>ABV %</Text>
-        <Text style={[styles.macroLabel, { color: ink }]}>VOLUME (mL)</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.macroLabel, { color: ink }]}>ABV %</Text>
+          {abvErr ? <Text style={{ color: theme.coral.solid, fontSize: 10 }}>{abvErr}</Text> : null}
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.macroLabel, { color: ink }]}>VOLUME (mL)</Text>
+          {volErr ? <Text style={{ color: theme.coral.solid, fontSize: 10 }}>{volErr}</Text> : null}
+        </View>
       </View>
       {previewDrinks != null ? (
         <Text style={{ color: theme.textSoft, fontSize: 11 }}>
@@ -353,6 +372,8 @@ function MacroEditForm({
   const [carbs, setCarbs] = useState(initial.carbs_g != null ? String(initial.carbs_g) : "");
   const [sugar, setSugar] = useState(initial.sugar_g != null ? String(initial.sugar_g) : "");
   const [cals, setCals] = useState(initial.calories != null ? String(initial.calories) : "");
+  const [nameErr, setNameErr] = useState("");
+  const [macroErr, setMacroErr] = useState("");
 
   function parseNum(s: string): number | null {
     const t = s.trim();
@@ -362,10 +383,13 @@ function MacroEditForm({
   }
 
   function handleSave() {
-    if (!name.trim()) { Alert.alert("Name required", "Please enter a meal name."); return; }
-    if (carbs.trim() && isNaN(parseFloat(carbs))) { Alert.alert("Invalid value", "Carbs must be a number or blank."); return; }
-    if (sugar.trim() && isNaN(parseFloat(sugar))) { Alert.alert("Invalid value", "Sugar must be a number or blank."); return; }
-    if (cals.trim() && isNaN(parseFloat(cals))) { Alert.alert("Invalid value", "Calories must be a number or blank."); return; }
+    let valid = true;
+    if (!name.trim()) { setNameErr("Please enter a meal name."); valid = false; } else setNameErr("");
+    const badMacro = (carbs.trim() && isNaN(parseFloat(carbs))) ||
+      (sugar.trim() && isNaN(parseFloat(sugar))) ||
+      (cals.trim() && isNaN(parseFloat(cals)));
+    if (badMacro) { setMacroErr("Carbs, sugar, and calories must be numbers or left blank."); valid = false; } else setMacroErr("");
+    if (!valid) return;
     onSave({ name: name.trim(), carbs_g: parseNum(carbs), sugar_g: parseNum(sugar), calories: parseNum(cals) });
   }
 
@@ -373,35 +397,40 @@ function MacroEditForm({
     <View style={styles.editForm}>
       <TextInput
         value={name}
-        onChangeText={setName}
+        onChangeText={v => { setName(v); setNameErr(""); }}
         placeholder="Food name"
         placeholderTextColor={theme.textSoft}
-        style={[styles.textInput, { color: theme.textStrong }]}
+        style={[styles.textInput, { color: theme.textStrong, borderColor: nameErr ? theme.coral.solid : ink }]}
+        accessibilityLabel="Meal name"
       />
+      {nameErr ? <Text style={{ color: theme.coral.solid, fontSize: 11, marginTop: -4 }}>{nameErr}</Text> : null}
       <View style={styles.macroInputRow}>
         <TextInput
           value={carbs}
-          onChangeText={setCarbs}
+          onChangeText={v => { setCarbs(v); setMacroErr(""); }}
           placeholder="g"
           placeholderTextColor={theme.textSoft}
           keyboardType="decimal-pad"
           style={[styles.macroInput, { color: theme.textStrong }]}
+          accessibilityLabel="Carbohydrates in grams"
         />
         <TextInput
           value={sugar}
-          onChangeText={setSugar}
+          onChangeText={v => { setSugar(v); setMacroErr(""); }}
           placeholder="g"
           placeholderTextColor={theme.textSoft}
           keyboardType="decimal-pad"
           style={[styles.macroInput, { color: theme.textStrong }]}
+          accessibilityLabel="Sugar in grams"
         />
         <TextInput
           value={cals}
-          onChangeText={setCals}
+          onChangeText={v => { setCals(v); setMacroErr(""); }}
           placeholder="kcal"
           placeholderTextColor={theme.textSoft}
           keyboardType="decimal-pad"
           style={[styles.macroInput, { color: theme.textStrong }]}
+          accessibilityLabel="Calories in kcal"
         />
       </View>
       <View style={styles.macroInputRow}>
@@ -409,6 +438,7 @@ function MacroEditForm({
         <Text style={[styles.macroLabel, { color: ink }]}>SUGAR</Text>
         <Text style={[styles.macroLabel, { color: ink }]}>CALORIES</Text>
       </View>
+      {macroErr ? <Text style={{ color: theme.coral.solid, fontSize: 11 }}>{macroErr}</Text> : null}
       <View style={styles.editFormButtons}>
         <Pressable onPress={onCancel} style={styles.cancelBtn}>
           <Text style={styles.cancelBtnText}>CANCEL</Text>
@@ -605,12 +635,14 @@ export function MealsScreen() {
         setPendingFood(null);
         setSearchQuery("");
         setSearchResults([]);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        toast("Meal logged.");
         loadMeals();
         const h = new Date().getHours();
         const periodKey = h >= 4 && h < 11 ? "breakfast" : h >= 11 && h < 15 ? "lunch" : h >= 17 && h < 23 ? "dinner" : null;
         if (periodKey) notifee.cancelNotification(`meal-reminder-${periodKey}`).catch(() => {});
       })
-      .catch(function (e: Error) { setSearchError(e.message || "Failed to log meal"); });
+      .catch(function () { setSearchError("Your meal wasn't saved. Try again — nothing was lost."); });
   }
 
   function handleOpenEdit(meal: Meal) {
@@ -621,7 +653,7 @@ export function MealsScreen() {
   function handleSaveEdit(mealId: string, values: MacroValues) {
     api.updateMeal(mealId, values)
       .then(function () { setEditingMealId(null); loadMeals(); })
-      .catch(function (e: Error) { setMealsError(e.message || "Failed to update meal"); });
+      .catch(function () { toast("Couldn't save that change. Try again.", "error"); });
   }
 
   function handleDeleteMeal(meal: Meal) {

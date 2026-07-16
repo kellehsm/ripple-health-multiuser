@@ -10,8 +10,8 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
-  ToastAndroid,
 } from "react-native";
+import { toast, Msg } from "../lib/toast";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -113,8 +113,8 @@ export function LifeScreen() {
         })
       );
       setProgress(Object.fromEntries(entries));
-    } catch (e) {
-      console.error("Failed to load books", e);
+    } catch {
+      // non-critical — user sees empty list with empty state
     } finally {
       setLoadingBooks(false);
     }
@@ -169,8 +169,8 @@ export function LifeScreen() {
     try {
       const results = await api.searchBooks(searchText);
       setSearchResults(results);
-    } catch (e) {
-      console.error("Book search failed", e);
+    } catch {
+      toast("Book search failed. Try again.", "error");
     } finally {
       setSearching(false);
     }
@@ -186,9 +186,10 @@ export function LifeScreen() {
       });
       setSearchText("");
       setSearchResults([]);
+      toast("Book added.");
       loadBooks();
-    } catch (e) {
-      console.error("Failed to add book", e);
+    } catch {
+      toast("Couldn't add that book. Try again.", "error");
     }
   }
 
@@ -202,12 +203,14 @@ export function LifeScreen() {
       if (p.percent_complete != null && p.percent_complete >= 100) {
         await api.updateBook(bookId, { status: "finished" });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        ToastAndroid.show("🎉 Finished! Moved to Completed.", ToastAndroid.LONG);
+        toast("Finished! Moved to Completed.");
         loadBooks();
         loadCompletedCount();
+      } else {
+        toast("Reading progress saved.");
       }
-    } catch (e) {
-      console.error("Failed to log pages", e);
+    } catch {
+      toast(Msg.logPages, "error");
     }
   }
 
@@ -222,11 +225,11 @@ export function LifeScreen() {
     try {
       await api.updateBook(bookId, { status: "finished" });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      ToastAndroid.show("🎉 Marked as finished!", ToastAndroid.SHORT);
+      toast("Marked as finished!");
       loadBooks();
       loadCompletedCount();
-    } catch (e) {
-      console.error("Failed to mark book finished", e);
+    } catch {
+      toast("Couldn't update book status. Try again.", "error");
     }
   }
 
@@ -237,7 +240,7 @@ export function LifeScreen() {
         text: "Delete", style: "destructive",
         onPress: async () => {
           try { await api.deleteBook(bookId); loadBooks(); }
-          catch (e) { console.error("Failed to delete book", e); }
+          catch { toast("Couldn't delete that book. Try again.", "error"); }
         },
       },
     ]);
@@ -252,11 +255,11 @@ export function LifeScreen() {
           try {
             await api.updateHobby(hobbyId, { status: "completed" });
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            ToastAndroid.show("✅ Hobby completed!", ToastAndroid.SHORT);
+            toast("Hobby completed!");
             loadHobbies();
             loadCompletedCount();
-          } catch (e) {
-            console.error("Failed to complete hobby", e);
+          } catch {
+            toast("Couldn't complete that hobby. Try again.", "error");
           }
         },
       },
@@ -270,7 +273,7 @@ export function LifeScreen() {
         text: "Delete", style: "destructive",
         onPress: async () => {
           try { await api.deleteHobby(hobbyId); loadHobbies(); }
-          catch (e) { console.error("Failed to delete hobby", e); }
+          catch { toast("Couldn't delete that hobby. Try again.", "error"); }
         },
       },
     ]);
@@ -296,10 +299,12 @@ export function LifeScreen() {
     setLogHobbyError(null);
     try {
       await api.logHobby(hobbyId, amount, undefined, undefined);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      toast("Session logged.");
       const s: HobbyStats = await api.hobbyStats(hobbyId);
       setHobbyStats((prev) => ({ ...prev, [hobbyId]: s }));
-    } catch (e: any) {
-      setLogHobbyError((e as Error).message || "Failed to log hobby");
+    } catch {
+      toast(Msg.logHobby, "error");
     }
   }
 

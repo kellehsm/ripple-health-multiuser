@@ -20,6 +20,17 @@ export async function clearToken(): Promise<void> {
   await SecureStore.deleteItemAsync(TOKEN_KEY);
 }
 
+export async function getUserId(): Promise<string | null> {
+  const token = await getToken();
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload.user_id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // Logout hook — App registers this so Settings can trigger a full sign-out
 let _logoutHandler: (() => void) | null = null;
 

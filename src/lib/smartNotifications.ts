@@ -1,34 +1,41 @@
 import notifee, { AndroidImportance } from "@notifee/react-native";
 import { api } from "../api/client";
 
-export const CH_MEALS   = "ripple-meal-reminders";
-export const CH_GLUCOSE = "ripple-glucose";
-export const CH_EVENING = "ripple-evening";
-export const CH_WATER   = "ripple-water";
-export const CH_STREAK  = "ripple-streak";
+// ─── Channels ─────────────────────────────────────────────────────────────────
+
+export const CH_MEALS    = "ripple-meal-reminders";
+export const CH_GLUCOSE  = "ripple-glucose";
+export const CH_EVENING  = "ripple-evening";
+export const CH_WATER    = "ripple-water";
+export const CH_STREAK   = "ripple-streak";
+export const CH_MOOD     = "ripple-mood";
+export const CH_BOOKS    = "ripple-books";
+export const CH_HOBBIES  = "ripple-hobbies";
+export const CH_SPENDING = "ripple-spending";
 
 export async function initSmartChannels() {
   await Promise.all([
-    notifee.createChannel({ id: CH_MEALS,   name: "Meal Reminders",    importance: AndroidImportance.DEFAULT }),
-    notifee.createChannel({ id: CH_GLUCOSE, name: "Glucose Alerts",    importance: AndroidImportance.HIGH }),
-    notifee.createChannel({ id: CH_EVENING, name: "Evening Check-in",  importance: AndroidImportance.DEFAULT }),
-    notifee.createChannel({ id: CH_WATER,   name: "Water Reminders",   importance: AndroidImportance.DEFAULT }),
-    notifee.createChannel({ id: CH_STREAK,  name: "Streak Protection", importance: AndroidImportance.DEFAULT }),
+    notifee.createChannel({ id: CH_MEALS,    name: "Meal Reminders",    importance: AndroidImportance.DEFAULT }),
+    notifee.createChannel({ id: CH_GLUCOSE,  name: "Glucose Alerts",    importance: AndroidImportance.HIGH }),
+    notifee.createChannel({ id: CH_EVENING,  name: "Evening Check-in",  importance: AndroidImportance.DEFAULT }),
+    notifee.createChannel({ id: CH_WATER,    name: "Water Reminders",   importance: AndroidImportance.DEFAULT }),
+    notifee.createChannel({ id: CH_STREAK,   name: "Streak Protection", importance: AndroidImportance.DEFAULT }),
+    notifee.createChannel({ id: CH_MOOD,     name: "Mood Check-in",     importance: AndroidImportance.DEFAULT }),
+    notifee.createChannel({ id: CH_BOOKS,    name: "Reading Reminders", importance: AndroidImportance.MIN }),
+    notifee.createChannel({ id: CH_HOBBIES,  name: "Hobby Reminders",   importance: AndroidImportance.MIN }),
+    notifee.createChannel({ id: CH_SPENDING, name: "Spending Reminders",importance: AndroidImportance.MIN }),
   ]);
 }
 
-// ── Deduplication ──────────────────────────────────────────────────────────
-// Module-level state persists for the life of the foreground service.
-// A new day clears the set so each reminder can fire once per calendar day.
+// ─── Deduplication ────────────────────────────────────────────────────────────
+// Resets at midnight so each reminder fires once per calendar day at most.
+
 const sent = new Set<string>();
 let sentDate = "";
 
 function resetIfNewDay() {
   const today = new Date().toISOString().slice(0, 10);
-  if (today !== sentDate) {
-    sentDate = today;
-    sent.clear();
-  }
+  if (today !== sentDate) { sentDate = today; sent.clear(); }
 }
 
 function wasSent(key: string): boolean {
@@ -36,11 +43,24 @@ function wasSent(key: string): boolean {
   return sent.has(key);
 }
 
-function markSent(key: string) {
-  sent.add(key);
+function markSent(key: string) { sent.add(key); }
+
+// ─── Sleep hours guard ────────────────────────────────────────────────────────
+// Suppress non-urgent notifications between 11pm and 6am.
+
+function isNighttime(now: Date): boolean {
+  const h = now.getHours();
+  return h >= 23 || h < 6;
 }
 
-// ── Meal reminders ─────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function plural(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? "" : "s"}`;
+}
+
+// ─── Meal reminders ───────────────────────────────────────────────────────────
+
 type MealCfg = { key: string; label: string; defaultHour: number; windowStart: number; windowEnd: number };
 const MEALS: MealCfg[] = [
   { key: "breakfast", label: "Breakfast", defaultHour: 9,  windowStart: 4,  windowEnd: 11 },
@@ -51,12 +71,18 @@ const MEALS: MealCfg[] = [
 export async function checkMealReminders(settings: any, now: Date) {
   const mealCfg = settings?.smart_notifications?.meal_reminders;
   if (!mealCfg?.enabled) return;
+  if (isNighttime(now)) return;
 
   const nowH = now.getHours();
   const today = now.toISOString().slice(0, 10);
 
   let meals: any[] = [];
-  try { meals = await api.meals(today); } catch (_) {}
+  let streak = 0;
+  try {
+    [meals] = await Promise.all([api.meals(today)]);
+    const streakData = await api.streaks().catch(() => null);
+    streak = streakData?.meal_streak ?? 0;
+  } catch (_) {}
 
   for (const m of MEALS) {
     const periodCfg = mealCfg[m.key] ?? {};
@@ -67,35 +93,47 @@ export async function checkMealReminders(settings: any, now: Date) {
     if (wasSent(`meal_${m.key}`)) continue;
     markSent(`meal_${m.key}`);
 
-    const alreadyLogged = meals.some((entry: any) => {
+    const alreadyLogged = Array.isArray(meals) && meals.some((entry: any) => {
       const h = new Date(entry.logged_at).getHours();
       return h >= m.windowStart && h < m.windowEnd;
     });
     if (alreadyLogged) continue;
 
+    const mealCount = Array.isArray(meals) ? meals.length : 0;
+    let body = `No ${m.label.toLowerCase()} logged yet — tap to add it.`;
+    if (m.key === "breakfast" && streak >= 3) {
+      body = `You have a ${plural(streak, "day")} streak — keep it going with ${m.label.toLowerCase()}.`;
+    } else if (m.key === "lunch" && mealCount > 0) {
+      body = `You logged breakfast. Lunch time?`;
+    } else if (m.key === "dinner" && mealCount >= 2) {
+      body = `You've logged ${plural(mealCount, "meal")} today. How did dinner go?`;
+    } else if (m.key === "dinner" && mealCount === 0) {
+      body = `No meals logged yet today — you can catch up now.`;
+    }
+
     await notifee.displayNotification({
       id: `meal-reminder-${m.key}`,
       title: `${m.label} logged?`,
-      body: `No ${m.label.toLowerCase()} logged yet — tap to add it.`,
-      data: { target: "meals" },
+      body,
+      data: { target: "meals", action: "add" },
       android: {
         channelId: CH_MEALS,
         smallIcon: "ic_launcher",
         pressAction: { id: "default", launchActivity: "default" },
         actions: [
-          { title: "Log now",        pressAction: { id: "log-meal",           launchActivity: "default" } },
-          { title: "Already logged", pressAction: { id: `ack-meal-${m.key}` } },
-          { title: "Skip",           pressAction: { id: `skip-meal-${m.key}` } },
+          { title: "Log Meal",      pressAction: { id: "log-meal",           launchActivity: "default" } },
+          { title: "Already logged",pressAction: { id: `ack-meal-${m.key}` } },
+          { title: "Later",         pressAction: { id: `skip-meal-${m.key}` } },
         ],
       },
     });
   }
 }
 
-// ── Glucose spike ──────────────────────────────────────────────────────────
-// Tracks last spike time (ms) across the full day, not just per-hour.
+// ─── Glucose spike alert ──────────────────────────────────────────────────────
+
 let lastSpikeMs = 0;
-const SPIKE_COOLDOWN_MS = 2 * 60 * 60 * 1000; // 2 hours
+const SPIKE_COOLDOWN_MS = 2 * 60 * 60 * 1000;
 
 export async function checkGlucoseSpike(settings: any, now: Date) {
   const spikeCfg = settings?.smart_notifications?.glucose_spike;
@@ -114,64 +152,33 @@ export async function checkGlucoseSpike(settings: any, now: Date) {
     if (rise < threshold) return;
 
     lastSpikeMs = now.getTime();
+    const current = latest;
+    const rangeNote = current > 180 ? " — currently above your target range" : "";
+
     await notifee.displayNotification({
       id: "glucose-spike",
       title: "Glucose rising \u{1F4C8}",
-      body: `Up ${rise} mg/dL in the last hour (${earliest} → ${latest}). Did you eat something?`,
-      data: { target: "meals" },
+      body: `Up ${rise} mg/dL in the last hour (${earliest} → ${latest} mg/dL${rangeNote}). Did you eat something?`,
+      data: { target: "meals", action: "add" },
       android: {
         channelId: CH_GLUCOSE,
         smallIcon: "ic_launcher",
         pressAction: { id: "default", launchActivity: "default" },
         actions: [
-          { title: "Yes, log a meal", pressAction: { id: "log-meal",     launchActivity: "default" } },
-          { title: "No, nothing",     pressAction: { id: "dismiss-spike" } },
+          { title: "Log a Meal",  pressAction: { id: "log-meal",     launchActivity: "default" } },
+          { title: "Dismiss",     pressAction: { id: "dismiss-spike" } },
         ],
       },
     });
   } catch (_) {}
 }
 
-// ── Evening check-in ───────────────────────────────────────────────────────
-export async function checkEveningCheckin(settings: any, now: Date) {
-  const checkinCfg = settings?.smart_notifications?.evening_checkin;
-  if (!checkinCfg?.enabled) return;
+// ─── Water reminder ───────────────────────────────────────────────────────────
 
-  const targetH: number = checkinCfg.hour ?? 21;
-  if (now.getHours() < targetH) return;
-  if (wasSent("evening_checkin")) return;
-  markSent("evening_checkin");
-
-  const today = now.toISOString().slice(0, 10);
-  let body = "Tap to review your day.";
-  try {
-    const [meals, streaks] = await Promise.all([
-      api.meals(today).catch(() => [] as any[]),
-      api.streaks().catch(() => null),
-    ]);
-    const parts: string[] = [];
-    const mealCount = Array.isArray(meals) ? meals.length : 0;
-    if (mealCount > 0) parts.push(`${mealCount} meal${mealCount !== 1 ? "s" : ""} logged`);
-    if (streaks?.current_streak > 0) parts.push(`${streaks.current_streak}d streak`);
-    if (parts.length > 0) body = parts.join(" · ") + " — how did the rest of the day go?";
-  } catch (_) {}
-
-  await notifee.displayNotification({
-    id: "evening-checkin",
-    title: "End of day check-in",
-    body,
-    android: {
-      channelId: CH_EVENING,
-      smallIcon: "ic_launcher",
-      pressAction: { id: "default", launchActivity: "default" },
-    },
-  });
-}
-
-// ── Water reminder ─────────────────────────────────────────────────────────
 let cachedWaterMetricId: string | null = null;
 let lastWaterReminderMs = 0;
-const WATER_COOLDOWN_MS = 2 * 60 * 60 * 1000; // 2 hours between reminders
+const WATER_COOLDOWN_MS = 2 * 60 * 60 * 1000;
+const waterGoalCelebrationSent = new Set<string>();
 
 export async function checkWaterReminder(settings: any, now: Date) {
   const waterCfg = settings?.smart_notifications?.water_reminder;
@@ -179,9 +186,11 @@ export async function checkWaterReminder(settings: any, now: Date) {
 
   const startH: number = waterCfg.start_hour ?? 9;
   if (now.getHours() < startH) return;
+  if (isNighttime(now)) return;
   if (now.getTime() - lastWaterReminderMs < WATER_COOLDOWN_MS) return;
 
   const goal: number = waterCfg.goal ?? 8;
+  const todayKey = now.toISOString().slice(0, 10);
 
   try {
     if (!cachedWaterMetricId) {
@@ -193,32 +202,160 @@ export async function checkWaterReminder(settings: any, now: Date) {
     const logs: any[] = await api.todaysWaterCount(cachedWaterMetricId);
     const todayStr = now.toDateString();
     const todayCount = Array.isArray(logs)
-      ? logs
-          .filter((l) => new Date(l.logged_at).toDateString() === todayStr)
-          .reduce((sum, l) => sum + Number(l.value), 0)
+      ? Math.round(logs.filter((l) => new Date(l.logged_at).toDateString() === todayStr).reduce((s, l) => s + Number(l.value), 0))
       : 0;
 
-    if (todayCount >= goal) return;
+    if (todayCount >= goal) {
+      // One-time goal completion celebration
+      const celebKey = `water_goal_${todayKey}`;
+      if (!waterGoalCelebrationSent.has(celebKey)) {
+        waterGoalCelebrationSent.add(celebKey);
+        await notifee.displayNotification({
+          id: "water-goal-complete",
+          title: "Water goal reached! 💧",
+          body: `Nice work — you've hit your ${goal}-glass goal for today.`,
+          android: {
+            channelId: CH_WATER,
+            smallIcon: "ic_launcher",
+            pressAction: { id: "default" },
+          },
+        });
+      }
+      return;
+    }
 
     lastWaterReminderMs = now.getTime();
+
+    let body: string;
+    const remaining = goal - todayCount;
+    if (todayCount === 0) {
+      body = `You haven't logged water yet today. Starting now makes it easier to stay on track.`;
+    } else if (todayCount < goal / 2) {
+      body = `You've logged ${plural(todayCount, "glass")} of ${goal}. ${remaining} more to reach your goal.`;
+    } else {
+      body = `You're at ${todayCount}/${goal} glasses — ${remaining} more and you're there.`;
+    }
+
     await notifee.displayNotification({
       id: "water-reminder",
-      title: "Stay hydrated 💧",
-      body: `${todayCount}/${goal} glasses today — time for another?`,
+      title: "Time for some water 💧",
+      body,
       android: {
         channelId: CH_WATER,
         smallIcon: "ic_launcher",
         pressAction: { id: "default", launchActivity: "default" },
         actions: [
-          { title: "Log glass", pressAction: { id: "log-water", launchActivity: "default" } },
-          { title: "Skip",      pressAction: { id: "dismiss-water" } },
+          { title: "Drink 1 Glass", pressAction: { id: "log-water" } },
+          { title: "Dismiss",       pressAction: { id: "dismiss-water" } },
         ],
       },
     });
   } catch (_) {}
 }
 
-// ── Streak protection ──────────────────────────────────────────────────────
+// ─── Mood check-in ────────────────────────────────────────────────────────────
+// Fires around 2pm and 7pm if no mood logged in that window.
+
+export async function checkMoodReminder(settings: any, now: Date) {
+  const moodCfg = settings?.smart_notifications?.mood_checkin;
+  if (moodCfg?.enabled === false) return;
+  if (isNighttime(now)) return;
+
+  const h = now.getHours();
+  const today = now.toISOString().slice(0, 10);
+
+  const windowKey = h >= 14 && h < 19 ? "afternoon" : h >= 19 && h < 23 ? "evening" : null;
+  if (!windowKey) return;
+
+  const sentKey = `mood_${windowKey}`;
+  if (wasSent(sentKey)) return;
+  markSent(sentKey);
+
+  try {
+    const entries = await api.journalToday().catch(() => [] as any[]);
+    const hasRecentMood = Array.isArray(entries) && entries.some((e: any) => {
+      const eh = new Date(e.logged_at).getHours();
+      return windowKey === "afternoon" ? (eh >= 11 && eh < 18) : (eh >= 17);
+    });
+    if (hasRecentMood) return;
+
+    const title = windowKey === "afternoon" ? "Afternoon check-in" : "Evening check-in";
+    const body = windowKey === "afternoon"
+      ? "How are you feeling mid-day? A quick mood note takes 5 seconds."
+      : "How did your day go? A quick check-in helps you notice patterns over time.";
+
+    await notifee.displayNotification({
+      id: `mood-checkin-${windowKey}`,
+      title,
+      body,
+      data: { target: "home" },
+      android: {
+        channelId: CH_MOOD,
+        smallIcon: "ic_launcher",
+        pressAction: { id: "default", launchActivity: "default" },
+        actions: [
+          { title: "Check In", pressAction: { id: "log-mood", launchActivity: "default" } },
+          { title: "Skip",     pressAction: { id: `skip-mood-${windowKey}` } },
+        ],
+      },
+    });
+  } catch (_) {}
+}
+
+// ─── Evening summary ──────────────────────────────────────────────────────────
+
+export async function checkEveningCheckin(settings: any, now: Date) {
+  const checkinCfg = settings?.smart_notifications?.evening_checkin;
+  if (!checkinCfg?.enabled) return;
+
+  const targetH: number = checkinCfg.hour ?? 21;
+  if (now.getHours() < targetH) return;
+  if (wasSent("evening_checkin")) return;
+  markSent("evening_checkin");
+
+  const today = now.toISOString().slice(0, 10);
+  let body = "Tap to review how your day went.";
+  try {
+    const [meals, streakData, dse] = await Promise.all([
+      api.meals(today).catch(() => [] as any[]),
+      api.streaks().catch(() => null),
+      api.dailySummary(today).catch(() => null),
+    ]);
+
+    const parts: string[] = [];
+    const mealCount = Array.isArray(meals) ? meals.length : 0;
+    const streak = streakData?.meal_streak ?? 0;
+
+    if (mealCount > 0) parts.push(`${plural(mealCount, "meal")} logged`);
+    if (streak > 0) parts.push(`${streak}-day streak`);
+
+    const overall = dse?.scores?.overall;
+    if (overall !== null && overall !== undefined) {
+      const label = overall >= 75 ? "great day" : overall >= 55 ? "solid day" : "active day";
+      parts.push(`overall ${overall} — ${label}`);
+    }
+
+    if (parts.length > 0) body = parts.join(" · ");
+  } catch (_) {}
+
+  await notifee.displayNotification({
+    id: "evening-checkin",
+    title: "End of day",
+    body,
+    data: { target: "home" },
+    android: {
+      channelId: CH_EVENING,
+      smallIcon: "ic_launcher",
+      pressAction: { id: "default", launchActivity: "default" },
+      actions: [
+        { title: "Review Today", pressAction: { id: "review-today", launchActivity: "default" } },
+      ],
+    },
+  });
+}
+
+// ─── Streak protection ────────────────────────────────────────────────────────
+
 export async function checkStreakProtection(settings: any, now: Date) {
   const streakCfg = settings?.smart_notifications?.streak_protection;
   if (!streakCfg?.enabled) return;
@@ -229,26 +366,102 @@ export async function checkStreakProtection(settings: any, now: Date) {
   markSent("streak_protection");
 
   try {
-    const [streaks, meals] = await Promise.all([
+    const [streakData, meals] = await Promise.all([
       api.streaks().catch(() => null),
       api.meals(now.toISOString().slice(0, 10)).catch(() => [] as any[]),
     ]);
 
-    if (!streaks?.current_streak || streaks.current_streak < 1) return;
+    const streak = streakData?.meal_streak ?? 0;
+    if (streak < 1) return;
     if (Array.isArray(meals) && meals.length > 0) return;
 
     await notifee.displayNotification({
       id: "streak-protection",
-      title: `Don't break your ${streaks.current_streak}-day streak! 🔥`,
-      body: "Log a meal or habit before midnight to keep it going.",
-      data: { target: "meals" },
+      title: `${plural(streak, "day")} streak — don't stop now \u{1F525}`,
+      body: "Log one meal before midnight to keep your streak alive.",
+      data: { target: "meals", action: "add" },
       android: {
         channelId: CH_STREAK,
         smallIcon: "ic_launcher",
         pressAction: { id: "default", launchActivity: "default" },
         actions: [
-          { title: "Log now", pressAction: { id: "log-meal", launchActivity: "default" } },
-          { title: "Dismiss", pressAction: { id: "dismiss-streak" } },
+          { title: "Log Meal", pressAction: { id: "log-meal", launchActivity: "default" } },
+          { title: "Dismiss",  pressAction: { id: "dismiss-streak" } },
+        ],
+      },
+    });
+  } catch (_) {}
+}
+
+// ─── Book reminder ────────────────────────────────────────────────────────────
+
+export async function checkBookReminder(settings: any, now: Date) {
+  const bookCfg = settings?.smart_notifications?.book_reminder;
+  if (bookCfg?.enabled === false) return;
+  if (isNighttime(now)) return;
+
+  const targetH = bookCfg?.hour ?? 20;
+  if (now.getHours() < targetH) return;
+  if (wasSent("book_reminder")) return;
+  markSent("book_reminder");
+
+  try {
+    const books: any[] = await api.books("reading").catch(() => []);
+    if (!Array.isArray(books) || books.length === 0) return;
+
+    const book = books[0];
+    const title = book.title ?? "your book";
+    const truncated = title.length > 28 ? title.slice(0, 25) + "…" : title;
+
+    await notifee.displayNotification({
+      id: "book-reminder",
+      title: "Reading time 📖",
+      body: `Did you read today? You have "${truncated}" in progress.`,
+      data: { target: "life" },
+      android: {
+        channelId: CH_BOOKS,
+        smallIcon: "ic_launcher",
+        pressAction: { id: "default", launchActivity: "default" },
+        actions: [
+          { title: "Log Reading", pressAction: { id: "log-book", launchActivity: "default" } },
+          { title: "Later",       pressAction: { id: "skip-book" } },
+        ],
+      },
+    });
+  } catch (_) {}
+}
+
+// ─── Hobby reminder ───────────────────────────────────────────────────────────
+
+export async function checkHobbyReminder(settings: any, now: Date) {
+  const hobbyCfg = settings?.smart_notifications?.hobby_reminder;
+  if (hobbyCfg?.enabled === false) return;
+  if (isNighttime(now)) return;
+
+  const targetH = hobbyCfg?.hour ?? 17;
+  if (now.getHours() < targetH) return;
+  if (wasSent("hobby_reminder")) return;
+  markSent("hobby_reminder");
+
+  try {
+    const hobbies: any[] = await api.hobbies().catch(() => []);
+    if (!Array.isArray(hobbies) || hobbies.length === 0) return;
+
+    const hobby = hobbies[0];
+    const name = hobby.name ?? "your hobby";
+
+    await notifee.displayNotification({
+      id: "hobby-reminder",
+      title: "Activity time",
+      body: `Did you do any ${name} today? Log it to track your consistency.`,
+      data: { target: "life" },
+      android: {
+        channelId: CH_HOBBIES,
+        smallIcon: "ic_launcher",
+        pressAction: { id: "default", launchActivity: "default" },
+        actions: [
+          { title: "Log Activity", pressAction: { id: "log-hobby", launchActivity: "default" } },
+          { title: "Later",        pressAction: { id: "skip-hobby" } },
         ],
       },
     });

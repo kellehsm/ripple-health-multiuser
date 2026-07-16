@@ -79,6 +79,10 @@ export const api = {
   streaks: function () {
     return request("/summary/streaks");
   },
+  dailySummary: function (date?: string) {
+    const d = date ?? new Date().toISOString().slice(0, 10);
+    return request("/summary/daily/" + d);
+  },
 
   // ── Books ─────────────────────────────────────────────────────────────────
   books: function (status?: string) {
@@ -325,6 +329,20 @@ export const api = {
   },
   deleteSubstance: function (id: string) {
     return request("/substances/" + id, { method: "DELETE" });
+  },
+
+  // ── Insights ──────────────────────────────────────────────────────────────
+  getInsights: function () {
+    return request("/insights");
+  },
+  getInsightHistory: function () {
+    return request("/insights/history");
+  },
+  dismissInsight: function (id: string) {
+    return request("/insights/" + id + "/dismiss", { method: "POST", body: JSON.stringify({}) });
+  },
+  regenerateInsights: function () {
+    return request("/insights/regenerate", { method: "POST", body: JSON.stringify({}) });
   },
 
   // ── Analytics ─────────────────────────────────────────────────────────────
