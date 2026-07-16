@@ -104,18 +104,18 @@ function TabNavigator() {
             >
               <View
                 style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 26,
+                  width: 56,
+                  height: 56,
+                  borderRadius: 28,
                   overflow: "hidden",
-                  marginTop: -24,
+                  marginTop: -32,
                   borderWidth: 2.5,
                   borderColor: ink,
                   shadowColor: ink,
-                  shadowOffset: { width: 3, height: 3 },
+                  shadowOffset: { width: 4, height: 4 },
                   shadowOpacity: 1,
                   shadowRadius: 0,
-                  elevation: 4,
+                  elevation: 7,
                 }}
               >
                 <View style={{ flexDirection: "row", height: 26 }}>
@@ -130,7 +130,7 @@ function TabNavigator() {
                   <Text style={{ fontSize: 24 }}>🏠</Text>
                 </View>
               </View>
-              <Text style={{ color: theme.textSoft, fontSize: 10, marginTop: 3 }}>Home</Text>
+              <Text style={{ color: theme.textSoft, fontSize: 10, marginTop: 3 }}>Trends</Text>
             </Pressable>
           ),
         })}

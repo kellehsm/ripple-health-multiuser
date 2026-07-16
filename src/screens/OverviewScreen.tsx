@@ -4,9 +4,7 @@ import {
   View,
   Text,
   Pressable,
-  TextInput,
   StyleSheet,
-  ActivityIndicator,
   Animated,
   Dimensions,
   RefreshControl,
@@ -21,6 +19,7 @@ import { api } from "../api/client";
 import { DailySummaryCard, type DailySummaryData } from "../components/DailySummaryCard";
 import { InsightCard, type Insight } from "../components/InsightCard";
 import { toast, Msg } from "../lib/toast";
+import { MoodCheckInModal, type MoodPeriod } from "../components/MoodCheckInModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -83,14 +82,6 @@ const BUCKET_LABEL: Record<Bucket, string> = {
   evening: "Evening",
   night: "Night",
 };
-
-const MOOD_OPTIONS = [
-  { score: 5, label: "Great", emoji: "😃", colorKey: "violet" as const },
-  { score: 4, label: "Good",  emoji: "🙂", colorKey: "teal"   as const },
-  { score: 3, label: "Okay",  emoji: "😐", colorKey: "blue"   as const },
-  { score: 2, label: "Low",   emoji: "😕", colorKey: "coral"  as const },
-  { score: 1, label: "Bad",   emoji: "😣", colorKey: "red"    as const },
-];
 
 const SCORE_EMOJI: Record<number, string> = { 5: "😃", 4: "🙂", 3: "😐", 2: "😕", 1: "😣" };
 
@@ -314,11 +305,9 @@ export function OverviewScreen() {
   const [dailySummary, setDailySummary] = useState<DailySummaryData | null>(null);
   const [topInsight, setTopInsight] = useState<Insight | null>(null);
 
-  // Mood picker state
-  const [activePicker, setActivePicker] = useState<Bucket | "moment" | null>(null);
-  const [pendingLabel, setPendingLabel] = useState<string | null>(null);
-  const [pendingNote, setPendingNote] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  // Mood modal state
+  const [showMoodModal, setShowMoodModal] = useState(false);
+  const moodModalShownKeyRef = useRef<string | null>(null);
 
   // Correlation toggle
   const [correlation, setCorrelation] = useState<"sleep" | "spend">("sleep");
@@ -417,47 +406,25 @@ export function OverviewScreen() {
 
   // Mood period helpers
   const entryPerPeriod: Partial<Record<Bucket, JournalEntry>> = {};
-  const momentEntries: JournalEntry[] = [];
   for (const entry of todayEntries) {
-    if (entry.entry_type === "moment") { momentEntries.push(entry); continue; }
+    if (entry.entry_type === "moment") continue;
     const p = (entry.period ?? timeOfDayBucket(new Date(entry.logged_at))) as Bucket;
     entryPerPeriod[p] = entry;
   }
   const currentBucket = timeOfDayBucket(new Date());
-  const currentEntry = entryPerPeriod[currentBucket] ?? null;
-  const currentUnlogged = currentEntry === null;
 
-  async function handleSubmit() {
-    if (!pendingLabel || !activePicker) return;
-    const score = MOOD_OPTIONS.find((m) => m.label === pendingLabel)?.score;
-    if (!score) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSubmitting(true);
-    try {
-      if (activePicker === "moment") {
-        await api.logMoodMoment(score, pendingLabel, pendingNote.trim() || undefined);
-      } else {
-        await api.upsertPeriodMood(score, activePicker, pendingLabel, pendingNote.trim() || undefined);
-      }
-      setActivePicker(null);
-      setPendingLabel(null);
-      setPendingNote("");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      toast("Check-in saved.");
-      await load();
-    } catch {
-      toast(Msg.logMood, "error");
-    } finally {
-      setSubmitting(false);
+  // Auto-show mood modal once per time period when no entry exists yet
+  useEffect(function () {
+    if (loading) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const key = today + "-" + currentBucket;
+    if (moodModalShownKeyRef.current === key) return;
+    if (!entryPerPeriod[currentBucket]) {
+      moodModalShownKeyRef.current = key;
+      const t = setTimeout(() => setShowMoodModal(true), 700);
+      return () => clearTimeout(t);
     }
-  }
-
-  function openPicker(target: Bucket | "moment") {
-    const existing = target !== "moment" ? entryPerPeriod[target as Bucket] : null;
-    setActivePicker(target);
-    setPendingLabel(existing?.mood_label ?? null);
-    setPendingNote(existing?.entry_text ?? "");
-  }
+  }, [loading, todayEntries]);
 
   // Derived values
   const tir = computeTIR(dayGlucose);
@@ -684,135 +651,15 @@ export function OverviewScreen() {
         </View>
       )}
 
-      {/* ── 4. Mood check-in ── */}
-      <View style={[styles.card, { backgroundColor: theme.coral.tint }]}>
-        <View style={styles.cardTitleRow}>
-          <Text style={[styles.cardTitle, { color: theme.coral.fg }]}>Mood check-in</Text>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            {currentUnlogged ? (
-              <View style={[styles.dueNowPill, { backgroundColor: theme.coral.solid }]}>
-                <Text style={styles.dueNowText}>DUE NOW</Text>
-              </View>
-            ) : null}
-            <Pressable
-              onPress={() => openPicker("moment")}
-              style={[styles.momentBtn, { backgroundColor: card }]}
-              accessibilityRole="button"
-              accessibilityLabel="Log a mood moment"
-            >
-              <Ionicons name="add" size={13} color={ink} />
-              <Text style={styles.momentBtnText}>MOMENT</Text>
-            </Pressable>
-          </View>
-        </View>
+      {/* ── 4. Mood check-in modal ── */}
+      <MoodCheckInModal
+        visible={showMoodModal}
+        period={currentBucket as MoodPeriod}
+        onDismiss={() => setShowMoodModal(false)}
+        onSubmitted={() => { setShowMoodModal(false); load(); }}
+      />
 
-        <View style={styles.periodRow}>
-          {BUCKET_ORDER.map(function (b) {
-            const entry = entryPerPeriod[b];
-            const isNow = b === currentBucket;
-            return (
-              <Pressable
-                key={b}
-                onPress={() => openPicker(b)}
-                style={[
-                  styles.periodTile,
-                  {
-                    backgroundColor: card,
-                    borderColor: isNow && !entry ? theme.coral.solid : ink,
-                    borderWidth: isNow && !entry ? 2.5 : 2,
-                  },
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel={BUCKET_LABEL[b] + " mood: " + (entry ? entry.mood_label ?? String(entry.mood_score) : "not logged")}
-              >
-                <Text style={styles.periodLabel}>{BUCKET_LABEL[b].slice(0, 3).toUpperCase()}</Text>
-                <Text style={{ fontSize: 16, marginVertical: 2 }}>
-                  {entry ? (SCORE_EMOJI[entry.mood_score] ?? "·") : (isNow ? "·" : "—")}
-                </Text>
-                <Text style={{ color: theme.textSoft, fontSize: 10, fontWeight: "600" }}>
-                  {entry ? (entry.mood_label ?? String(entry.mood_score)) : ""}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {activePicker !== null ? (
-          <View style={[styles.pickerBox, { backgroundColor: card }]}>
-            <Text style={styles.pickerTitle}>
-              {activePicker === "moment"
-                ? "Log a moment"
-                : BUCKET_LABEL[activePicker as Bucket] + (entryPerPeriod[activePicker as Bucket] ? " — update" : "")}
-            </Text>
-            <View style={styles.moodOptionsRow}>
-              {MOOD_OPTIONS.map(function (opt) {
-                const selected = pendingLabel === opt.label;
-                const c = (theme as any)[opt.colorKey];
-                return (
-                  <Pressable
-                    key={opt.label}
-                    onPress={() => setPendingLabel(opt.label)}
-                    style={[
-                      styles.moodTile,
-                      { backgroundColor: selected ? c.tint : theme.card, borderColor: selected ? c.solid : ink, borderWidth: selected ? 2.5 : 2 },
-                    ]}
-                    accessibilityRole="radio"
-                    accessibilityState={{ checked: selected }}
-                    accessibilityLabel={opt.label}
-                  >
-                    <Text style={{ fontSize: 22, marginBottom: 4 }}>{opt.emoji}</Text>
-                    <Text style={[styles.moodTileLabel, { color: selected ? c.fg : theme.textSoft }]}>
-                      {opt.label.toUpperCase()}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <TextInput
-              value={pendingNote}
-              onChangeText={setPendingNote}
-              placeholder="Note (optional)"
-              placeholderTextColor={theme.textSoft}
-              style={[styles.noteInput, { color: theme.textStrong }]}
-              accessibilityLabel="Mood note"
-            />
-            <View style={styles.pickerActions}>
-              <Pressable
-                onPress={() => { setActivePicker(null); setPendingLabel(null); setPendingNote(""); }}
-                style={styles.cancelBtn}
-                accessibilityRole="button"
-                accessibilityLabel="Cancel"
-              >
-                <Text style={styles.cancelBtnText}>CANCEL</Text>
-              </Pressable>
-              <Pressable
-                onPress={handleSubmit}
-                disabled={pendingLabel === null || submitting}
-                style={[styles.logBtn, { backgroundColor: pendingLabel !== null ? theme.coral.solid : theme.cardBorder, opacity: pendingLabel === null ? 0.5 : 1 }]}
-                accessibilityRole="button"
-                accessibilityLabel="Log mood"
-              >
-                {submitting
-                  ? <ActivityIndicator size="small" color="#fff" />
-                  : <Text style={styles.logBtnText}>LOG</Text>}
-              </Pressable>
-            </View>
-          </View>
-        ) : null}
-
-        {momentEntries.length > 0 ? (
-          <View style={{ marginTop: 8, gap: 4 }}>
-            {momentEntries.map(e => (
-              <Text key={e.id} style={{ color: theme.coral.fg, fontSize: 12 }}>
-                {fmtTime(e.logged_at)} · {SCORE_EMOJI[e.mood_score] ?? ""} {e.mood_label ?? String(e.mood_score)}
-                {e.entry_text ? " — " + e.entry_text : ""}
-              </Text>
-            ))}
-          </View>
-        ) : null}
-      </View>
-
-      {/* ── 4. Today's timeline ── */}
+      {/* ── 5. Today's timeline ── */}
       <View style={[styles.card, { backgroundColor: theme.card }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Today's timeline</Text>
 

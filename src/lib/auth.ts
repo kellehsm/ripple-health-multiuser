@@ -1,6 +1,8 @@
 import * as SecureStore from "expo-secure-store";
+import * as FileSystem from "expo-file-system";
 
 const TOKEN_KEY = "ripple_jwt";
+const WIDGET_AUTH_FILE = "widget_auth.json";
 
 export interface UserInfo {
   id: string;
@@ -14,10 +16,21 @@ export async function getToken(): Promise<string | null> {
 
 export async function setToken(token: string): Promise<void> {
   await SecureStore.setItemAsync(TOKEN_KEY, token);
+  // Mirror to a plain file so the Android widget (same package) can read it
+  try {
+    await FileSystem.writeAsStringAsync(
+      FileSystem.documentDirectory + WIDGET_AUTH_FILE,
+      JSON.stringify({ token }),
+      { encoding: FileSystem.EncodingType.UTF8 }
+    );
+  } catch {}
 }
 
 export async function clearToken(): Promise<void> {
   await SecureStore.deleteItemAsync(TOKEN_KEY);
+  try {
+    await FileSystem.deleteAsync(FileSystem.documentDirectory + WIDGET_AUTH_FILE, { idempotent: true });
+  } catch {}
 }
 
 export async function getUserId(): Promise<string | null> {

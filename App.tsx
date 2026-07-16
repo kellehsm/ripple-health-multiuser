@@ -179,7 +179,7 @@ export default function App() {
   if (appState === "login") {
     return (
       <ThemeProvider>
-        <StatusBar style="auto" />
+        <StatusBar style="dark" />
         <LoginScreen onLoginSuccess={handleLoginSuccess} />
       </ThemeProvider>
     );
@@ -188,7 +188,7 @@ export default function App() {
   if (appState === "onboarding") {
     return (
       <ThemeProvider>
-        <StatusBar style="auto" />
+        <StatusBar style="dark" />
         <OnboardingFlow onComplete={handleOnboardingComplete} />
       </ThemeProvider>
     );
