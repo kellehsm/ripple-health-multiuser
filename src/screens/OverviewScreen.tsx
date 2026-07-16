@@ -20,6 +20,7 @@ import { DailySummaryCard, type DailySummaryData } from "../components/DailySumm
 import { InsightCard, type Insight } from "../components/InsightCard";
 import { toast, Msg } from "../lib/toast";
 import { MoodCheckInModal, type MoodPeriod } from "../components/MoodCheckInModal";
+import { MoodPageSheet } from "../components/MoodPageSheet";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -307,6 +308,7 @@ export function OverviewScreen() {
 
   // Mood modal state
   const [showMoodModal, setShowMoodModal] = useState(false);
+  const [showMoodSheet, setShowMoodSheet] = useState(false);
   const moodModalShownKeyRef = useRef<string | null>(null);
 
   // Correlation toggle
@@ -500,6 +502,7 @@ export function OverviewScreen() {
     color: string;
     icon: string;
     empty?: boolean;
+    onPress?: () => void;
   };
 
   const currentMoodEntry = entryPerPeriod[currentBucket];
@@ -555,6 +558,7 @@ export function OverviewScreen() {
       color: theme.violet.solid,
       icon: "happy-outline",
       empty: !currentMoodEntry,
+      onPress: () => setShowMoodSheet(true),
     },
   ];
 
@@ -590,13 +594,15 @@ export function OverviewScreen() {
       ) : (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }} accessibilityLabel="Key metrics">
           {chips.map((chip) => (
-            <View
+            <Pressable
               key={chip.label}
+              onPress={chip.onPress}
               style={[
                 styles.metricChip,
                 { width: "31%", borderColor: ink, opacity: chip.empty ? 0.55 : 1 },
               ]}
               accessibilityLabel={chip.label + ": " + chip.value}
+              accessibilityRole={chip.onPress ? "button" : undefined}
             >
               <View style={[styles.chipIcon, { backgroundColor: chip.color }]}>
                 <Ionicons name={chip.icon as any} size={13} color="#fff" />
@@ -610,7 +616,7 @@ export function OverviewScreen() {
                 </Text>
               ) : null}
               <Text style={[styles.chipLabel, { color: theme.textSoft }]}>{chip.label}</Text>
-            </View>
+            </Pressable>
           ))}
         </View>
       )}
@@ -651,12 +657,21 @@ export function OverviewScreen() {
         </View>
       )}
 
-      {/* ── 4. Mood check-in modal ── */}
+      {/* ── 4. Mood check-in modal (auto-shown at period start) ── */}
       <MoodCheckInModal
-        visible={showMoodModal}
+        visible={showMoodModal && !showMoodSheet}
         period={currentBucket as MoodPeriod}
         onDismiss={() => setShowMoodModal(false)}
         onSubmitted={() => { setShowMoodModal(false); load(); }}
+      />
+
+      {/* ── Mood page sheet (tap MOOD chip) ── */}
+      <MoodPageSheet
+        visible={showMoodSheet}
+        todayEntries={todayEntries}
+        currentBucket={currentBucket as MoodPeriod}
+        onDismiss={() => setShowMoodSheet(false)}
+        onSubmitted={() => { setShowMoodSheet(false); load(); }}
       />
 
       {/* ── 5. Today's timeline ── */}
