@@ -1,62 +1,66 @@
-# Ripple Wellness — Frontend (CLAUDE.md)
+# Ripple Wellness — Frontend DEV (CLAUDE.md)
 
-Expo/React Native (TypeScript) app, "Ripple Wellness." Talks to the backend at `https://app.kels.gg/api`.
+This is the **development** working copy of the frontend. All new feature work happens here first.
 
-## Critical operational rules
+## Dev environment
 
-- **Do NOT run `eas build` without explicit user approval.** EAS build credits are limited and nearly exhausted at times — batch ALL native-touching changes (native modules, permissions, icon assets, Health Connect, foreground services, notification config) together and only build when explicitly told to.
-- JS-only changes (screens, styling, navigation logic, API calls) need no approval — test freely via the dev server (`npx expo start`).
-- Metro dev server runs on port 8081. Backend is at `https://app.kels.gg/api` (real HTTPS — the app cannot use plain `http://` in a real build; Android blocks cleartext traffic by default).
+| | Production | Dev (this directory) |
+|---|---|---|
+| Directory | `/root/wellness-fresh-multiuser` | `/root/wellness-fresh-multiuser-dev` |
+| Git branch | `master` | `dev` |
+| Backend URL | `https://app.kels.gg/api` | **`http://129.121.125.214:4002`** |
+| Metro port | 8081 | **8082** (use `--port 8082` to avoid conflicts) |
+| Test via | EAS APK | **Expo Go** (cleartext HTTP allowed in Expo Go) |
 
-## App identity
+Both repos are git worktrees — same remote (`kellehsm/ripple-health-multiuser`), different branches.
 
-- Name: **Ripple Wellness**
-- Icon: four-quadrant droplet, thin black outline (`#111111`), black pulse/heartbeat line through center, centered, on cream background (`#FBFAF7`)
-- Current quadrant colors: teal `#3FA0A6` (top-left), coral `#E8654E` (top-right), purple `#7B3FBF` (bottom-left), berry-wine `#A62A50` (bottom-right) — chosen specifically to avoid resembling Google Health's palette; don't drift back toward teal/blue/green-dominant schemes.
+The `BASE_URL` change is in `src/api/client.ts` line 3. Do not accidentally sync it to the production directory.
 
-## Theme / metric color mapping (current)
+## Starting the dev Metro bundler
 
-- **Steps** (+ reading/hobbies as "activity") → teal `#3FA0A6`
-- **Food/Meals** → coral `#E8654E`
-- **Finance** → purple `#7B3FBF`
-- **Glucose & heart rate** (default/in-range) → berry-wine `#A62A50` — BUT high/low glucose ALERTS must shift to a distinct urgent red (e.g. `#C0392B`) so alerts visually stand out from the normal berry tone
-- **Mood** → a lighter violet, distinct from finance's purple
-- **Water** → a complementary blue
-- **Sleep** → a muted indigo/lavender
-- Cream page background: `#F5F1E8` (slightly deeper than the original `#FBFAF7`)
+```bash
+cd /root/wellness-fresh-multiuser-dev
+npx expo start --port 8082
+```
 
-## Navigation
+Scan the QR code in Expo Go. The app will talk to the dev backend at `http://129.121.125.214:4002`.
 
-- Bottom nav order: **Health, Meals, Home (raised center button), Life, Finance** — Home is a filled circle (teal) floating above the tab bar line, not a flat tab like the others. Thin dividers between each tab item.
-- Settings is accessed via a header gear icon (stack navigation pushed on top), NOT a 6th bottom tab — this was a deliberate choice to preserve the 5-tab-plus-center-button layout.
+**Note:** The dev backend uses `wellness_multiuser_dev` (empty database) — you'll need to create a user via the admin endpoint before logging in:
+```bash
+curl -X POST http://localhost:4002/api/auth/create-user \
+  -H "Content-Type: application/json" \
+  -H "x-admin-secret: ripple-admin-2026" \
+  -d '{"email":"test@example.com","password":"testpassword"}'
+```
 
-## Icon library gotchas
+## Promoting dev → production
 
-- The actual app uses **Ionicons** via `@expo/vector-icons`. (Note: Tabler icon names like `ti-pizza`/`ti-heartbeat` were used in chat-based design mockups only and do NOT apply to this codebase — always verify Ionicons names actually render in Expo Go before finalizing, since some assumed equivalents may not exist.)
-- Health → `heart`, Meals → `restaurant` or `fast-food` (verify which renders best), Home → `home`, Life → `book`, Finance → `wallet`.
+When frontend changes are confirmed working in Expo Go:
 
-## Common bug pattern to check first
+1. **Commit and push on `dev` branch** (from this directory):
+   ```bash
+   git add -A && git commit -m "..." && git push origin dev
+   ```
 
-Multiple "this feature doesn't work" reports this project turned out to be **working backend logic with no UI ever displaying the result** (book progress, hobby logging, water tracking). Before rewriting a log/save function, check whether the data is actually landing in the database — if it is, the fix is a display/UI wiring issue, not the underlying logic.
+2. **Merge into production** — two options (ask the user which they prefer):
+   - **Direct merge (no PR):** In `/root/wellness-fresh-multiuser`:
+     ```bash
+     git fetch origin && git merge origin/dev && git push origin master
+     ```
+   - **Pull request:** Open a PR from `dev` → `master` on GitHub for review before merging.
 
-## Settings permission checks
+3. **If the change is JS-only:** The production app (installed APK) will NOT update automatically — a new EAS build is required if you want users to get the change. Discuss with user before triggering a build.
 
-Any screen showing system permission status (notifications, battery optimization, Health Connect) MUST re-check the ACTUAL current system state on screen focus (`useFocusEffect`), not just on mount — the user often leaves to Android's own settings screens and returns, and a mount-only check will show stale/wrong status.
+4. **EAS build policy:** NEVER run `eas build` without explicit user approval. Batch all native-touching changes together before asking.
 
-## Correlation / pattern language (UI copy)
+## Inherited rules (apply here too)
 
-Any UI text describing a pattern across data must stay descriptive, never diagnostic:
-- Single day → gentle observation ("glucose climbed after lunch today")
-- Repeated pattern across multiple days → stronger language OK, but must cite the count ("4 of the last 5 days")
-- Never phrase things as medical advice or a causal claim ("your lunch is spiking your blood sugar" is NOT acceptable phrasing)
-
-## Backend
-
-- Backend runs in a single `screen -S wellness` session on the VPS
-- Always check `screen -ls` before starting a new session — never run `npm run dev` outside the existing session
-- If the session is dead, restart with: `screen -dmS wellness bash -c 'cd /root/wellness-app/backend && npm run dev 2>&1 | tee /tmp/wellness-backend.log'`
+- **Do NOT run `eas build` without explicit user approval.**
+- App identity: Ripple Wellness, four-quadrant droplet icon, Bold Outline design language.
+- Use `useFocusEffect` (not `useEffect`) for permission status checks.
+- Correlation language: descriptive only, never diagnostic or causal.
+- Check the database before assuming a feature is broken — "backend works, no UI" is a common shape.
 
 ## Git
 
-- Repo under git. Commit checkpoints after each confirmed-working feature.
-- Don't regenerate shared files (`client.ts`, theme files) wholesale when adding a new feature — add to them.
+Both worktrees share the same `.git` history. Dev branch diverges from master — commit freely here, merge to master only when confirmed working.
