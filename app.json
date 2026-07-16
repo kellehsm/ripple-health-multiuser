@@ -66,6 +66,11 @@
       "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
-    "owner": "kellehjs"
+    "owner": "kellehjs",
+    "extra": {
+      "eas": {
+        "projectId": "6a8534d7-4d01-4882-b591-397d26c93713"
+      }
+    }
   }
 }
