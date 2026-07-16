@@ -1,12 +1,24 @@
-# Ripple Wellness — Frontend (CLAUDE.md)
+# Ripple Wellness — Frontend PRODUCTION (CLAUDE.md)
 
-Expo/React Native (TypeScript) app, "Ripple Wellness." Talks to the backend at `https://app.kels.gg/api`.
+Expo/React Native (TypeScript) app, "Ripple Wellness." Talks to the production backend at `https://app.kels.gg/api`.
+
+**THIS IS PRODUCTION. Do not develop here — use `/root/wellness-fresh-multiuser-dev` (dev branch) for all new work.**
+
+## Environment
+
+| | Production (this directory) | Dev |
+|---|---|---|
+| Directory | `/root/wellness-fresh-multiuser` | `/root/wellness-fresh-multiuser-dev` |
+| Git branch | `master` | `dev` |
+| Backend URL | `https://app.kels.gg/api` | `http://129.121.125.214:4002` |
+| Metro port | 8081 | 8082 |
+| Test via | EAS APK | Expo Go |
 
 ## Critical operational rules
 
-- **Do NOT run `eas build` without explicit user approval.** EAS build credits are limited and nearly exhausted at times — batch ALL native-touching changes (native modules, permissions, icon assets, Health Connect, foreground services, notification config) together and only build when explicitly told to.
-- JS-only changes (screens, styling, navigation logic, API calls) need no approval — test freely via the dev server (`npx expo start`).
-- Metro dev server runs on port 8081. Backend is at `https://app.kels.gg/api` (real HTTPS — the app cannot use plain `http://` in a real build; Android blocks cleartext traffic by default).
+- **Do NOT run `eas build` without explicit user approval.** EAS build credits are limited — batch ALL native-touching changes (native modules, permissions, icon assets, Health Connect, foreground services, notification config) together and only build when explicitly told to.
+- JS-only changes (screens, styling, navigation logic, API calls) need no approval — but develop and test them in the dev directory first.
+- Android blocks cleartext HTTP in production builds — the app must use `https://` for production. Expo Go allows cleartext, which is why dev can use `http://`.
 
 ## App identity
 
@@ -28,11 +40,11 @@ Expo/React Native (TypeScript) app, "Ripple Wellness." Talks to the backend at `
 ## Navigation
 
 - Bottom nav order: **Health, Meals, Home (raised center button), Life, Finance** — Home is a filled circle (teal) floating above the tab bar line, not a flat tab like the others. Thin dividers between each tab item.
-- Settings is accessed via a header gear icon (stack navigation pushed on top), NOT a 6th bottom tab — this was a deliberate choice to preserve the 5-tab-plus-center-button layout.
+- Settings is accessed via a header gear icon (stack navigation pushed on top), NOT a 6th bottom tab — deliberate choice to preserve the 5-tab-plus-center-button layout.
 
 ## Icon library gotchas
 
-- The actual app uses **Ionicons** via `@expo/vector-icons`. (Note: Tabler icon names like `ti-pizza`/`ti-heartbeat` were used in chat-based design mockups only and do NOT apply to this codebase — always verify Ionicons names actually render in Expo Go before finalizing, since some assumed equivalents may not exist.)
+- The actual app uses **Ionicons** via `@expo/vector-icons`. (Note: Tabler icon names like `ti-pizza`/`ti-heartbeat` were used in chat-based design mockups only and do NOT apply to this codebase — always verify Ionicons names actually render in Expo Go before finalizing.)
 - Health → `heart`, Meals → `restaurant` or `fast-food` (verify which renders best), Home → `home`, Life → `book`, Finance → `wallet`.
 
 ## Common bug pattern to check first
@@ -50,11 +62,15 @@ Any UI text describing a pattern across data must stay descriptive, never diagno
 - Repeated pattern across multiple days → stronger language OK, but must cite the count ("4 of the last 5 days")
 - Never phrase things as medical advice or a causal claim ("your lunch is spiking your blood sugar" is NOT acceptable phrasing)
 
-## Backend
+## Receiving promoted changes from dev
 
-- Backend runs in a single `screen -S wellness` session on the VPS
-- Always check `screen -ls` before starting a new session — never run `npm run dev` outside the existing session
-- If the session is dead, restart with: `screen -dmS wellness bash -c 'cd /root/wellness-app/backend && npm run dev 2>&1 | tee /tmp/wellness-backend.log'`
+After dev changes are confirmed working and merged into master:
+
+```bash
+# In this directory:
+git pull origin master
+# Then trigger an EAS build only with explicit user approval if native changes are included
+```
 
 ## Git
 
