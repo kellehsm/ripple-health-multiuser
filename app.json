@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "wellnessfresh",
+    "scheme": "ripple",
     "userInterfaceStyle": "automatic",
     "ios": {
       "infoPlist": {
@@ -57,9 +57,7 @@
       "expo-secure-store"
     ],
     "updates": {
-      "url": "https://u.expo.dev/db5bae1a-d8dd-4c26-84e7-7711669de2e8",
-      "enabled": true,
-      "fallbackToCacheTimeout": 0
+      "enabled": false
     },
     "runtimeVersion": {
       "policy": "appVersion"
@@ -68,11 +66,6 @@
       "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
-    "extra": {
-      "eas": {
-        "projectId": "db5bae1a-d8dd-4c26-84e7-7711669de2e8"
-      }
-    },
-    "owner": "kels_gg"
+    "owner": "kellehjs"
   }
 }
