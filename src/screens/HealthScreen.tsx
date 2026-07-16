@@ -449,6 +449,35 @@ export function HealthScreen() {
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
     >
+      {/* Mindfulness button */}
+      <Pressable
+        onPress={() => navigation.getParent()?.navigate("Mindfulness")}
+        style={{
+          borderRadius: 14,
+          borderWidth: 2,
+          borderColor: ink,
+          backgroundColor: theme.purple.solid,
+          padding: 16,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 14,
+          shadowColor: ink,
+          shadowOffset: { width: 4, height: 4 },
+          shadowOpacity: 1,
+          shadowRadius: 0,
+          elevation: 4,
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="Open Mindfulness hub"
+      >
+        <Text style={{ fontSize: 32 }}>🧘</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: "#fff", fontSize: 18, fontWeight: "900", marginBottom: 2 }}>Mindfulness</Text>
+          <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 12 }}>Breathing · grounding · gratitude</Text>
+        </View>
+        <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 20, fontWeight: "800" }}>›</Text>
+      </Pressable>
+
       {/* 2×2 metric tile grid */}
       <View style={styles.grid}>
         <Pressable

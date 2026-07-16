@@ -10,7 +10,7 @@ import { InsightCard, Insight } from "../components/InsightCard";
 
 const TYPE_GROUPS: { label: string; types: string[]; emoji: string }[] = [
   { label: "All", types: [], emoji: "✨" },
-  { label: "Health", types: ["glucose", "sleep", "activity", "water"], emoji: "❤️" },
+  { label: "Wellness", types: ["glucose", "sleep", "activity", "water"], emoji: "❤️" },
   { label: "Mind", types: ["mood", "books", "hobbies"], emoji: "🧠" },
   { label: "Habits", types: ["spending", "streak"], emoji: "🔥" },
 ];
