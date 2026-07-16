@@ -1,6 +1,6 @@
 import { getToken } from "../lib/auth";
 
-const BASE_URL = "https://app.kels.gg/api";
+const BASE_URL = "http://129.121.125.214:4002";
 
 async function request(path: string, options: RequestInit = {}): Promise<any> {
   const token = await getToken();
@@ -312,6 +312,12 @@ export const api = {
   },
   disconnectDrive: function () {
     return request("/settings/google-drive/disconnect", { method: "POST", body: JSON.stringify({}) });
+  },
+  listDriveBackups: function () {
+    return request("/settings/google-drive/list-backups");
+  },
+  restoreFromDrive: function (file_id: string) {
+    return request("/settings/google-drive/restore", { method: "POST", body: JSON.stringify({ file_id }) });
   },
 
   // ── Substances ────────────────────────────────────────────────────────────
