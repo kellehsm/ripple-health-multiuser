@@ -313,6 +313,12 @@ export const api = {
   disconnectDrive: function () {
     return request("/settings/google-drive/disconnect", { method: "POST", body: JSON.stringify({}) });
   },
+  listDriveBackups: function () {
+    return request("/settings/google-drive/list-backups");
+  },
+  restoreFromDrive: function (file_id: string) {
+    return request("/settings/google-drive/restore", { method: "POST", body: JSON.stringify({ file_id }) });
+  },
 
   // ── Substances ────────────────────────────────────────────────────────────
   searchSubstances: function (q: string, type: "caffeine" | "alcohol") {

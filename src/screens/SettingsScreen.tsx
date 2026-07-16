@@ -111,6 +111,9 @@ export function SettingsScreen() {
   const [driveStatus, setDriveStatus] = useState<DriveStatus | null>(null);
   const [driveConnecting, setDriveConnecting] = useState(false);
   const [driveBackingUp, setDriveBackingUp] = useState(false);
+  const [driveBackups, setDriveBackups] = useState<Array<{ id: string; name: string; createdTime: string; size?: string }> | null>(null);
+  const [loadingBackups, setLoadingBackups] = useState(false);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
 
   const loadDriveStatus = useCallback(async function () {
     try {
@@ -372,6 +375,57 @@ export function SettingsScreen() {
     } catch (e: any) {
       Alert.alert("Error", e?.message ?? "Failed to update setting.");
     }
+  }
+
+  async function handleLoadBackups() {
+    setLoadingBackups(true);
+    try {
+      const res = await api.listDriveBackups();
+      setDriveBackups(res.files ?? []);
+    } catch (e: any) {
+      Alert.alert("Error", e?.message ?? "Could not list backups.");
+    } finally {
+      setLoadingBackups(false);
+    }
+  }
+
+  async function handleRestore(fileId: string, filename: string) {
+    Alert.alert(
+      "Restore from backup?",
+      `This will import data from "${filename}" into your account. Existing records won't be overwritten — only missing records will be added.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Restore",
+          onPress: async () => {
+            setRestoringId(fileId);
+            try {
+              const res = await api.restoreFromDrive(fileId);
+              const c = res.counts ?? {};
+              const lines = [
+                c.glucose_readings && `${c.glucose_readings} glucose readings`,
+                c.meals && `${c.meals} meals`,
+                c.journal_entries && `${c.journal_entries} journal entries`,
+                c.spending_entries && `${c.spending_entries} spending entries`,
+                c.books && `${c.books} books`,
+                c.hobbies && `${c.hobbies} hobbies`,
+                c.hobby_logs && `${c.hobby_logs} hobby logs`,
+                c.sleep_sessions && `${c.sleep_sessions} sleep sessions`,
+                c.heart_rate_readings && `${c.heart_rate_readings} heart rate readings`,
+                c.metrics && `${c.metrics} metrics`,
+                c.metric_logs && `${c.metric_logs} metric logs`,
+              ].filter(Boolean);
+              const summary = lines.length > 0 ? lines.join(", ") : "Nothing new to import — all records already existed.";
+              Alert.alert("Restore complete", "Added: " + summary);
+            } catch (e: any) {
+              Alert.alert("Restore failed", e?.message ?? "Unknown error");
+            } finally {
+              setRestoringId(null);
+            }
+          },
+        },
+      ]
+    );
   }
 
   async function handleDisconnectDrive() {
@@ -1046,6 +1100,50 @@ export function SettingsScreen() {
                 : <Text style={{ color: theme.teal.fg, fontWeight: "500" }}>Back up now</Text>
               }
             </Pressable>
+
+            {/* Restore from backup */}
+            <Pressable
+              onPress={handleLoadBackups}
+              disabled={loadingBackups}
+              style={[styles.saveButton, { backgroundColor: theme.purple.bg ?? theme.card, borderColor: theme.purple.sub, opacity: loadingBackups ? 0.6 : 1 }]}
+            >
+              {loadingBackups
+                ? <ActivityIndicator size="small" color={theme.purple.fg} />
+                : <Text style={{ color: theme.purple.fg, fontWeight: "500" }}>View backups to restore</Text>
+              }
+            </Pressable>
+
+            {driveBackups !== null && (
+              <View style={{ gap: 6, marginTop: 4 }}>
+                {driveBackups.length === 0 ? (
+                  <Text style={{ color: theme.textSoft, fontSize: 12, textAlign: "center" }}>No JSON backups found in Drive.</Text>
+                ) : (
+                  driveBackups.map((file) => (
+                    <View
+                      key={file.id}
+                      style={{ flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: theme.cardBorder, borderRadius: 8, padding: 10 }}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: theme.textStrong, fontSize: 13, fontWeight: "600" }}>{file.name}</Text>
+                        <Text style={{ color: theme.textSoft, fontSize: 11 }}>
+                          {new Date(file.createdTime).toLocaleDateString()}
+                        </Text>
+                      </View>
+                      <Pressable
+                        onPress={() => handleRestore(file.id, file.name)}
+                        disabled={restoringId === file.id}
+                        style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: theme.purple.sub, backgroundColor: theme.purple.bg ?? theme.card }}
+                      >
+                        {restoringId === file.id
+                          ? <ActivityIndicator size="small" color={theme.purple.fg} />
+                          : <Text style={{ color: theme.purple.fg, fontSize: 12, fontWeight: "600" }}>Restore</Text>
+                        }
+                      </Pressable>
+                    </View>
+                  ))
+                )}
+              </View>
+            )}
 
             <Pressable
               onPress={handleDisconnectDrive}
