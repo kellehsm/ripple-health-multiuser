@@ -11,6 +11,7 @@ import {
   Alert,
   Platform,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import * as IntentLauncher from "expo-intent-launcher";
@@ -84,6 +85,7 @@ export function SettingsScreen() {
   const [saving, setSaving] = useState(false);
   const [dexcomAccountId, setDexcomAccountId] = useState("");
   const [dexcomPassword, setDexcomPassword] = useState("");
+  const [showDexcomPassword, setShowDexcomPassword] = useState(false);
   const [dexcomRegion, setDexcomRegion] = useState<"us" | "ous">("us");
   const [trackingEnabled, setTrackingEnabled] = useState(false);
   const [notifGranted, setNotifGranted] = useState<boolean | null>(null);
@@ -674,16 +676,26 @@ export function SettingsScreen() {
         <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>
           Password {settings.dexcom?.share_password_set ? "(currently set — leave blank to keep)" : ""}
         </Text>
-        <TextInput
-          value={dexcomPassword}
-          onChangeText={setDexcomPassword}
-          placeholder={settings.dexcom?.share_password_set ? "Leave blank to keep existing" : "Password"}
-          placeholderTextColor={theme.textSoft}
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
-          style={[styles.textInput, { color: theme.textStrong, borderColor: theme.ink, backgroundColor: theme.page }]}
-        />
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <TextInput
+            value={dexcomPassword}
+            onChangeText={setDexcomPassword}
+            placeholder={settings.dexcom?.share_password_set ? "Leave blank to keep existing" : "Password"}
+            placeholderTextColor={theme.textSoft}
+            secureTextEntry={!showDexcomPassword}
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={[styles.textInput, { flex: 1, color: theme.textStrong, borderColor: theme.ink, backgroundColor: theme.page }]}
+          />
+          <Pressable
+            onPress={() => setShowDexcomPassword(v => !v)}
+            hitSlop={8}
+            accessibilityLabel={showDexcomPassword ? "Hide password" : "Show password"}
+            style={{ padding: 4 }}
+          >
+            <Ionicons name={showDexcomPassword ? "eye-off-outline" : "eye-outline"} size={20} color={theme.textSoft} />
+          </Pressable>
+        </View>
 
         <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>Region</Text>
         <View style={styles.regionRow}>

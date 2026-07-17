@@ -578,6 +578,7 @@ export function MealsScreen() {
     if (!searchQuery.trim()) return;
     setSearching(true);
     setSearchError(null);
+    setSearchResults([]);
     setPendingFood(null);
     api.searchFood(searchQuery)
       .then(function (data: FoodResult[]) { setSearchResults(Array.isArray(data) ? data : []); })

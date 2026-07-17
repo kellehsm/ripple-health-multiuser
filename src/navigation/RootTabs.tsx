@@ -159,6 +159,7 @@ function TabNavigator() {
         component={LifeScreen}
         options={{
           title: "Hobbies",
+          tabBarLabel: "Hobbies",
           tabBarIcon: () => (
             <Text style={{ fontSize: 22 }}>📖</Text>
           ),

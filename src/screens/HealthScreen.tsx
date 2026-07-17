@@ -605,7 +605,15 @@ export function HealthScreen() {
           </Text>
         ) : (
           <GestureDetector gesture={panGesture}>
-            <View>
+            <View
+              accessible={true}
+              accessibilityRole="image"
+              accessibilityLabel={
+                status?.hasData
+                  ? `Glucose chart. Last reading ${status.mg_dl} mg/dL${status.arrow ? ", " + status.arrow : ""}${status.minutesSinceReading != null ? ", " + status.minutesSinceReading + " minutes ago" : ""}. ${todayReadings.filter(r => Number(r.mg_dl) < 70 || Number(r.mg_dl) > 180).length} readings out of the 70–180 mg/dL range in this window.`
+                  : "Glucose chart. No readings in the current time window."
+              }
+            >
               <Svg width={CHART_WIDTH} height={CHART_HEIGHT} style={{ marginTop: 12 }}>
                 {gridValues.map((v) => {
                   const gy = PAD_TOP + chartInnerHeight - ((v - minVal) / (maxVal - minVal)) * chartInnerHeight;

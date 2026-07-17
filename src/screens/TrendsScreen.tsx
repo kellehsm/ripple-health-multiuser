@@ -73,12 +73,18 @@ function ScatterPlot({
   const lx2 = PAD + W, ly2 = clamp(py(slope * xMax + intercept));
 
   return (
-    <Svg width={CHART_W} height={CHART_H}>
-      <Line x1={lx1} y1={ly1} x2={lx2} y2={ly2} stroke={lineColor} strokeWidth={1.5} strokeDasharray="5,4" opacity={0.45} />
-      {xs.map((x, i) => (
-        <Circle key={i} cx={px(x)} cy={py(ys[i])} r={4} fill={dotColor} opacity={0.72} />
-      ))}
-    </Svg>
+    <View
+      accessible={true}
+      accessibilityRole="image"
+      accessibilityLabel={`Scatter chart showing ${xs.length} data points. Range: ${xMin.toFixed(1)}–${xMax.toFixed(1)} on the x-axis, ${yMin.toFixed(1)}–${yMax.toFixed(1)} on the y-axis.`}
+    >
+      <Svg width={CHART_W} height={CHART_H}>
+        <Line x1={lx1} y1={ly1} x2={lx2} y2={ly2} stroke={lineColor} strokeWidth={1.5} strokeDasharray="5,4" opacity={0.45} />
+        {xs.map((x, i) => (
+          <Circle key={i} cx={px(x)} cy={py(ys[i])} r={4} fill={dotColor} opacity={0.72} />
+        ))}
+      </Svg>
+    </View>
   );
 }
 

@@ -21,10 +21,12 @@ export function InsightsScreen() {
   const card = theme.card;
 
   const [insights, setInsights] = useState<Insight[]>([]);
+  const [dismissed, setDismissed] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [activeGroup, setActiveGroup] = useState(0);
+  const [showDismissed, setShowDismissed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function load(showRefresh = false) {
@@ -32,8 +34,14 @@ export function InsightsScreen() {
     else setLoading(true);
     setError(null);
     try {
-      const data = await api.getInsights();
-      setInsights(Array.isArray(data) ? data : []);
+      const [active, history] = await Promise.all([api.getInsights(), api.getInsightHistory()]);
+      const activeList: Insight[] = Array.isArray(active) ? active : [];
+      const activeIds = new Set(activeList.map((i: Insight) => i.id));
+      const dismissedList: Insight[] = Array.isArray(history)
+        ? history.filter((i: any) => i.dismissed && !activeIds.has(i.id))
+        : [];
+      setInsights(activeList);
+      setDismissed(dismissedList);
     } catch (e: any) {
       setError("Couldn't load insights — pull to retry.");
     } finally {
@@ -47,7 +55,18 @@ export function InsightsScreen() {
   async function handleDismiss(id: string) {
     try {
       await api.dismissInsight(id);
+      const item = insights.find(i => i.id === id);
       setInsights(prev => prev.filter(i => i.id !== id));
+      if (item) setDismissed(prev => [{ ...item, dismissed: true }, ...prev]);
+    } catch (_) {}
+  }
+
+  async function handleUndismiss(id: string) {
+    try {
+      await api.undismissInsight(id);
+      const item = dismissed.find(i => i.id === id);
+      setDismissed(prev => prev.filter(i => i.id !== id));
+      if (item) setInsights(prev => [{ ...item, dismissed: false }, ...prev]);
     } catch (_) {}
   }
 
@@ -170,6 +189,38 @@ export function InsightsScreen() {
         </View>
       )}
 
+      {/* Dismissed section */}
+      {dismissed.length > 0 && (
+        <View style={{ marginTop: 8 }}>
+          <Pressable
+            onPress={() => setShowDismissed(v => !v)}
+            style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 4 }}
+          >
+            <Ionicons name={showDismissed ? "chevron-down" : "chevron-forward"} size={14} color={theme.textSoft} />
+            <Text style={[styles.sectionLabel, { color: theme.textSoft, marginBottom: 0 }]}>
+              DISMISSED ({dismissed.length})
+            </Text>
+          </Pressable>
+          {showDismissed && (
+            <View style={{ gap: 8, marginTop: 6 }}>
+              {dismissed.map(insight => (
+                <View key={insight.id} style={[styles.dismissedRow, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+                  <Text style={{ color: theme.textSoft, fontSize: 13, flex: 1, lineHeight: 18 }}>{insight.title}</Text>
+                  <Pressable
+                    onPress={() => handleUndismiss(insight.id)}
+                    hitSlop={8}
+                    style={[styles.restoreBtn, { borderColor: theme.ink }]}
+                    accessibilityLabel="Restore insight"
+                  >
+                    <Text style={{ color: theme.textSoft, fontSize: 11, fontWeight: "700" }}>RESTORE</Text>
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      )}
+
       <Text style={[styles.footer, { color: theme.textSoft }]}>
         Insights are based on statistical patterns in your personal data only. They describe observations, never diagnoses. Always consult a healthcare professional for medical decisions.
       </Text>
@@ -215,6 +266,20 @@ function makeStyles(page: string, ink: string, card: string) {
     },
     emptyTitle: { fontSize: 16, fontWeight: "800", marginBottom: 8 },
     emptyText: { fontSize: 13, lineHeight: 19, textAlign: "center" },
+    dismissedRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      padding: 12,
+      borderRadius: 10,
+      borderWidth: 1,
+    },
+    restoreBtn: {
+      borderWidth: 1.5,
+      borderRadius: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+    },
     footer: {
       fontSize: 11,
       lineHeight: 16,
