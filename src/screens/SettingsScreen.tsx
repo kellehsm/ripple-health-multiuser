@@ -497,6 +497,8 @@ export function SettingsScreen() {
     <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content}>
       <ThemePickerModal visible={themePickerVisible} onClose={() => setThemePickerVisible(false)} />
 
+      <Text style={[styles.groupLabel, { color: theme.textSoft }]}>APPEARANCE</Text>
+
       {/* Appearance */}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Appearance</Text>
@@ -612,6 +614,8 @@ export function SettingsScreen() {
         })}
       </View>
 
+      <Text style={[styles.groupLabel, { color: theme.textSoft }]}>DATA SOURCES</Text>
+
       {/* Health Connect sync toggles */}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Health Connect Sync</Text>
@@ -726,6 +730,8 @@ export function SettingsScreen() {
           <Text style={{ color: theme.teal.fg, fontWeight: "500" }}>Save Dexcom credentials</Text>
         </Pressable>
       </View>
+
+      <Text style={[styles.groupLabel, { color: theme.textSoft }]}>NOTIFICATIONS</Text>
 
       {/* Smart notifications */}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
@@ -943,6 +949,8 @@ export function SettingsScreen() {
         />
       </View>
 
+      <Text style={[styles.groupLabel, { color: theme.textSoft }]}>EXPORT & BACKUP</Text>
+
       {/* Doctor PDF export */}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Export Health Report</Text>
@@ -1104,6 +1112,8 @@ export function SettingsScreen() {
         )}
       </View>
 
+      <Text style={[styles.groupLabel, { color: theme.textSoft }]}>ACCOUNT</Text>
+
       {/* Account */}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Account</Text>
@@ -1176,6 +1186,7 @@ const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   card: { borderRadius: 14, borderWidth: 2, padding: 16, gap: 8 },
+  groupLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.2, marginTop: 4, marginBottom: -4 },
   sectionTitle: { fontSize: 14, fontWeight: "600", marginBottom: 2 },
   sectionDesc: { fontSize: 12, marginBottom: 4 },
   subHead: { fontSize: 13, fontWeight: "500", marginTop: 8, marginBottom: 2 },

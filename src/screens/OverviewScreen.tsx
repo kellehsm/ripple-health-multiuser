@@ -431,6 +431,9 @@ export function OverviewScreen() {
 
   // Derived values
   const tir = computeTIR(dayGlucose);
+  const lastGlucoseReading = dayGlucose.length > 0 ? dayGlucose[dayGlucose.length - 1] : null;
+  const lastGlucoseVal = lastGlucoseReading ? Number(lastGlucoseReading.mg_dl) : null;
+  const glucoseOutOfRange = lastGlucoseVal !== null && (lastGlucoseVal < 70 || lastGlucoseVal > 180);
   const insights = useMemo(() => computeInsights({
     dayGlucose, weeklyData, patternEvents, streak, stepsCount, sleepStats, digest,
   }), [dayGlucose, weeklyData, patternEvents, streak, stepsCount, sleepStats, digest]);
@@ -676,7 +679,7 @@ export function OverviewScreen() {
       />
 
       {/* ── 5. Today's timeline ── */}
-      <View style={[styles.card, { backgroundColor: theme.card }]}>
+      <View style={[styles.card, { backgroundColor: glucoseOutOfRange ? theme.red.tint : theme.card }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Today's timeline</Text>
 
         {/* Glucose chart */}
@@ -701,6 +704,21 @@ export function OverviewScreen() {
                     <Polyline points={glucosePoints} fill="none" stroke={theme.berry.bar} strokeWidth={2} />
                   </>
                 ) : null}
+                {lastGlucoseVal !== null && lastGlucoseReading ? (() => {
+                  const lx = eventX(new Date(lastGlucoseReading.recorded_at).getTime(), windowStart, windowEnd);
+                  const ly = glucoseY(lastGlucoseVal, minVal, maxVal);
+                  const isHigh = lastGlucoseVal > 180;
+                  const isLow = lastGlucoseVal < 70;
+                  const dotFill = isHigh || isLow ? theme.red.solid : theme.berry.bar;
+                  const labelX = lx + 6 + 26 > CHART_W ? lx - 32 : lx + 6;
+                  return (
+                    <>
+                      <Circle cx={lx} cy={ly} r={5} fill={dotFill} stroke={ink} strokeWidth={1.5} />
+                      <Rect x={labelX} y={ly - 9} width={30} height={14} rx={4} fill={dotFill} opacity={0.92} />
+                      <SvgText x={labelX + 15} y={ly + 2} fontSize={9} fontWeight="bold" fill="#fff" textAnchor="middle">{lastGlucoseVal}</SvgText>
+                    </>
+                  );
+                })() : null}
                 {dayEvents.map(function (ev, i) {
                   const t = new Date(ev.time).getTime();
                   if (t < windowStart || t > windowEnd) return null;
