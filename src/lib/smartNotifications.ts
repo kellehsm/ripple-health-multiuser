@@ -163,6 +163,15 @@ export async function checkGlucoseSpike(settings: any, now: Date) {
     const rise = latest - earliest;
     if (rise < threshold) return;
 
+    // Suppress if a meal was already logged within the past hour — the app already has the context
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    const todayStr = now.toISOString().slice(0, 10);
+    const recentMeals = await api.meals(todayStr).catch(() => [] as any[]);
+    const hasRecentMeal = Array.isArray(recentMeals) && recentMeals.some(
+      (m: any) => new Date(m.logged_at) >= oneHourAgo,
+    );
+    if (hasRecentMeal) return;
+
     lastSpikeMs = now.getTime();
     const current = latest;
     const rangeNote = current > 180 ? " — currently above your target range" : "";
@@ -216,6 +225,13 @@ export async function checkWaterReminder(settings: any, now: Date) {
     const todayCount = Array.isArray(logs)
       ? Math.round(logs.filter((l) => new Date(l.logged_at).toDateString() === todayStr).reduce((s, l) => s + Number(l.value), 0))
       : 0;
+
+    // Suppress if water was already logged within the past hour
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    const hasRecentWater = Array.isArray(logs) && logs.some(
+      (l: any) => new Date(l.logged_at) >= oneHourAgo,
+    );
+    if (hasRecentWater) return;
 
     if (todayCount >= goal) {
       // One-time goal completion celebration
