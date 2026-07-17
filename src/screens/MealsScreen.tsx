@@ -490,15 +490,20 @@ function MiniGlucoseChart({
     }
   }
 
+  const isHighResponse = peakVal > 180;
+  const chartLineColor = isHighResponse ? theme.red.solid : theme.berry.sub;
+
   return (
-    <View style={{ marginTop: 4 }}>
+    <View style={{ marginTop: 4, borderRadius: 8, borderWidth: isHighResponse ? 1.5 : 0, borderColor: isHighResponse ? theme.red.solid : "transparent", padding: isHighResponse ? 4 : 0 }}>
+      {isHighResponse && (
+        <Text style={{ color: theme.red.fg, fontSize: 10, fontWeight: "700", marginBottom: 2 }}>⚠ HIGH RESPONSE ({peakVal} mg/dL)</Text>
+      )}
       {points.length > 0 && (
         <Svg width={MINI_CHART_WIDTH} height={MINI_CHART_HEIGHT}>
           <SvgText x={0} y={MC_PAD_TOP + 6} fontSize={9} fill={theme.textSoft}>{Math.round(maxVal)}</SvgText>
           <SvgText x={0} y={MINI_CHART_HEIGHT - MC_PAD_BOTTOM} fontSize={9} fill={theme.textSoft}>{Math.round(minVal)}</SvgText>
-          {/* Double-stroke mini chart */}
           <Polyline points={points} fill="none" stroke={ink} strokeWidth={2.5} />
-          <Polyline points={points} fill="none" stroke={theme.berry.sub} strokeWidth={1.5} />
+          <Polyline points={points} fill="none" stroke={chartLineColor} strokeWidth={1.5} />
         </Svg>
       )}
       <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 4 }}>{summaryText}</Text>
