@@ -19,6 +19,7 @@ import * as WebBrowser from "expo-web-browser";
 import notifee, { AuthorizationStatus } from "@notifee/react-native";
 import * as Notifications from "expo-notifications";
 import { useFocusEffect } from "@react-navigation/core";
+import { useNavigation } from "@react-navigation/native";
 import { getGrantedPermissions } from "react-native-health-connect";
 import { useTheme } from "../theme/ThemeContext";
 import { onSolid } from "../theme/colorUtils";
@@ -79,6 +80,7 @@ type DriveStatus = {
 
 
 export function SettingsScreen() {
+  const navigation = useNavigation<any>();
   const { theme, paletteId, setPalette } = useTheme();
   const [themePickerVisible, setThemePickerVisible] = useState(false);
   const [settings, setSettings] = useState<Settings>({});
@@ -1151,6 +1153,20 @@ export function SettingsScreen() {
           </View>
         </View>
       )}
+
+      <Text style={[styles.groupLabel, { color: theme.textSoft }]}>HOME SCREEN</Text>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+        <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Customize dashboard</Text>
+        <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
+          Reorder or hide cards on your Home screen.
+        </Text>
+        <Pressable
+          onPress={() => navigation.navigate("CustomizeDashboard")}
+          style={[styles.saveButton, { backgroundColor: theme.teal.tint, borderColor: theme.teal.solid, marginTop: 8 }]}
+        >
+          <Text style={{ color: theme.teal.fg, fontWeight: "700" }}>Open customizer →</Text>
+        </Pressable>
+      </View>
 
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>ACCOUNT</Text>
 

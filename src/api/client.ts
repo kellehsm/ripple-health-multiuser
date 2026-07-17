@@ -390,4 +390,23 @@ export const api = {
   journey: function () {
     return request("/analytics/journey");
   },
+
+  // ── Recipes ───────────────────────────────────────────────────────────────────
+  recipes: function () {
+    return request("/recipes");
+  },
+  createRecipe: function (payload: Record<string, unknown>) {
+    return request("/recipes", { method: "POST", body: JSON.stringify(payload) });
+  },
+  updateRecipe: function (id: string, payload: Record<string, unknown>) {
+    return request("/recipes/" + id, { method: "PATCH", body: JSON.stringify(payload) });
+  },
+  deleteRecipe: function (id: string) {
+    return request("/recipes/" + id, { method: "DELETE" });
+  },
+
+  // ── Sync status ───────────────────────────────────────────────────────────────
+  syncStatus: function () {
+    return request("/settings/sync-status");
+  },
 };

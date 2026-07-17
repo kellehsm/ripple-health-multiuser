@@ -20,6 +20,7 @@ import { onSolid } from "../theme/colorUtils";
 import { api } from "../api/client";
 
 import { BarcodeScannerModal } from "../components/BarcodeScannerModal";
+import { RecipeBuilderModal, Recipe } from "../components/RecipeBuilderModal";
 import { toast, Msg } from "../lib/toast";
 
 // ── Substance types ───────────────────────────────────────────────────────────
@@ -581,6 +582,9 @@ export function MealsScreen() {
   const [frequentMeals, setFrequentMeals] = useState<FrequentMeal[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedMealId, setExpandedMealId] = useState<string | null>(null);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [showRecipeBuilder, setShowRecipeBuilder] = useState(false);
+  const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const [glucoseData, setGlucoseData] = useState<Record<string, GlucoseReading[]>>({});
   const [loadingGlucose, setLoadingGlucose] = useState<Record<string, boolean>>({});
   const [glucoseErrors, setGlucoseErrors] = useState<Record<string, string>>({});
@@ -623,6 +627,9 @@ export function MealsScreen() {
     loadSubstances();
     api.frequentMeals()
       .then(function (data) { setFrequentMeals(Array.isArray(data) ? data : []); })
+      .catch(function () {});
+    api.recipes()
+      .then(function (data: Recipe[]) { setRecipes(Array.isArray(data) ? data : []); })
       .catch(function () {});
   }, [loadMeals, loadSubstances]);
 
@@ -669,10 +676,34 @@ export function MealsScreen() {
         loadMeals(),
         loadSubstances(),
         api.frequentMeals().then(d => setFrequentMeals(Array.isArray(d) ? d : [])).catch(() => {}),
+        api.recipes().then((d: Recipe[]) => setRecipes(Array.isArray(d) ? d : [])).catch(() => {}),
       ]);
     } finally {
       setRefreshing(false);
     }
+  }
+
+  function handleLogRecipe(recipe: Recipe) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    api.addMeal({
+      name: recipe.name,
+      meal_type: mealType,
+      carbs_g: recipe.carbs_g,
+      sugar_g: recipe.sugar_g,
+      calories: recipe.calories,
+      source_db: "recipe",
+    })
+      .then(function () {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        toast("Meal logged.");
+        loadMeals();
+      })
+      .catch(function () { toast("Couldn't log that recipe. Try again.", "error"); });
+  }
+
+  function handleEditRecipe(recipe: Recipe) {
+    setEditingRecipe(recipe);
+    setShowRecipeBuilder(true);
   }
 
   function handleSavePending(values: MacroValues) {
@@ -855,11 +886,40 @@ export function MealsScreen() {
       <View style={[styles.card, { backgroundColor: theme.coral.tint }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Log a meal</Text>
 
-        {/* Frequent meals */}
-        {frequentMeals.length > 0 ? (
+        {/* Frequent meals + recipes */}
+        {(frequentMeals.length > 0 || recipes.length > 0) ? (
           <View style={styles.frequentSection}>
-            <Text style={[styles.sectionLabel, { color: theme.textSoft }]}>YOUR USUAL</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
+              <Text style={[styles.sectionLabel, { color: theme.textSoft, flex: 1, marginBottom: 0 }]}>YOUR USUAL</Text>
+              <Pressable
+                onPress={function () { setEditingRecipe(null); setShowRecipeBuilder(true); }}
+                style={[styles.secondaryBtn, { paddingVertical: 4 }]}
+              >
+                <Ionicons name="bookmark-outline" size={12} color={ink} />
+                <Text style={styles.secondaryBtnText}>+ RECIPE</Text>
+              </Pressable>
+            </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.frequentRow}>
+              {recipes.map(function (recipe) {
+                return (
+                  <Pressable
+                    key={recipe.id}
+                    onPress={function () { handleLogRecipe(recipe); }}
+                    onLongPress={function () { handleEditRecipe(recipe); }}
+                    style={[styles.frequentChip, { backgroundColor: theme.teal.tint }]}
+                  >
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <Ionicons name="bookmark" size={11} color={theme.teal.fg} />
+                      <Text style={{ color: theme.teal.fg, fontSize: 13, fontWeight: "700" }} numberOfLines={1}>{recipe.name}</Text>
+                    </View>
+                    {(recipe.calories != null || recipe.carbs_g != null) ? (
+                      <Text style={{ color: theme.teal.sub, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
+                        {recipe.calories != null ? recipe.calories + " cal" : recipe.carbs_g + "g carbs"}
+                      </Text>
+                    ) : null}
+                  </Pressable>
+                );
+              })}
               {frequentMeals.map(function (meal, i) {
                 const cc = chipColors(i, theme);
                 return (
@@ -879,7 +939,15 @@ export function MealsScreen() {
               })}
             </ScrollView>
           </View>
-        ) : null}
+        ) : (
+          <Pressable
+            onPress={function () { setEditingRecipe(null); setShowRecipeBuilder(true); }}
+            style={[styles.secondaryBtn, { alignSelf: "flex-start", marginBottom: 8 }]}
+          >
+            <Ionicons name="bookmark-outline" size={12} color={ink} />
+            <Text style={styles.secondaryBtnText}>+ SAVE A RECIPE</Text>
+          </Pressable>
+        )}
 
         {/* Meal type selector */}
         <View style={styles.chipRow}>
@@ -1261,6 +1329,16 @@ export function MealsScreen() {
             source_db: "manual",
           });
         }}
+      />
+      <RecipeBuilderModal
+        visible={showRecipeBuilder}
+        onClose={function () { setShowRecipeBuilder(false); setEditingRecipe(null); }}
+        onSaved={function (r) {
+          setRecipes(function (prev) { return [...prev.filter(function (x) { return x.id !== r.id; }), r]; });
+          setShowRecipeBuilder(false);
+          setEditingRecipe(null);
+        }}
+        existing={editingRecipe ?? undefined}
       />
     </ScrollView>
   );

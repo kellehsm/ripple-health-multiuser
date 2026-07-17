@@ -2,6 +2,9 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { ScrollView, View, Text, Pressable, StyleSheet, Dimensions, Platform, Alert, RefreshControl } from "react-native";
 import { LoadingIndicator } from "../components/LoadingIndicator";
 import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/core";
+import { StaleSyncBanner } from "../components/StaleSyncBanner";
+import { shouldNotifyStale, markStaleNotified } from "../utils/staleSyncState";
 import * as Haptics from "expo-haptics";
 import Svg, { Polyline, Line, Text as SvgText, Rect, Circle } from "react-native-svg";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -126,6 +129,7 @@ export function HealthScreen() {
   const [hcResult, setHcResult] = useState<string | null>(null);
   const [liveTracking, setLiveTracking] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [staleBannerMessage, setStaleBannerMessage] = useState<string | null>(null);
 
   // Glucose chart scrubbing
   const [scrubInfo, setScrubInfo] = useState<{
@@ -400,6 +404,33 @@ export function HealthScreen() {
     [onScrub, onScrubEnd]
   );
 
+  useFocusEffect(useCallback(function () {
+    api.syncStatus()
+      .then(async function (s: any) {
+        const now = Date.now();
+        const stale: Array<{ key: string; label: string; thresholdH: number; lastAt: string | null }> = [
+          { key: "dexcom",   label: "Dexcom",         thresholdH: 3,  lastAt: s?.dexcom_last_at   ?? null },
+          { key: "hc_steps", label: "Health Connect steps", thresholdH: 25, lastAt: s?.hc_steps_last_at ?? null },
+          { key: "hc_sleep", label: "Health Connect sleep", thresholdH: 49, lastAt: s?.hc_sleep_last_at ?? null },
+          { key: "hc_hr",    label: "Heart Rate",     thresholdH: 49, lastAt: s?.hc_hr_last_at    ?? null },
+        ];
+        for (const item of stale) {
+          if (!item.lastAt) continue;
+          const age = now - new Date(item.lastAt).getTime();
+          if (age > item.thresholdH * 60 * 60 * 1000) {
+            const notify = await shouldNotifyStale(item.key);
+            if (notify) {
+              const ageH = Math.round(age / 3600000);
+              setStaleBannerMessage(`${item.label} data hasn't synced in ${ageH}h. You may want to check your connection.`);
+              await markStaleNotified(item.key);
+              break;
+            }
+          }
+        }
+      })
+      .catch(function () {});
+  }, []));
+
   useEffect(function () {
     load(rangeHours);
     const interval = setInterval(function () {
@@ -446,6 +477,7 @@ export function HealthScreen() {
     : null;
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView
       style={{ backgroundColor: theme.page }}
       contentContainerStyle={styles.content}
@@ -846,6 +878,13 @@ export function HealthScreen() {
       ) : null}
 
     </ScrollView>
+    {staleBannerMessage ? (
+      <StaleSyncBanner
+        message={staleBannerMessage}
+        onDismiss={() => setStaleBannerMessage(null)}
+      />
+    ) : null}
+    </View>
   );
 }
 
