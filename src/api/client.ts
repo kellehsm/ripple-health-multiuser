@@ -1,6 +1,6 @@
 import { getToken } from "../lib/auth";
 
-const BASE_URL = "http://129.121.125.214:4002";
+const BASE_URL = __DEV__ ? "http://129.121.125.214:4002" : "https://app.kels.gg/api";
 
 async function request(path: string, options: RequestInit = {}): Promise<any> {
   const token = await getToken();
