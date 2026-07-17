@@ -21,11 +21,16 @@ const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [paletteId, setPaletteId] = useState(DEFAULT_PALETTE_ID);
 
-  // Load persisted palette on mount (after first render, avoids flicker)
+  // Load persisted palette on mount; on first install default to dark if system is dark
   useEffect(() => {
     SecureStore.getItemAsync(STORAGE_KEY)
       .then((stored) => {
-        if (stored && PALETTES[stored]) setPaletteId(stored);
+        if (stored && PALETTES[stored]) {
+          setPaletteId(stored);
+        } else {
+          const scheme = Appearance.getColorScheme();
+          if (scheme === "dark") setPaletteId(DEFAULT_DARK_PALETTE_ID);
+        }
       })
       .catch(() => {});
   }, []);
