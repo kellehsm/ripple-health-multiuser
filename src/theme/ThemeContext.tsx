@@ -1,7 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { Appearance } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import type { Theme } from "./theme";
 import { PALETTES, DEFAULT_PALETTE_ID } from "./palettes";
+
+const DEFAULT_DARK_PALETTE_ID = "midnight-steel";
 
 const STORAGE_KEY = "ripple_palette_id";
 
@@ -18,11 +21,16 @@ const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [paletteId, setPaletteId] = useState(DEFAULT_PALETTE_ID);
 
-  // Load persisted palette on mount (after first render, avoids flicker)
+  // Load persisted palette on mount; on first install default to dark if system is dark
   useEffect(() => {
     SecureStore.getItemAsync(STORAGE_KEY)
       .then((stored) => {
-        if (stored && PALETTES[stored]) setPaletteId(stored);
+        if (stored && PALETTES[stored]) {
+          setPaletteId(stored);
+        } else {
+          const scheme = Appearance.getColorScheme();
+          if (scheme === "dark") setPaletteId(DEFAULT_DARK_PALETTE_ID);
+        }
       })
       .catch(() => {});
   }, []);
@@ -37,7 +45,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const mode: "light" | "dark" = theme.isDark ? "dark" : "light";
 
   const toggle = useCallback(() => {
-    setPalette(theme.isDark ? "morning-mist" : "midnight-neon");
+    setPalette(theme.isDark ? "morning-mist" : "midnight-steel");
   }, [theme.isDark, setPalette]);
 
   return (

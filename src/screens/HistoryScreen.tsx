@@ -77,7 +77,7 @@ export function HistoryScreen() {
   const modeLabel: Record<FilterMode, string> = { glucose: "Glucose", meals: "Meals", mood: "Mood", spending: "Spending" };
 
   return (
-    <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content}>
+    <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
       <View style={styles.modeRow}>
         {MODES.map(m => (
           <Pressable

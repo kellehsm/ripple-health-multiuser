@@ -215,7 +215,7 @@ export function MoodPageSheet({ visible, todayEntries, currentBucket, onDismiss,
 
               <ScrollView style={styles.scroll} contentContainerStyle={{ padding: 16, gap: 10 }} showsVerticalScrollIndicator={false}>
                 <Text style={{ color: theme.textSoft, fontSize: 12, marginBottom: 4 }}>
-                  Tap a period to log or edit
+                  Tap a period to log or edit. Each entry is filed under the period matching when you save it.
                 </Text>
 
                 {BUCKET_ORDER.map((period) => {

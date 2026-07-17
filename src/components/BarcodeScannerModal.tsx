@@ -61,11 +61,13 @@ export function BarcodeScannerModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
 
   function handleClose() {
     setScanned(false);
     setError(null);
     setNotFound(false);
+    setTorchOn(false);
     onClose();
   }
 
@@ -161,6 +163,7 @@ export function BarcodeScannerModal({
             <CameraView
               style={styles.camera}
               facing="back"
+              enableTorch={torchOn}
               barcodeScannerSettings={{
                 barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e", "code128"],
               }}
@@ -170,6 +173,15 @@ export function BarcodeScannerModal({
             <View style={styles.overlay} pointerEvents="none">
               <View style={[styles.finder, { borderColor: accent }]} />
             </View>
+
+            <Pressable
+              onPress={() => setTorchOn(v => !v)}
+              style={[styles.torchBtn, { backgroundColor: torchOn ? "#fff" : "rgba(0,0,0,0.5)" }]}
+              accessibilityLabel={torchOn ? "Turn off flashlight" : "Turn on flashlight"}
+              hitSlop={12}
+            >
+              <Ionicons name={torchOn ? "flash" : "flash-outline"} size={22} color={torchOn ? "#111" : "#fff"} />
+            </Pressable>
 
             <View style={styles.statusArea}>
               {loading ? (
@@ -251,4 +263,14 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center", padding: 32 },
   btn: { borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10 },
   btnText: { color: "#fff", fontWeight: "600", fontSize: 14 },
+  torchBtn: {
+    position: "absolute",
+    top: 108,
+    right: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

@@ -11,6 +11,7 @@ import {
   Alert,
   Platform,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import * as IntentLauncher from "expo-intent-launcher";
@@ -20,6 +21,7 @@ import * as Notifications from "expo-notifications";
 import { useFocusEffect } from "@react-navigation/core";
 import { getGrantedPermissions } from "react-native-health-connect";
 import { useTheme } from "../theme/ThemeContext";
+import { onSolid } from "../theme/colorUtils";
 import { ThemePickerModal } from "./ThemePickerModal";
 import { PALETTES } from "../theme/palettes";
 import { api } from "../api/client";
@@ -84,6 +86,7 @@ export function SettingsScreen() {
   const [saving, setSaving] = useState(false);
   const [dexcomAccountId, setDexcomAccountId] = useState("");
   const [dexcomPassword, setDexcomPassword] = useState("");
+  const [showDexcomPassword, setShowDexcomPassword] = useState(false);
   const [dexcomRegion, setDexcomRegion] = useState<"us" | "ous">("us");
   const [trackingEnabled, setTrackingEnabled] = useState(false);
   const [notifGranted, setNotifGranted] = useState<boolean | null>(null);
@@ -495,6 +498,8 @@ export function SettingsScreen() {
     <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content}>
       <ThemePickerModal visible={themePickerVisible} onClose={() => setThemePickerVisible(false)} />
 
+      <Text style={[styles.groupLabel, { color: theme.textSoft }]}>APPEARANCE</Text>
+
       {/* Appearance */}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Appearance</Text>
@@ -610,6 +615,8 @@ export function SettingsScreen() {
         })}
       </View>
 
+      <Text style={[styles.groupLabel, { color: theme.textSoft }]}>DATA SOURCES</Text>
+
       {/* Health Connect sync toggles */}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Health Connect Sync</Text>
@@ -638,6 +645,17 @@ export function SettingsScreen() {
           onChange={(v) => setHcToggle("sync_heart_rate", v)}
           theme={theme}
         />
+        {hcGranted === false && (
+          <Pressable
+            onPress={async () => {
+              const granted = await requestHealthPermissions().catch(() => false);
+              setHcGranted(!!granted);
+            }}
+            style={[styles.saveButton, { backgroundColor: theme.teal.solid, borderColor: theme.teal.sub }]}
+          >
+            <Text style={{ color: onSolid(theme.teal.solid), fontWeight: "600" }}>Grant all Health Connect permissions</Text>
+          </Pressable>
+        )}
         <Pressable
           onPress={handleBackfill}
           disabled={backfilling}
@@ -674,16 +692,26 @@ export function SettingsScreen() {
         <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>
           Password {settings.dexcom?.share_password_set ? "(currently set — leave blank to keep)" : ""}
         </Text>
-        <TextInput
-          value={dexcomPassword}
-          onChangeText={setDexcomPassword}
-          placeholder={settings.dexcom?.share_password_set ? "Leave blank to keep existing" : "Password"}
-          placeholderTextColor={theme.textSoft}
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
-          style={[styles.textInput, { color: theme.textStrong, borderColor: theme.ink, backgroundColor: theme.page }]}
-        />
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <TextInput
+            value={dexcomPassword}
+            onChangeText={setDexcomPassword}
+            placeholder={settings.dexcom?.share_password_set ? "Leave blank to keep existing" : "Password"}
+            placeholderTextColor={theme.textSoft}
+            secureTextEntry={!showDexcomPassword}
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={[styles.textInput, { flex: 1, color: theme.textStrong, borderColor: theme.ink, backgroundColor: theme.page }]}
+          />
+          <Pressable
+            onPress={() => setShowDexcomPassword(v => !v)}
+            hitSlop={8}
+            accessibilityLabel={showDexcomPassword ? "Hide password" : "Show password"}
+            style={{ padding: 4 }}
+          >
+            <Ionicons name={showDexcomPassword ? "eye-off-outline" : "eye-outline"} size={20} color={theme.textSoft} />
+          </Pressable>
+        </View>
 
         <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>Region</Text>
         <View style={styles.regionRow}>
@@ -714,6 +742,8 @@ export function SettingsScreen() {
           <Text style={{ color: theme.teal.fg, fontWeight: "500" }}>Save Dexcom credentials</Text>
         </Pressable>
       </View>
+
+      <Text style={[styles.groupLabel, { color: theme.textSoft }]}>NOTIFICATIONS</Text>
 
       {/* Smart notifications */}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
@@ -931,6 +961,8 @@ export function SettingsScreen() {
         />
       </View>
 
+      <Text style={[styles.groupLabel, { color: theme.textSoft }]}>EXPORT & BACKUP</Text>
+
       {/* Doctor PDF export */}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Export Health Report</Text>
@@ -1092,6 +1124,8 @@ export function SettingsScreen() {
         )}
       </View>
 
+      <Text style={[styles.groupLabel, { color: theme.textSoft }]}>ACCOUNT</Text>
+
       {/* Account */}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Account</Text>
@@ -1164,6 +1198,7 @@ const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   card: { borderRadius: 14, borderWidth: 2, padding: 16, gap: 8 },
+  groupLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.2, marginTop: 4, marginBottom: -4 },
   sectionTitle: { fontSize: 14, fontWeight: "600", marginBottom: 2 },
   sectionDesc: { fontSize: 12, marginBottom: 4 },
   subHead: { fontSize: 13, fontWeight: "500", marginTop: 8, marginBottom: 2 },

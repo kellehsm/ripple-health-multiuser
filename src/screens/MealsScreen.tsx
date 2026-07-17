@@ -16,6 +16,7 @@ import notifee from "@notifee/react-native";
 import Svg, { Polyline, Text as SvgText } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
+import { onSolid } from "../theme/colorUtils";
 import { api } from "../api/client";
 
 import { BarcodeScannerModal } from "../components/BarcodeScannerModal";
@@ -122,7 +123,7 @@ function CaffeineForm({
           <Text style={styles.cancelBtnText}>CANCEL</Text>
         </Pressable>
         <Pressable onPress={handleSave} style={[styles.actionBtn, { backgroundColor: theme.coral.sub, flex: 1 }]}>
-          <Text style={styles.actionBtnText}>LOG IT</Text>
+          <Text style={[styles.actionBtnText, { color: onSolid(theme.coral.sub) }]}>LOG IT</Text>
         </Pressable>
       </View>
     </View>
@@ -217,7 +218,7 @@ function AlcoholForm({
           <Text style={styles.cancelBtnText}>CANCEL</Text>
         </Pressable>
         <Pressable onPress={handleSave} style={[styles.actionBtn, { backgroundColor: theme.purple.solid, flex: 1 }]}>
-          <Text style={styles.actionBtnText}>LOG IT</Text>
+          <Text style={[styles.actionBtnText, { color: onSolid(theme.purple.solid) }]}>LOG IT</Text>
         </Pressable>
       </View>
     </View>
@@ -444,7 +445,7 @@ function MacroEditForm({
           <Text style={styles.cancelBtnText}>CANCEL</Text>
         </Pressable>
         <Pressable onPress={handleSave} style={[styles.actionBtn, { backgroundColor: theme.coral.solid, flex: 1 }]}>
-          <Text style={styles.actionBtnText}>{saveLabel.toUpperCase()}</Text>
+          <Text style={[styles.actionBtnText, { color: onSolid(theme.coral.solid) }]}>{saveLabel.toUpperCase()}</Text>
         </Pressable>
       </View>
     </View>
@@ -489,15 +490,20 @@ function MiniGlucoseChart({
     }
   }
 
+  const isHighResponse = peakVal > 180;
+  const chartLineColor = isHighResponse ? theme.red.solid : theme.berry.sub;
+
   return (
-    <View style={{ marginTop: 4 }}>
+    <View style={{ marginTop: 4, borderRadius: 8, borderWidth: isHighResponse ? 1.5 : 0, borderColor: isHighResponse ? theme.red.solid : "transparent", padding: isHighResponse ? 4 : 0 }}>
+      {isHighResponse && (
+        <Text style={{ color: theme.red.fg, fontSize: 10, fontWeight: "700", marginBottom: 2 }}>⚠ HIGH RESPONSE ({peakVal} mg/dL)</Text>
+      )}
       {points.length > 0 && (
         <Svg width={MINI_CHART_WIDTH} height={MINI_CHART_HEIGHT}>
           <SvgText x={0} y={MC_PAD_TOP + 6} fontSize={9} fill={theme.textSoft}>{Math.round(maxVal)}</SvgText>
           <SvgText x={0} y={MINI_CHART_HEIGHT - MC_PAD_BOTTOM} fontSize={9} fill={theme.textSoft}>{Math.round(minVal)}</SvgText>
-          {/* Double-stroke mini chart */}
           <Polyline points={points} fill="none" stroke={ink} strokeWidth={2.5} />
-          <Polyline points={points} fill="none" stroke={theme.berry.sub} strokeWidth={1.5} />
+          <Polyline points={points} fill="none" stroke={chartLineColor} strokeWidth={1.5} />
         </Svg>
       )}
       <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 4 }}>{summaryText}</Text>
@@ -577,6 +583,7 @@ export function MealsScreen() {
     if (!searchQuery.trim()) return;
     setSearching(true);
     setSearchError(null);
+    setSearchResults([]);
     setPendingFood(null);
     api.searchFood(searchQuery)
       .then(function (data: FoodResult[]) { setSearchResults(Array.isArray(data) ? data : []); })
@@ -778,20 +785,20 @@ export function MealsScreen() {
         <View style={styles.totalsRow}>
           {totals.carbs !== null ? (
             <View style={[styles.totalBlock, { backgroundColor: theme.teal.solid }]}>
-              <Text style={styles.totalBlockLabel}>CARBS</Text>
-              <Text style={styles.totalBlockValue}>{totals.carbs}g</Text>
+              <Text style={[styles.totalBlockLabel, { color: onSolid(theme.teal.solid) }]}>CARBS</Text>
+              <Text style={[styles.totalBlockValue, { color: onSolid(theme.teal.solid) }]}>{totals.carbs}g</Text>
             </View>
           ) : null}
           {totals.sugar !== null ? (
             <View style={[styles.totalBlock, { backgroundColor: theme.coral.solid }]}>
-              <Text style={styles.totalBlockLabel}>SUGAR</Text>
-              <Text style={styles.totalBlockValue}>{totals.sugar}g</Text>
+              <Text style={[styles.totalBlockLabel, { color: onSolid(theme.coral.solid) }]}>SUGAR</Text>
+              <Text style={[styles.totalBlockValue, { color: onSolid(theme.coral.solid) }]}>{totals.sugar}g</Text>
             </View>
           ) : null}
           {totals.calories !== null ? (
             <View style={[styles.totalBlock, { backgroundColor: theme.berry.solid }]}>
-              <Text style={styles.totalBlockLabel}>CALORIES</Text>
-              <Text style={styles.totalBlockValue}>{totals.calories}</Text>
+              <Text style={[styles.totalBlockLabel, { color: onSolid(theme.berry.solid) }]}>CALORIES</Text>
+              <Text style={[styles.totalBlockValue, { color: onSolid(theme.berry.solid) }]}>{totals.calories}</Text>
             </View>
           ) : null}
         </View>
@@ -860,9 +867,9 @@ export function MealsScreen() {
           />
           <Pressable style={[styles.actionBtn, { backgroundColor: theme.coral.solid }]} onPress={handleSearch}>
             {searching ? (
-              <ActivityIndicator color="#fff" size="small" />
+              <ActivityIndicator color={onSolid(theme.coral.solid)} size="small" />
             ) : (
-              <Text style={styles.actionBtnText}>SEARCH</Text>
+              <Text style={[styles.actionBtnText, { color: onSolid(theme.coral.solid) }]}>SEARCH</Text>
             )}
           </Pressable>
         </View>
@@ -929,14 +936,14 @@ export function MealsScreen() {
           <View style={{ flexDirection: "row", gap: 8, marginBottom: 10 }}>
             {subTotals.caffeine_mg > 0 && (
               <View style={[styles.totalBlock, { backgroundColor: theme.coral.sub, flex: 1 }]}>
-                <Text style={styles.totalBlockLabel}>CAFFEINE TODAY</Text>
-                <Text style={styles.totalBlockValue}>{subTotals.caffeine_mg}mg</Text>
+                <Text style={[styles.totalBlockLabel, { color: onSolid(theme.coral.sub) }]}>CAFFEINE TODAY</Text>
+                <Text style={[styles.totalBlockValue, { color: onSolid(theme.coral.sub) }]}>{subTotals.caffeine_mg}mg</Text>
               </View>
             )}
             {subTotals.standard_drinks > 0 && (
               <View style={[styles.totalBlock, { backgroundColor: theme.purple.solid, flex: 1 }]}>
-                <Text style={styles.totalBlockLabel}>STD DRINKS TODAY</Text>
-                <Text style={styles.totalBlockValue}>{subTotals.standard_drinks}</Text>
+                <Text style={[styles.totalBlockLabel, { color: onSolid(theme.purple.solid) }]}>STD DRINKS TODAY</Text>
+                <Text style={[styles.totalBlockValue, { color: onSolid(theme.purple.solid) }]}>{subTotals.standard_drinks}</Text>
               </View>
             )}
           </View>
@@ -984,9 +991,9 @@ export function MealsScreen() {
             onPress={handleSubSearch}
           >
             {subSearching ? (
-              <ActivityIndicator color="#fff" size="small" />
+              <ActivityIndicator color={onSolid(subType === "caffeine" ? theme.coral.sub : theme.purple.solid)} size="small" />
             ) : (
-              <Text style={styles.actionBtnText}>SEARCH</Text>
+              <Text style={[styles.actionBtnText, { color: onSolid(subType === "caffeine" ? theme.coral.sub : theme.purple.solid) }]}>SEARCH</Text>
             )}
           </Pressable>
         </View>
@@ -1081,7 +1088,7 @@ export function MealsScreen() {
                     <Ionicons
                       name={entry.substance_type === "caffeine" ? "cafe-outline" : "wine-outline"}
                       size={14}
-                      color="#fff"
+                      color={onSolid(iconColor)}
                     />
                   </View>
                   <View style={{ flex: 1, marginLeft: 8 }}>
@@ -1127,7 +1134,7 @@ export function MealsScreen() {
                 <View style={styles.mealContent}>
                   {/* Colored icon tile */}
                   <View style={[styles.mealIconTile, { backgroundColor: mealColor }]}>
-                    <Ionicons name="restaurant" size={16} color="#fff" />
+                    <Ionicons name="restaurant" size={16} color={onSolid(mealColor)} />
                   </View>
 
                   <Pressable
@@ -1230,8 +1237,8 @@ function makeStyles(ink: string, card: string) {
     shadowRadius: 0,
     elevation: 3,
   },
-  totalBlockLabel: { color: "#fff", fontSize: 9, fontWeight: "800", letterSpacing: 0.6, marginBottom: 4 },
-  totalBlockValue: { color: "#fff", fontSize: 20, fontWeight: "800" },
+  totalBlockLabel: { fontSize: 9, fontWeight: "800", letterSpacing: 0.6, marginBottom: 4 },
+  totalBlockValue: { fontSize: 20, fontWeight: "800" },
 
   // Card
   card: {
@@ -1309,7 +1316,7 @@ function makeStyles(ink: string, card: string) {
     shadowRadius: 0,
     elevation: 2,
   },
-  actionBtnText: { color: "#fff", fontWeight: "800", fontSize: 11, letterSpacing: 0.4 },
+  actionBtnText: { fontWeight: "800", fontSize: 11, letterSpacing: 0.4 },
 
   belowSearchRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
   secondaryBtn: {

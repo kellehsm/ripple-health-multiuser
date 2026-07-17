@@ -9,12 +9,14 @@ import {
   Dimensions,
   RefreshControl,
   PanResponder,
+  AccessibilityInfo,
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import Svg, { Rect, Text as SvgText, Polyline, Circle, Line as SvgLine } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../theme/ThemeContext";
+import { onSolid } from "../theme/colorUtils";
 import { api } from "../api/client";
 import { DailySummaryCard, type DailySummaryData } from "../components/DailySummaryCard";
 import { InsightCard, type Insight } from "../components/InsightCard";
@@ -256,14 +258,19 @@ function computeInsights(params: {
 function SkeletonBox({ style }: { style?: object }) {
   const { theme } = useTheme();
   const anim = useRef(new Animated.Value(0.35)).current;
+  const [reduceMotion, setReduceMotion] = useState(false);
   useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion).catch(() => {});
+  }, []);
+  useEffect(() => {
+    if (reduceMotion) { anim.setValue(0.55); return; }
     Animated.loop(
       Animated.sequence([
         Animated.timing(anim, { toValue: 0.75, duration: 750, useNativeDriver: true }),
         Animated.timing(anim, { toValue: 0.35, duration: 750, useNativeDriver: true }),
       ])
     ).start();
-  }, [anim]);
+  }, [anim, reduceMotion]);
   return <Animated.View style={[{ backgroundColor: theme.cardBorder, borderRadius: 10, opacity: anim }, style]} />;
 }
 
@@ -430,6 +437,9 @@ export function OverviewScreen() {
 
   // Derived values
   const tir = computeTIR(dayGlucose);
+  const lastGlucoseReading = dayGlucose.length > 0 ? dayGlucose[dayGlucose.length - 1] : null;
+  const lastGlucoseVal = lastGlucoseReading ? Number(lastGlucoseReading.mg_dl) : null;
+  const glucoseOutOfRange = lastGlucoseVal !== null && (lastGlucoseVal < 70 || lastGlucoseVal > 180);
   const insights = useMemo(() => computeInsights({
     dayGlucose, weeklyData, patternEvents, streak, stepsCount, sleepStats, digest,
   }), [dayGlucose, weeklyData, patternEvents, streak, stepsCount, sleepStats, digest]);
@@ -580,8 +590,8 @@ export function OverviewScreen() {
 
         {streak >= 3 ? (
           <View style={[styles.streakPill, { backgroundColor: theme.teal.solid }]}>
-            <Ionicons name="flame" size={12} color="#fff" style={{ marginRight: 4 }} />
-            <Text style={styles.streakPillText}>{streak} DAY STREAK</Text>
+            <Ionicons name="flame" size={12} color={onSolid(theme.teal.solid)} style={{ marginRight: 4 }} />
+            <Text style={[styles.streakPillText, { color: onSolid(theme.teal.solid) }]}>{streak} DAY STREAK</Text>
           </View>
         ) : null}
       </View>
@@ -605,7 +615,7 @@ export function OverviewScreen() {
               accessibilityRole={chip.onPress ? "button" : undefined}
             >
               <View style={[styles.chipIcon, { backgroundColor: chip.color }]}>
-                <Ionicons name={chip.icon as any} size={13} color="#fff" />
+                <Ionicons name={chip.icon as any} size={13} color={onSolid(chip.color)} />
               </View>
               <Text style={[styles.chipValue, { color: theme.textStrong }]} numberOfLines={1}>
                 {chip.value}
@@ -675,7 +685,7 @@ export function OverviewScreen() {
       />
 
       {/* ── 5. Today's timeline ── */}
-      <View style={[styles.card, { backgroundColor: theme.card }]}>
+      <View style={[styles.card, { backgroundColor: glucoseOutOfRange ? theme.red.tint : theme.card }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Today's timeline</Text>
 
         {/* Glucose chart */}
@@ -700,6 +710,21 @@ export function OverviewScreen() {
                     <Polyline points={glucosePoints} fill="none" stroke={theme.berry.bar} strokeWidth={2} />
                   </>
                 ) : null}
+                {lastGlucoseVal !== null && lastGlucoseReading ? (() => {
+                  const lx = eventX(new Date(lastGlucoseReading.recorded_at).getTime(), windowStart, windowEnd);
+                  const ly = glucoseY(lastGlucoseVal, minVal, maxVal);
+                  const isHigh = lastGlucoseVal > 180;
+                  const isLow = lastGlucoseVal < 70;
+                  const dotFill = isHigh || isLow ? theme.red.solid : theme.berry.bar;
+                  const labelX = lx + 6 + 26 > CHART_W ? lx - 32 : lx + 6;
+                  return (
+                    <>
+                      <Circle cx={lx} cy={ly} r={5} fill={dotFill} stroke={ink} strokeWidth={1.5} />
+                      <Rect x={labelX} y={ly - 9} width={30} height={14} rx={4} fill={dotFill} opacity={0.92} />
+                      <SvgText x={labelX + 15} y={ly + 2} fontSize={9} fontWeight="bold" fill="#fff" textAnchor="middle">{lastGlucoseVal}</SvgText>
+                    </>
+                  );
+                })() : null}
                 {dayEvents.map(function (ev, i) {
                   const t = new Date(ev.time).getTime();
                   if (t < windowStart || t > windowEnd) return null;
@@ -751,7 +776,7 @@ export function OverviewScreen() {
         ) : (
           <View style={[styles.emptyState, { borderColor: ink }]}>
             <Ionicons name="pulse-outline" size={24} color={theme.textSoft} />
-            <Text style={[styles.emptyText, { color: theme.textSoft }]}>No glucose data yet today</Text>
+            <Text style={[styles.emptyText, { color: theme.textSoft }]}>No glucose readings yet — connect Dexcom in Settings to see your chart here</Text>
           </View>
         )}
 
@@ -765,7 +790,7 @@ export function OverviewScreen() {
         ) : patternEvents.length === 0 ? (
           <View style={[styles.emptyState, { borderColor: ink }]}>
             <Ionicons name="calendar-outline" size={24} color={theme.textSoft} />
-            <Text style={[styles.emptyText, { color: theme.textSoft }]}>No events logged today yet</Text>
+            <Text style={[styles.emptyText, { color: theme.textSoft }]}>Log a meal, mood, or spend to start your day's timeline</Text>
           </View>
         ) : (
           <>
@@ -778,7 +803,7 @@ export function OverviewScreen() {
                   <Text style={[styles.tlTime, { color: theme.textSoft }]}>{fmtTime(ev.time)}</Text>
                   <View style={{ width: 20, alignItems: "center", marginRight: 10 }}>
                     <View style={[styles.tlIconDot, { backgroundColor: dotColor }]}>
-                      <Ionicons name={icon as any} size={9} color="#fff" />
+                      <Ionicons name={icon as any} size={9} color={onSolid(dotColor)} />
                     </View>
                     {!isLast && <View style={[styles.tlLine, { backgroundColor: theme.cardBorder }]} />}
                   </View>
@@ -816,7 +841,7 @@ export function OverviewScreen() {
         <View style={[styles.card, { backgroundColor: theme.card }]}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <View style={[styles.insightIcon, { backgroundColor: theme.violet.solid }]}>
-              <Ionicons name="bulb-outline" size={14} color="#fff" />
+              <Ionicons name="bulb-outline" size={14} color={onSolid(theme.violet.solid)} />
             </View>
             <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Insights</Text>
           </View>
@@ -863,20 +888,20 @@ export function OverviewScreen() {
           <>
             <View style={styles.summaryBlocksRow}>
               <View style={[styles.summaryBlock, { backgroundColor: theme.teal.solid }]}>
-                <Text style={styles.summaryBlockLabel}>STEPS</Text>
-                <Text style={styles.summaryBlockValue}>{digest.steps.this_week.toLocaleString()}</Text>
+                <Text style={[styles.summaryBlockLabel, { color: onSolid(theme.teal.solid) }]}>STEPS</Text>
+                <Text style={[styles.summaryBlockValue, { color: onSolid(theme.teal.solid) }]}>{digest.steps.this_week.toLocaleString()}</Text>
               </View>
               <View style={[styles.summaryBlock, { backgroundColor: theme.berry.solid }]}>
-                <Text style={styles.summaryBlockLabel}>GLUCOSE</Text>
-                <Text style={styles.summaryBlockValue}>{glucoseAvg !== null ? glucoseAvg + " avg" : "--"}</Text>
+                <Text style={[styles.summaryBlockLabel, { color: onSolid(theme.berry.solid) }]}>GLUCOSE</Text>
+                <Text style={[styles.summaryBlockValue, { color: onSolid(theme.berry.solid) }]}>{glucoseAvg !== null ? glucoseAvg + " avg" : "--"}</Text>
               </View>
               <View style={[styles.summaryBlock, { backgroundColor: theme.purple.solid }]}>
-                <Text style={styles.summaryBlockLabel}>HOBBIES</Text>
-                <Text style={styles.summaryBlockValue}>{digest.hobbies.this_week_sessions} sess.</Text>
+                <Text style={[styles.summaryBlockLabel, { color: onSolid(theme.purple.solid) }]}>HOBBIES</Text>
+                <Text style={[styles.summaryBlockValue, { color: onSolid(theme.purple.solid) }]}>{digest.hobbies.this_week_sessions} sess.</Text>
               </View>
               <View style={[styles.summaryBlock, { backgroundColor: theme.coral.solid }]}>
-                <Text style={styles.summaryBlockLabel}>MEAL NOTES</Text>
-                <Text style={styles.summaryBlockValue}>{digest.meal_flags.length === 0 ? "All clear" : digest.meal_flags.length + " flagged"}</Text>
+                <Text style={[styles.summaryBlockLabel, { color: onSolid(theme.coral.solid) }]}>MEAL NOTES</Text>
+                <Text style={[styles.summaryBlockValue, { color: onSolid(theme.coral.solid) }]}>{digest.meal_flags.length === 0 ? "All clear" : digest.meal_flags.length + " flagged"}</Text>
               </View>
             </View>
             {digest.heart_rate.has_data ? (
@@ -896,7 +921,7 @@ export function OverviewScreen() {
           </>
         ) : (
           <View style={[styles.emptyState, { borderColor: ink, marginTop: 8 }]}>
-            <Text style={[styles.emptyText, { color: theme.textSoft }]}>No 7-day data yet</Text>
+            <Text style={[styles.emptyText, { color: theme.textSoft }]}>Keep logging meals, steps, and mood — your weekly recap appears here after a few days</Text>
           </View>
         )}
       </View>
@@ -976,7 +1001,7 @@ function makeStyles(ink: string, card: string) {
       shadowRadius: 0,
       elevation: 2,
     },
-    streakPillText: { color: "#fff", fontSize: 11, fontWeight: "800", letterSpacing: 0.5 },
+    streakPillText: { fontSize: 11, fontWeight: "800", letterSpacing: 0.5 },
 
     metricChip: {
       borderRadius: 12,
@@ -1022,7 +1047,7 @@ function makeStyles(ink: string, card: string) {
       paddingHorizontal: 8,
       paddingVertical: 3,
     },
-    dueNowText: { color: "#fff", fontSize: 9, fontWeight: "800", letterSpacing: 0.5 },
+    dueNowText: { fontSize: 9, fontWeight: "800", letterSpacing: 0.5 },
 
     momentBtn: {
       flexDirection: "row",
@@ -1127,7 +1152,7 @@ function makeStyles(ink: string, card: string) {
       shadowRadius: 0,
       elevation: 2,
     },
-    logBtnText: { color: "#fff", fontSize: 11, fontWeight: "800", letterSpacing: 0.4 },
+    logBtnText: { fontSize: 11, fontWeight: "800", letterSpacing: 0.4 },
 
     // Timeline
     tlTime: { fontSize: 11, width: 42, paddingTop: 3 },
@@ -1187,8 +1212,8 @@ function makeStyles(ink: string, card: string) {
       shadowRadius: 0,
       elevation: 2,
     },
-    summaryBlockLabel: { color: "#fff", fontSize: 8, fontWeight: "800", letterSpacing: 0.5, marginBottom: 4 },
-    summaryBlockValue: { color: "#fff", fontSize: 13, fontWeight: "800" },
+    summaryBlockLabel: { fontSize: 8, fontWeight: "800", letterSpacing: 0.5, marginBottom: 4 },
+    summaryBlockValue: { fontSize: 13, fontWeight: "800" },
     digestLabel: { fontSize: 10, fontWeight: "800", marginTop: 10, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.7 },
     calloutStrip: { borderWidth: 2, borderRadius: 10, padding: 10, marginTop: 10, gap: 4 },
 

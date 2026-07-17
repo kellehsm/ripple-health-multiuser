@@ -359,6 +359,9 @@ export const api = {
   dismissInsight: function (id: string) {
     return request("/insights/" + id + "/dismiss", { method: "POST", body: JSON.stringify({}) });
   },
+  undismissInsight: function (id: string) {
+    return request("/insights/" + id + "/undismiss", { method: "POST", body: JSON.stringify({}) });
+  },
   regenerateInsights: function () {
     return request("/insights/regenerate", { method: "POST", body: JSON.stringify({}) });
   },
