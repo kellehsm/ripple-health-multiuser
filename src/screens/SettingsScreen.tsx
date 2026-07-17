@@ -17,7 +17,6 @@ import * as IntentLauncher from "expo-intent-launcher";
 import * as WebBrowser from "expo-web-browser";
 import notifee, { AuthorizationStatus } from "@notifee/react-native";
 import * as Notifications from "expo-notifications";
-import { SchedulableTriggerInputTypes } from "expo-notifications";
 import { useFocusEffect } from "@react-navigation/core";
 import { getGrantedPermissions } from "react-native-health-connect";
 import { useTheme } from "../theme/ThemeContext";
@@ -52,10 +51,6 @@ type Settings = {
     share_region?: string;
     share_password_set?: boolean;
   };
-  mood_reminders?: {
-    enabled?: boolean;
-    periods?: { morning?: boolean; afternoon?: boolean; evening?: boolean; night?: boolean };
-  };
   smart_notifications?: {
     meal_reminders?: {
       enabled?: boolean;
@@ -67,6 +62,9 @@ type Settings = {
     evening_checkin?: { enabled?: boolean; hour?: number };
     water_reminder?: { enabled?: boolean; start_hour?: number; goal?: number };
     streak_protection?: { enabled?: boolean; hour?: number };
+    mood_checkin?: { enabled?: boolean };
+    book_reminder?: { enabled?: boolean; hour?: number };
+    hobby_reminder?: { enabled?: boolean; hour?: number };
   };
 };
 
@@ -77,12 +75,6 @@ type DriveStatus = {
   connected_at: string | null;
 };
 
-const REMINDER_PERIODS: { key: string; label: string; hour: number; minute: number }[] = [
-  { key: "morning", label: "Morning", hour: 9, minute: 0 },
-  { key: "afternoon", label: "Afternoon", hour: 14, minute: 0 },
-  { key: "evening", label: "Evening", hour: 19, minute: 0 },
-  { key: "night", label: "Night", hour: 22, minute: 0 },
-];
 
 export function SettingsScreen() {
   const { theme, paletteId, setPalette } = useTheme();
@@ -123,6 +115,8 @@ export function SettingsScreen() {
   }, []);
 
   const load = useCallback(async function () {
+    // Cancel any legacy expo-notifications mood reminders left over from before they were replaced
+    Notifications.cancelAllScheduledNotificationsAsync().catch(() => {});
     try {
       const s = await api.getSettings();
       setSettings(s ?? {});
@@ -240,78 +234,6 @@ export function SettingsScreen() {
       Alert.alert("Error", e?.message ?? "Failed to start tracking.");
     } finally {
       setTrackingBusy(false);
-    }
-  }
-
-  async function scheduleMoodReminder(periodKey: string, hour: number, minute: number) {
-    await Notifications.scheduleNotificationAsync({
-      identifier: "mood-reminder-" + periodKey,
-      content: {
-        title: "How are you feeling?",
-        body: "Log your " + periodKey + " mood check-in.",
-        data: { period: periodKey },
-      },
-      trigger: {
-        type: SchedulableTriggerInputTypes.DAILY,
-        hour,
-        minute,
-      },
-    });
-  }
-
-  async function cancelMoodReminder(periodKey: string) {
-    await Notifications.cancelScheduledNotificationAsync("mood-reminder-" + periodKey).catch(() => {});
-  }
-
-  async function applyMoodReminderSchedule(
-    enabled: boolean,
-    periods: Record<string, boolean>
-  ) {
-    for (const p of REMINDER_PERIODS) {
-      if (enabled && periods[p.key] !== false) {
-        await scheduleMoodReminder(p.key, p.hour, p.minute);
-      } else {
-        await cancelMoodReminder(p.key);
-      }
-    }
-  }
-
-  async function handleMoodReminderMasterToggle(value: boolean) {
-    if (value && !notifGranted) {
-      Alert.alert(
-        "Notification permission required",
-        "Enable the Always-on Tracking toggle first to grant notification permission.",
-        [{ text: "OK" }]
-      );
-      return;
-    }
-    const periods = settings.mood_reminders?.periods ?? {};
-    const updated = {
-      mood_reminders: { ...(settings.mood_reminders ?? {}), enabled: value },
-    };
-    setSettings((prev) => ({ ...prev, ...updated }));
-    await save(updated);
-    await applyMoodReminderSchedule(value, periods as Record<string, boolean>);
-  }
-
-  async function handleMoodReminderPeriodToggle(periodKey: string, value: boolean) {
-    const masterEnabled = settings.mood_reminders?.enabled === true;
-    const updatedPeriods = {
-      ...(settings.mood_reminders?.periods ?? {}),
-      [periodKey]: value,
-    };
-    const updated = {
-      mood_reminders: { ...(settings.mood_reminders ?? {}), periods: updatedPeriods },
-    };
-    setSettings((prev) => ({ ...prev, ...updated }));
-    await save(updated);
-    const p = REMINDER_PERIODS.find((r) => r.key === periodKey);
-    if (p) {
-      if (masterEnabled && value) {
-        await scheduleMoodReminder(p.key, p.hour, p.minute);
-      } else {
-        await cancelMoodReminder(p.key);
-      }
     }
   }
 
@@ -651,38 +573,6 @@ export function SettingsScreen() {
         </View>
       ) : null}
 
-      {/* Mood check-in reminders */}
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
-        <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Mood Check-in Reminders</Text>
-        <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
-          Daily reminders to log your mood for each time-of-day period.
-        </Text>
-        <ToggleRow
-          label="Reminders enabled"
-          value={settings.mood_reminders?.enabled === true}
-          onChange={handleMoodReminderMasterToggle}
-          theme={theme}
-        />
-        {settings.mood_reminders?.enabled === true ? (
-          <View style={{ gap: 0, marginTop: 4 }}>
-            {REMINDER_PERIODS.map((p) => (
-              <ToggleRow
-                key={p.key}
-                label={p.label + " (" + (p.hour > 12 ? p.hour - 12 : p.hour) + (p.minute > 0 ? ":" + String(p.minute).padStart(2, "0") : "") + (p.hour >= 12 ? " PM" : " AM") + ")"}
-                value={(settings.mood_reminders?.periods as any)?.[p.key] !== false}
-                onChange={(v) => handleMoodReminderPeriodToggle(p.key, v)}
-                theme={theme}
-              />
-            ))}
-          </View>
-        ) : null}
-        {notifGranted === false ? (
-          <Text style={{ color: theme.textSoft, fontSize: 12, marginTop: 4 }}>
-            Notification permission not granted — enable Always-on Tracking first.
-          </Text>
-        ) : null}
-      </View>
-
       {/* Week start preferences */}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Week Start Day</Text>
@@ -1003,6 +893,42 @@ export function SettingsScreen() {
             </ScrollView>
           </View>
         ) : null}
+
+        {/* Mood check-in */}
+        <Text style={[styles.subHead, { color: theme.textStrong }]}>Mood Check-in</Text>
+        <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
+          Nudges you around 2pm and 7pm if you haven't logged a mood check-in yet.
+        </Text>
+        <ToggleRow
+          label="Remind me to check in"
+          value={settings.smart_notifications?.mood_checkin?.enabled === true}
+          onChange={(v) => save({ smart_notifications: { ...(settings.smart_notifications ?? {}), mood_checkin: { ...(settings.smart_notifications?.mood_checkin ?? {}), enabled: v } } })}
+          theme={theme}
+        />
+
+        {/* Book reminder */}
+        <Text style={[styles.subHead, { color: theme.textStrong }]}>Reading Reminder</Text>
+        <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
+          Reminds you to log reading time if you have a book in progress.
+        </Text>
+        <ToggleRow
+          label="Remind me to read"
+          value={settings.smart_notifications?.book_reminder?.enabled === true}
+          onChange={(v) => save({ smart_notifications: { ...(settings.smart_notifications ?? {}), book_reminder: { ...(settings.smart_notifications?.book_reminder ?? {}), enabled: v } } })}
+          theme={theme}
+        />
+
+        {/* Hobby / activity reminder */}
+        <Text style={[styles.subHead, { color: theme.textStrong }]}>Activity Reminder</Text>
+        <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
+          Reminds you to log a hobby or activity if you have any set up.
+        </Text>
+        <ToggleRow
+          label="Remind me to log activities"
+          value={settings.smart_notifications?.hobby_reminder?.enabled === true}
+          onChange={(v) => save({ smart_notifications: { ...(settings.smart_notifications ?? {}), hobby_reminder: { ...(settings.smart_notifications?.hobby_reminder ?? {}), enabled: v } } })}
+          theme={theme}
+        />
       </View>
 
       {/* Doctor PDF export */}

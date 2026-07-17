@@ -7,11 +7,12 @@ import { ThemeProvider } from "./src/theme/ThemeContext";
 import { RootTabs } from "./src/navigation/RootTabs";
 import { OnboardingFlow } from "./src/screens/OnboardingFlow";
 import { LoginScreen } from "./src/screens/LoginScreen";
+import { SignupScreen } from "./src/screens/SignupScreen";
 import { navigationRef } from "./src/navigation/navigationRef";
 import { api } from "./src/api/client";
 import { getToken, clearToken, registerLogoutHandler } from "./src/lib/auth";
 
-type AppState = "loading" | "login" | "onboarding" | "app";
+type AppState = "loading" | "login" | "signup" | "onboarding" | "app";
 
 type TabName = "Meals" | "Health" | "Home" | "Life" | "Finance";
 
@@ -180,7 +181,22 @@ export default function App() {
     return (
       <ThemeProvider>
         <StatusBar style="dark" />
-        <LoginScreen onLoginSuccess={handleLoginSuccess} />
+        <LoginScreen
+          onLoginSuccess={handleLoginSuccess}
+          onShowSignup={() => setAppState("signup")}
+        />
+      </ThemeProvider>
+    );
+  }
+
+  if (appState === "signup") {
+    return (
+      <ThemeProvider>
+        <StatusBar style="dark" />
+        <SignupScreen
+          onSignupSuccess={() => setAppState("onboarding")}
+          onBackToLogin={() => setAppState("login")}
+        />
       </ThemeProvider>
     );
   }
@@ -196,7 +212,7 @@ export default function App() {
 
   return (
     <ThemeProvider>
-      <StatusBar style="auto" />
+      <StatusBar style="dark" />
       <RootTabs />
     </ThemeProvider>
   );

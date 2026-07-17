@@ -20,7 +20,7 @@ WebBrowser.maybeCompleteAuthSession();
 
 type AccentKey = "teal" | "coral" | "blue" | "amber" | "purple" | "berry" | "violet" | "red";
 
-type Step = "walkthrough" | "theme" | "drive" | "dexcom" | "health" | "notifications";
+type Step = "walkthrough" | "theme" | "health" | "drive" | "dexcom" | "notifications";
 
 // ── Walkthrough page definitions ──────────────────────────────────────────────
 
@@ -29,42 +29,42 @@ const WALK_PAGES: Array<{
   label: string;
   desc: string;
   accentKey: AccentKey;
-  preview: React.ReactNode;
 }> = [
   {
-    emoji: "❤️",
-    label: "HEALTH",
-    desc: "Track glucose, steps, sleep, and heart rate — all in one place.",
+    emoji: "💧",
+    label: "WELLNESS",
+    desc: "Glucose, steps, sleep, heart rate, and water — your daily health baseline in one place.",
     accentKey: "berry",
-    preview: null, // filled below after component defs
+  },
+  {
+    emoji: "😊",
+    label: "MOOD",
+    desc: "Check in a few times a day with a quick slider and emotion label. See how your mood connects to sleep, meals, and activity.",
+    accentKey: "violet",
   },
   {
     emoji: "🍜",
     label: "MEALS",
     desc: "Log food, caffeine, and alcohol — scan a barcode or search by name.",
     accentKey: "coral",
-    preview: null,
+  },
+  {
+    emoji: "🧘",
+    label: "MINDFULNESS",
+    desc: "A dedicated space for reflection and intentional rest. Log mindfulness sessions, journaling, and breathing exercises.",
+    accentKey: "teal",
+  },
+  {
+    emoji: "📊",
+    label: "TRENDS",
+    desc: "Spot patterns across all your data — mood, glucose, sleep, meals, and more — with automated insights.",
+    accentKey: "teal",
   },
   {
     emoji: "📖",
-    label: "HOBBIES",
-    desc: "Track books, hobbies, and personal goals.",
-    accentKey: "teal",
-    preview: null,
-  },
-  {
-    emoji: "🏠",
-    label: "HOME",
-    desc: "Your daily and weekly patterns — insights without noise.",
-    accentKey: "teal",
-    preview: null,
-  },
-  {
-    emoji: "💳",
-    label: "FINANCE",
-    desc: "See how spending connects to the rest of your day.",
+    label: "LIFE & FINANCE",
+    desc: "Books, hobbies, and spending — the fuller picture of your days and how they connect.",
     accentKey: "purple",
-    preview: null,
   },
 ];
 
@@ -81,17 +81,20 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
   const scrollRef = useRef<ScrollView>(null);
   const [loading, setLoading] = useState(false);
   const [driveError, setDriveError] = useState<string | null>(null);
+  const [dexcomUsername, setDexcomUsername] = useState("");
   const [dexcomAccountId, setDexcomAccountId] = useState("");
   const [dexcomPassword, setDexcomPassword] = useState("");
   const [dexcomRegion, setDexcomRegion] = useState<"us" | "ous">("us");
   const [dexcomError, setDexcomError] = useState<string | null>(null);
+  const [dexcomNeedsAccountId, setDexcomNeedsAccountId] = useState(false);
+  const [dexcomConnecting, setDexcomConnecting] = useState(false);
 
   function advance() {
     if (step === "walkthrough") setStep("theme");
-    else if (step === "theme") setStep("drive");
+    else if (step === "theme") setStep("health");
+    else if (step === "health") setStep("drive");
     else if (step === "drive") { setDriveError(null); setStep("dexcom"); }
-    else if (step === "dexcom") { setDexcomError(null); setStep("health"); }
-    else if (step === "health") setStep("notifications");
+    else if (step === "dexcom") { setDexcomError(null); setStep("notifications"); }
     else onComplete();
   }
 
@@ -144,22 +147,41 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
     }
   }
 
-  async function handleDexcomSave() {
-    const id = dexcomAccountId.trim();
+  async function handleDexcomConnect() {
+    const username = dexcomUsername.trim();
+    const accountId = dexcomAccountId.trim();
     const pw = dexcomPassword.trim();
-    if (!id || !pw) {
-      setDexcomError("Enter your Dexcom Share Account ID and password.");
-      return;
+
+    if (dexcomNeedsAccountId) {
+      if (!accountId || !pw) { setDexcomError("Enter your Account ID and Share password."); return; }
+    } else {
+      if (!username || !pw) { setDexcomError("Enter your Dexcom username and Share password."); return; }
     }
-    setLoading(true);
+
+    setDexcomConnecting(true);
     setDexcomError(null);
     try {
-      await api.patchSettings({ dexcom: { share_account_id: id, share_password: pw, share_region: dexcomRegion } });
-      advance();
+      const params = dexcomNeedsAccountId
+        ? { account_id: accountId, password: pw, region: dexcomRegion }
+        : { username, password: pw, region: dexcomRegion };
+      const result = await api.dexcomVerifyShare(params);
+      if (result.ok) {
+        advance();
+      } else if (result.needs_account_id) {
+        setDexcomNeedsAccountId(true);
+        setDexcomError(result.message ?? "This account needs an Account ID to connect.");
+      } else {
+        setDexcomError("Connection failed. Try again or skip to connect later from Settings.");
+      }
     } catch (e: any) {
-      setDexcomError(e?.message ?? "Failed to save credentials. Try again.");
+      const msg = e?.message ?? "";
+      if (msg.includes("401") || msg.toLowerCase().includes("password") || msg.toLowerCase().includes("invalid")) {
+        setDexcomError("Incorrect username or password. Double-check your Dexcom Share credentials.");
+      } else {
+        setDexcomError("Couldn't connect. Check your network and try again.");
+      }
     } finally {
-      setLoading(false);
+      setDexcomConnecting(false);
     }
   }
 
@@ -177,12 +199,12 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
 
   // ── Walkthrough previews (themed) ────────────────────────────────────────────
 
-  function HealthPreview() {
+  function WellnessPreview() {
     const chips = [
-      { label: "Glucose", value: "142", unit: "mg/dL", sub: "stable", color: theme.berry.solid },
+      { label: "Glucose", value: "142", unit: "mg/dL", sub: "stable ↗", color: theme.berry.solid },
       { label: "Steps", value: "6,234", unit: "steps", sub: "today", color: theme.teal.solid },
-      { label: "Sleep", value: "7h 12m", unit: "", sub: "last night", color: theme.amber.solid },
-      { label: "Heart rate", value: "68", unit: "bpm", sub: "resting", color: theme.red.solid },
+      { label: "Sleep", value: "7h 12m", unit: "", sub: "last night", color: theme.amber?.solid ?? "#F59E0B" },
+      { label: "Water", value: "5", unit: "/ 8 glasses", sub: "today", color: theme.blue?.solid ?? "#3B82F6" },
     ];
     return (
       <View style={styles.preview}>
@@ -192,6 +214,45 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
               <View style={[styles.statChipDot, { backgroundColor: c.color }]} />
               <Text style={[styles.statChipValue, { color: ink }]}>{c.value}<Text style={styles.statChipUnit}> {c.unit}</Text></Text>
               <Text style={[styles.statChipSub, { color: theme.textSoft }]}>{c.sub}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  }
+
+  function MoodPreview() {
+    const entries = [
+      { period: "Morning", label: "Calm", score: 4 },
+      { period: "Afternoon", label: "Focused", score: 4 },
+    ];
+    const EMOJIS: Record<number, string> = { 5: "😃", 4: "🙂", 3: "😐", 2: "😕", 1: "😣" };
+    return (
+      <View style={styles.preview}>
+        {entries.map((e) => (
+          <View key={e.period} style={[styles.mealRow, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+            <Text style={{ fontSize: 24 }}>{EMOJIS[e.score]}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.mealName, { color: ink }]}>{e.period}</Text>
+              <Text style={[styles.mealMeta, { color: theme.textSoft }]}>{e.label}</Text>
+            </View>
+          </View>
+        ))}
+        <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <View
+              key={n}
+              style={[
+                styles.statChip,
+                {
+                  flex: 1,
+                  borderColor: n === 4 ? theme.violet?.solid ?? "#8B5CF6" : theme.cardBorder,
+                  backgroundColor: n === 4 ? theme.violet?.bg ?? "#F5F3FF" : theme.card,
+                  padding: 6,
+                },
+              ]}
+            >
+              <Text style={{ textAlign: "center", fontSize: 16 }}>{EMOJIS[n]}</Text>
             </View>
           ))}
         </View>
@@ -222,39 +283,16 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
     );
   }
 
-  function HobbiesPreview() {
-    return (
-      <View style={styles.preview}>
-        <View style={[styles.bookCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
-          <Text style={[styles.bookTitle, { color: ink }]}>The Pragmatic Programmer</Text>
-          <Text style={[styles.bookAuthor, { color: theme.textSoft }]}>Andrew Hunt & David Thomas</Text>
-          <View style={[styles.progressTrack, { backgroundColor: theme.cardBorder }]}>
-            <View style={[styles.progressFill, { backgroundColor: theme.teal.solid, width: "45%" }]} />
-          </View>
-          <Text style={[styles.progressLabel, { color: theme.textSoft }]}>45% · 175 / 390 pages</Text>
-        </View>
-        <View style={[styles.hobbyRow, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
-          <View style={[styles.hobbyIcon, { backgroundColor: theme.coral.bg }]}>
-            <Text style={{ fontSize: 18 }}>🏃</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.hobbyName, { color: ink }]}>Running</Text>
-            <Text style={[styles.hobbyMeta, { color: theme.textSoft }]}>4.2 km this week</Text>
-          </View>
-        </View>
-      </View>
-    );
-  }
-
   // ── Walkthrough screen ────────────────────────────────────────────────────────
 
   if (step === "walkthrough") {
     const previews: React.ReactNode[] = [
-      <HealthPreview key="h" />,
+      <WellnessPreview key="w" />,
+      <MoodPreview key="mo" />,
       <MealsPreview key="m" />,
-      <HobbiesPreview key="ho" />,
-      null,
-      null,
+      null, // Mindfulness
+      null, // Trends
+      null, // Life & Finance
     ];
 
     return (
@@ -405,23 +443,46 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
             Connect your Dexcom Share account to see live glucose readings in Ripple.
           </Text>
 
-          <Text style={[styles.inputLabel, { color: ink }]}>Account ID</Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: theme.card, borderColor: theme.cardBorder, color: theme.textStrong }]}
-            value={dexcomAccountId}
-            onChangeText={setDexcomAccountId}
-            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-            placeholderTextColor={theme.textSoft}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
+          {!dexcomNeedsAccountId ? (
+            <>
+              <Text style={[styles.inputLabel, { color: ink }]}>Dexcom Username or Email</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: theme.card, borderColor: theme.cardBorder, color: theme.textStrong }]}
+                value={dexcomUsername}
+                onChangeText={setDexcomUsername}
+                placeholder="username or email"
+                placeholderTextColor={theme.textSoft}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </>
+          ) : (
+            <>
+              <View style={[styles.disclosureBox, { backgroundColor: theme.page, borderColor: ink, marginTop: 12 }]}>
+                <Text style={[styles.disclosureLabel, { color: theme.textSoft }]}>ACCOUNT ID NEEDED</Text>
+                <Text style={[styles.disclosureText, { color: theme.textStrong }]}>
+                  Standard login didn't work for this account. Enter your Account ID instead — find it at myaccount.dexcom.com under your profile.
+                </Text>
+              </View>
+              <Text style={[styles.inputLabel, { color: ink }]}>Account ID (UUID)</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: theme.card, borderColor: theme.cardBorder, color: theme.textStrong }]}
+                value={dexcomAccountId}
+                onChangeText={setDexcomAccountId}
+                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                placeholderTextColor={theme.textSoft}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </>
+          )}
 
           <Text style={[styles.inputLabel, { color: ink }]}>Share Password</Text>
           <TextInput
             style={[styles.input, { backgroundColor: theme.card, borderColor: theme.cardBorder, color: theme.textStrong }]}
             value={dexcomPassword}
             onChangeText={setDexcomPassword}
-            placeholder="Share password"
+            placeholder="Dexcom Share password"
             placeholderTextColor={theme.textSoft}
             secureTextEntry
           />
@@ -431,10 +492,7 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
               <Pressable
                 key={r}
                 onPress={() => setDexcomRegion(r)}
-                style={[
-                  styles.regionBtn,
-                  { borderColor: ink, backgroundColor: dexcomRegion === r ? ink : theme.card },
-                ]}
+                style={[styles.regionBtn, { borderColor: ink, backgroundColor: dexcomRegion === r ? ink : theme.card }]}
               >
                 <Text style={[styles.regionBtnText, { color: dexcomRegion === r ? theme.page : ink }]}>
                   {r === "us" ? "United States" : "Outside US"}
@@ -443,15 +501,11 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
             ))}
           </View>
 
-          <Pressable onPress={() => WebBrowser.openBrowserAsync("https://www.dexcom.com/faqs/how-do-i-find-my-account-id")}>
-            <Text style={[styles.helpLink, { color: theme.teal.solid }]}>Where do I find my Account ID?</Text>
-          </Pressable>
-
           {dexcomError ? <Text style={[styles.errorText, { color: theme.danger }]}>{dexcomError}</Text> : null}
         </>
       ),
-      primaryLabel: "Save & connect",
-      primaryAction: handleDexcomSave,
+      primaryLabel: dexcomConnecting ? "Connecting…" : "Connect",
+      primaryAction: handleDexcomConnect,
     },
     health: {
       emoji: "🏃",
@@ -487,8 +541,9 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
           <Text style={[styles.stepDesc, { color: theme.textStrong }]}>Notifications are used for:</Text>
           <View style={{ marginTop: 12, gap: 8 }}>
             {[
-              "Mood check-in reminders (morning, afternoon, evening)",
-              "An optional persistent notification showing live glucose and steps",
+              "Smart mood check-ins — a nudge in the afternoon and evening if you haven't checked in yet",
+              "Meal, water, and streak reminders — data-aware nudges, never more than once per window",
+              "An optional persistent notification showing live glucose and step count",
             ].map((item, i) => (
               <View key={i} style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}>
                 <View style={[styles.bulletDot, { backgroundColor: theme.amber.solid }]} />
@@ -497,7 +552,7 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
             ))}
           </View>
           <Text style={[styles.stepDescSmall, { color: theme.textSoft, marginTop: 16 }]}>
-            You can adjust what's enabled from Settings at any time.
+            All reminders can be individually enabled or disabled from Settings at any time.
           </Text>
         </>
       ),
@@ -525,14 +580,14 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
         <Pressable
           style={[styles.primaryBtn, { backgroundColor: accent.solid, borderColor: ink }]}
           onPress={cfg.primaryAction}
-          disabled={loading}
+          disabled={loading || dexcomConnecting}
         >
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>{cfg.primaryLabel}</Text>}
+          {loading || dexcomConnecting ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>{cfg.primaryLabel}</Text>}
         </Pressable>
         <Pressable
           style={[styles.secondaryBtn, { backgroundColor: theme.card, borderColor: ink }]}
           onPress={advance}
-          disabled={loading}
+          disabled={loading || dexcomConnecting}
         >
           <Text style={[styles.secondaryBtnText, { color: ink }]}>Not now</Text>
         </Pressable>
