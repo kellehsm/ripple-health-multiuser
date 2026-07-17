@@ -10,18 +10,20 @@ const sharp = require('/usr/lib/node_modules/sharp-cli/node_modules/sharp');
 // The droplet path: tip at top-center, curves out to sides, rounds at bottom
 
 const CREAM  = '#FBFAF7';
-const TEAL   = '#3FA0A6';   // top-left: activity / steps
-const CORAL  = '#E8820E';   // top-right: food / meals
-const PURPLE = '#7B3FBF';   // bottom-left: finance
-const BERRY  = '#A62A50';   // bottom-right: glucose / HR
+const TEAL   = '#8ED4D8';   // top-left: activity / steps (lighter)
+const CORAL  = '#F2A28C';   // top-right: food / meals (lighter)
+const PURPLE = '#B092D9';   // bottom-left: finance (lighter)
+const BERRY  = '#CE7A92';   // bottom-right: glucose / HR (lighter)
 const WHITE  = '#FFFFFF';
 const BLACK  = '#111111';
 
 // Droplet: shifted down 57px vs old design so bounding box (y=227–797) centers at y=512 in the tile
 const DROPLET = `M 512 227 C 512 227, 652 377, 672 547 C 692 717, 610 797, 512 797 C 414 797, 332 717, 352 547 C 372 377, 512 227, 512 227 Z`;
 
-// Pulse horizontal stays at y=512 (quadrant boundary / tile center); spike tips shifted +57 with droplet
-const PULSE = `M 362 512 L 440 512 L 465 512 L 480 447 L 510 691 L 530 512 L 654 512`;
+// Pulse baseline at y=512. Endpoints at x=270 (left) and x=760 (right) extend well past the
+// droplet boundary (~x=358 left, ~x=666 right) so the clip-path terminates each end flush
+// with the outline — no gap on either side, no overhang into the cream background.
+const PULSE = `M 270 512 L 440 512 L 465 512 L 480 447 L 510 691 L 530 512 L 760 512`;
 
 function iconSVG(bg) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024">
@@ -56,9 +58,9 @@ function iconSVG(bg) {
   <!-- droplet outline -->
   <path d="${DROPLET}" fill="none" stroke="${BLACK}" stroke-width="4"/>
 
-  <!-- pulse line over the droplet -->
+  <!-- pulse line — butt caps so clip produces a clean edge at the outline -->
   <path d="${PULSE}" fill="none" stroke="${BLACK}" stroke-width="22"
-        stroke-linecap="round" stroke-linejoin="round"
+        stroke-linecap="butt" stroke-linejoin="round"
         clip-path="url(#drop)"/>
 </svg>`;
 }
@@ -72,9 +74,9 @@ function monoSVG() {
   </defs>
   <!-- solid dark droplet with outline -->
   <path d="${DROPLET}" fill="#1A1A1A" stroke="${BLACK}" stroke-width="4"/>
-  <!-- pulse line cutout rendered as white on dark -->
+  <!-- white pulse line — butt caps for clean clip at outline -->
   <path d="${PULSE}" fill="none" stroke="${WHITE}" stroke-width="22"
-        stroke-linecap="round" stroke-linejoin="round"
+        stroke-linecap="butt" stroke-linejoin="round"
         clip-path="url(#drop)"/>
 </svg>`;
 }
@@ -89,7 +91,7 @@ async function render(svgStr, outPath) {
   console.log('wrote', outPath);
 }
 
-const base = '/root/wellness-fresh/assets/images';
+const base = '/root/wellness-fresh-multiuser-dev/assets/images';
 
 await render(iconSVG(true),  `${base}/icon.png`);
 await render(iconSVG(false), `${base}/android-icon-foreground.png`);
