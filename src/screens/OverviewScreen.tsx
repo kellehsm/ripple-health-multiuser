@@ -770,7 +770,7 @@ export function OverviewScreen() {
         ) : (
           <View style={[styles.emptyState, { borderColor: ink }]}>
             <Ionicons name="pulse-outline" size={24} color={theme.textSoft} />
-            <Text style={[styles.emptyText, { color: theme.textSoft }]}>No glucose data yet today</Text>
+            <Text style={[styles.emptyText, { color: theme.textSoft }]}>No glucose readings yet — connect Dexcom in Settings to see your chart here</Text>
           </View>
         )}
 
@@ -784,7 +784,7 @@ export function OverviewScreen() {
         ) : patternEvents.length === 0 ? (
           <View style={[styles.emptyState, { borderColor: ink }]}>
             <Ionicons name="calendar-outline" size={24} color={theme.textSoft} />
-            <Text style={[styles.emptyText, { color: theme.textSoft }]}>No events logged today yet</Text>
+            <Text style={[styles.emptyText, { color: theme.textSoft }]}>Log a meal, mood, or spend to start your day's timeline</Text>
           </View>
         ) : (
           <>
@@ -915,7 +915,7 @@ export function OverviewScreen() {
           </>
         ) : (
           <View style={[styles.emptyState, { borderColor: ink, marginTop: 8 }]}>
-            <Text style={[styles.emptyText, { color: theme.textSoft }]}>No 7-day data yet</Text>
+            <Text style={[styles.emptyText, { color: theme.textSoft }]}>Keep logging meals, steps, and mood — your weekly recap appears here after a few days</Text>
           </View>
         )}
       </View>

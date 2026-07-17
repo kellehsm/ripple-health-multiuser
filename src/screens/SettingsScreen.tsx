@@ -21,6 +21,7 @@ import * as Notifications from "expo-notifications";
 import { useFocusEffect } from "@react-navigation/core";
 import { getGrantedPermissions } from "react-native-health-connect";
 import { useTheme } from "../theme/ThemeContext";
+import { onSolid } from "../theme/colorUtils";
 import { ThemePickerModal } from "./ThemePickerModal";
 import { PALETTES } from "../theme/palettes";
 import { api } from "../api/client";
@@ -644,6 +645,17 @@ export function SettingsScreen() {
           onChange={(v) => setHcToggle("sync_heart_rate", v)}
           theme={theme}
         />
+        {hcGranted === false && (
+          <Pressable
+            onPress={async () => {
+              const granted = await requestHealthPermissions().catch(() => false);
+              setHcGranted(!!granted);
+            }}
+            style={[styles.saveButton, { backgroundColor: theme.teal.solid, borderColor: theme.teal.sub }]}
+          >
+            <Text style={{ color: onSolid(theme.teal.solid), fontWeight: "600" }}>Grant all Health Connect permissions</Text>
+          </Pressable>
+        )}
         <Pressable
           onPress={handleBackfill}
           disabled={backfilling}
