@@ -39,14 +39,14 @@ const PMR_STEPS = [
   "Shoulders",
   "Face & jaw",
 ];
-const PMR_DURATION = 10; // seconds per step (tense), same for release
+const PMR_DURATION = 10;
 
 const GROUNDING_54321 = [
-  { count: 5, sense: "SEE",         prompt: "Name 5 things you can see around you." },
-  { count: 4, sense: "TOUCH",       prompt: "Notice 4 things you can physically feel." },
-  { count: 3, sense: "HEAR",        prompt: "Identify 3 sounds you can hear right now." },
-  { count: 2, sense: "SMELL",       prompt: "Notice 2 things you can smell." },
-  { count: 1, sense: "TASTE",       prompt: "Notice 1 thing you can taste." },
+  { count: 5, sense: "SEE",   prompt: "Name 5 things you can see around you." },
+  { count: 4, sense: "TOUCH", prompt: "Notice 4 things you can physically feel." },
+  { count: 3, sense: "HEAR",  prompt: "Identify 3 sounds you can hear right now." },
+  { count: 2, sense: "SMELL", prompt: "Notice 2 things you can smell." },
+  { count: 1, sense: "TASTE", prompt: "Notice 1 thing you can taste." },
 ];
 
 const STOP_STEPS = [
@@ -67,6 +67,33 @@ const GRATITUDE_PROMPTS = [
   "What made you feel calm or at ease today?",
 ];
 
+const DURATIONS = [5, 10, 15, 20, 30];
+
+// ─── Shared: calm grace period countdown ─────────────────────────────────────
+
+function GraceCountdown({ count, accentColor, theme, ink }: {
+  count: number; accentColor: string; theme: any; ink: string;
+}) {
+  return (
+    <View style={{ alignItems: "center", gap: 18, paddingVertical: 32 }}>
+      <Text style={{ color: theme.textSoft, fontSize: 15, letterSpacing: 0.5 }}>Get ready...</Text>
+      <View style={{
+        width: 104, height: 104, borderRadius: 52,
+        backgroundColor: theme.card,
+        borderWidth: 2, borderColor: accentColor,
+        alignItems: "center", justifyContent: "center",
+        shadowColor: ink, shadowOffset: { width: 3, height: 3 },
+        shadowOpacity: 1, shadowRadius: 0, elevation: 3,
+      }}>
+        <Text style={{ color: accentColor, fontSize: 48, fontWeight: "900" }}>{count}</Text>
+      </View>
+      <Text style={{ color: theme.textSoft, fontSize: 13, textAlign: "center" }}>
+        Find a comfortable position
+      </Text>
+    </View>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function MindfulnessScreen() {
@@ -74,20 +101,37 @@ export function MindfulnessScreen() {
   const ink = theme.ink;
 
   const [activeSection, setActiveSection] = useState<Section | null>(null);
+  const contentFade = useRef(new Animated.Value(1)).current;
 
-  function goBack() { setActiveSection(null); }
+  function fadeTransition(onChange: () => void) {
+    Animated.timing(contentFade, { toValue: 0, duration: 140, useNativeDriver: true }).start(() => {
+      onChange();
+      Animated.timing(contentFade, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+    });
+  }
+
+  function navigateTo(section: Section) {
+    Haptics.selectionAsync();
+    fadeTransition(() => setActiveSection(section));
+  }
+
+  function goBack() {
+    fadeTransition(() => setActiveSection(null));
+  }
 
   return (
     <ScrollView
       style={{ backgroundColor: theme.page }}
-      contentContainerStyle={{ padding: 16, gap: 14 }}
+      contentContainerStyle={{ padding: 16 }}
       keyboardShouldPersistTaps="handled"
     >
-      {activeSection === null && <TileGrid theme={theme} ink={ink} onSelect={setActiveSection} />}
-      {activeSection === "breathing"  && <BreathingSection  theme={theme} ink={ink} onBack={goBack} />}
-      {activeSection === "grounding"  && <GroundingSection  theme={theme} ink={ink} onBack={goBack} />}
-      {activeSection === "meditation" && <MeditationSection theme={theme} ink={ink} onBack={goBack} />}
-      {activeSection === "gratitude"  && <GratitudeSection  theme={theme} ink={ink} onBack={goBack} />}
+      <Animated.View style={{ opacity: contentFade, gap: 14 }}>
+        {activeSection === null && <TileGrid theme={theme} ink={ink} onSelect={navigateTo} />}
+        {activeSection === "breathing"  && <BreathingSection  theme={theme} ink={ink} onBack={goBack} />}
+        {activeSection === "grounding"  && <GroundingSection  theme={theme} ink={ink} onBack={goBack} />}
+        {activeSection === "meditation" && <MeditationSection theme={theme} ink={ink} onBack={goBack} />}
+        {activeSection === "gratitude"  && <GratitudeSection  theme={theme} ink={ink} onBack={goBack} />}
+      </Animated.View>
     </ScrollView>
   );
 }
@@ -96,10 +140,10 @@ export function MindfulnessScreen() {
 
 function TileGrid({ theme, ink, onSelect }: { theme: any; ink: string; onSelect: (s: Section) => void }) {
   const tiles: { section: Section; emoji: string; title: string; desc: string; colorKey: string }[] = [
-    { section: "breathing",  emoji: "🫁", title: "Breathing",  desc: "Box · 4-7-8 · equal",            colorKey: "teal"   },
-    { section: "grounding",  emoji: "🌿", title: "Grounding",  desc: "5-4-3-2-1 · PMR · STOP",         colorKey: "coral"  },
-    { section: "meditation", emoji: "⏱",  title: "Meditation", desc: "Timed quiet session",             colorKey: "purple" },
-    { section: "gratitude",  emoji: "📓", title: "Gratitude",  desc: "Prompts & journaling",            colorKey: "berry"  },
+    { section: "breathing",  emoji: "🫁", title: "Breathing",  desc: "Box · 4-7-8 · equal",    colorKey: "teal"   },
+    { section: "grounding",  emoji: "🌿", title: "Grounding",  desc: "5-4-3-2-1 · PMR · STOP", colorKey: "coral"  },
+    { section: "meditation", emoji: "⏱",  title: "Meditation", desc: "Timed quiet session",     colorKey: "purple" },
+    { section: "gratitude",  emoji: "📓", title: "Gratitude",  desc: "Prompts & journaling",    colorKey: "berry"  },
   ];
 
   return (
@@ -113,7 +157,7 @@ function TileGrid({ theme, ink, onSelect }: { theme: any; ink: string; onSelect:
           return (
             <Pressable
               key={t.section}
-              onPress={() => { Haptics.selectionAsync(); onSelect(t.section); }}
+              onPress={() => onSelect(t.section)}
               style={{
                 width: "47%",
                 borderRadius: 14,
@@ -162,25 +206,23 @@ function BackBtn({ ink, onBack }: { ink: string; onBack: () => void }) {
 function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onBack: () => void }) {
   const [pattern, setPattern] = useState<BreathPattern | null>(null);
   const [running, setRunning] = useState(false);
-  const [phase, setPhase] = useState(0); // 0=inhale 1=holdIn 2=exhale 3=holdOut
+  const [phase, setPhase] = useState(0);
   const [cycles, setCycles] = useState(0);
+  const [gracePending, setGracePending] = useState<BreathPattern | null>(null);
+  const [graceCount, setGraceCount] = useState<number | null>(null);
+
   const breathAnim = useRef(new Animated.Value(0.5)).current;
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const runningRef = useRef(false);
+  const graceRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   function clearTimers() {
     timersRef.current.forEach(clearTimeout);
     timersRef.current = [];
   }
 
-  function stopSession() {
-    runningRef.current = false;
-    clearTimers();
-    breathAnim.stopAnimation();
-    breathAnim.setValue(0.5);
-    setRunning(false);
-    setPhase(0);
-    setCycles(0);
+  function clearGraceInterval() {
+    if (graceRef.current) { clearInterval(graceRef.current); graceRef.current = null; }
   }
 
   const runCycle = useCallback(function (phases: [number, number, number, number]) {
@@ -208,25 +250,86 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
     timersRef.current = [t1, t2, t3, t4].filter(Boolean) as ReturnType<typeof setTimeout>[];
   }, [breathAnim]);
 
-  function startSession(key: BreathPattern) {
+  function beginSession(key: BreathPattern) {
+    runningRef.current = false;
+    clearTimers();
+    breathAnim.stopAnimation();
+    breathAnim.setValue(0.5);
     setPattern(key);
-    stopSession();
-    runningRef.current = true;
-    setRunning(true);
+    setPhase(0);
     setCycles(0);
+    setRunning(true);
+    runningRef.current = true;
     setTimeout(() => runCycle(BREATH_PATTERNS[key].phases), 100);
   }
 
-  useEffect(() => () => { runningRef.current = false; clearTimers(); }, []);
+  function startGrace(key: BreathPattern) {
+    clearGraceInterval();
+    setGracePending(key);
+    setGraceCount(3);
+    graceRef.current = setInterval(() => {
+      setGraceCount((c) => {
+        if (c === null || c <= 1) {
+          clearGraceInterval();
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (graceCount === 0 && gracePending !== null) {
+      const key = gracePending;
+      setGraceCount(null);
+      setGracePending(null);
+      beginSession(key);
+    }
+  }, [graceCount, gracePending]);
+
+  function stopBreathing() {
+    runningRef.current = false;
+    clearTimers();
+    breathAnim.stopAnimation();
+    breathAnim.setValue(0.5);
+    setRunning(false);
+    setPhase(0);
+    setCycles(0);
+  }
+
+  function fullStop() {
+    clearGraceInterval();
+    setGraceCount(null);
+    setGracePending(null);
+    stopBreathing();
+  }
+
+  function handleRestart() {
+    const savedPattern = pattern;
+    stopBreathing();
+    if (savedPattern) startGrace(savedPattern);
+  }
+
+  useEffect(() => () => {
+    runningRef.current = false;
+    clearTimers();
+    clearGraceInterval();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const scaleInterp = breathAnim.interpolate({ inputRange: [0.5, 1], outputRange: [0.5, 1] });
+  const tealSolid = (theme.teal as any)?.solid ?? ink;
+  const inGrace = graceCount !== null;
 
   return (
     <>
-      <BackBtn ink={ink} onBack={() => { stopSession(); onBack(); }} />
+      <BackBtn ink={ink} onBack={() => { fullStop(); onBack(); }} />
       <Text style={{ color: theme.textStrong, fontSize: 20, fontWeight: "900", marginBottom: 2 }}>Breathing</Text>
 
-      {!running ? (
+      {inGrace ? (
+        <GraceCountdown count={graceCount!} accentColor={tealSolid} theme={theme} ink={ink} />
+      ) : !running ? (
         <>
           <Text style={{ color: theme.textSoft, fontSize: 13, marginBottom: 10 }}>Choose a pattern to begin.</Text>
           {(Object.keys(BREATH_PATTERNS) as BreathPattern[]).map((key) => {
@@ -234,7 +337,7 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
             return (
               <Pressable
                 key={key}
-                onPress={() => startSession(key)}
+                onPress={() => startGrace(key)}
                 style={[styles.card, { backgroundColor: theme.teal.tint, borderColor: ink }]}
                 accessibilityRole="button"
               >
@@ -253,23 +356,15 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
             {pattern ? BREATH_PATTERNS[pattern].label : ""}
           </Text>
 
-          {/* Animated circle */}
           <View style={{ width: 200, height: 200, alignItems: "center", justifyContent: "center" }}>
             <Animated.View style={{ transform: [{ scale: scaleInterp }] }}>
               <View style={{
-                width: 180,
-                height: 180,
-                borderRadius: 90,
-                backgroundColor: (theme.teal as any)?.solid ?? ink,
-                borderWidth: 3,
-                borderColor: ink,
-                shadowColor: ink,
-                shadowOffset: { width: 4, height: 4 },
-                shadowOpacity: 1,
-                shadowRadius: 0,
-                elevation: 6,
-                alignItems: "center",
-                justifyContent: "center",
+                width: 180, height: 180, borderRadius: 90,
+                backgroundColor: tealSolid,
+                borderWidth: 3, borderColor: ink,
+                shadowColor: ink, shadowOffset: { width: 4, height: 4 },
+                shadowOpacity: 1, shadowRadius: 0, elevation: 6,
+                alignItems: "center", justifyContent: "center",
               }}>
                 <Text style={{ color: "#fff", fontSize: 16, fontWeight: "900", letterSpacing: 1.5 }}>
                   {PHASE_LABELS[phase]}
@@ -282,13 +377,22 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
             Cycles completed: <Text style={{ color: theme.textStrong, fontWeight: "800" }}>{cycles}</Text>
           </Text>
 
-          <Pressable
-            onPress={stopSession}
-            style={[styles.endBtn, { borderColor: ink, backgroundColor: theme.card }]}
-            accessibilityRole="button"
-          >
-            <Text style={{ color: ink, fontSize: 13, fontWeight: "800", letterSpacing: 0.5 }}>END SESSION</Text>
-          </Pressable>
+          <View style={{ flexDirection: "row", gap: 10, width: "100%" }}>
+            <Pressable
+              onPress={handleRestart}
+              style={[styles.endBtn, { borderColor: ink, backgroundColor: theme.card, flex: 1 }]}
+              accessibilityRole="button"
+            >
+              <Text style={{ color: ink, fontSize: 13, fontWeight: "800", letterSpacing: 0.5 }}>↺ RESTART</Text>
+            </Pressable>
+            <Pressable
+              onPress={fullStop}
+              style={[styles.endBtn, { borderColor: ink, backgroundColor: theme.card, flex: 1 }]}
+              accessibilityRole="button"
+            >
+              <Text style={{ color: ink, fontSize: 13, fontWeight: "800", letterSpacing: 0.5 }}>END SESSION</Text>
+            </Pressable>
+          </View>
         </View>
       )}
     </>
@@ -302,10 +406,18 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
   const [step, setStep] = useState(0);
   const [pmrPhase, setPmrPhase] = useState<"tense" | "release">("tense");
   const [countdown, setCountdown] = useState(PMR_DURATION);
+  const [pmrGraceCount, setPmrGraceCount] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pmrGraceRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const coralSolid = (theme.coral as any)?.solid ?? ink;
 
   function stopTimer() {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+  }
+
+  function clearPmrGraceInterval() {
+    if (pmrGraceRef.current) { clearInterval(pmrGraceRef.current); pmrGraceRef.current = null; }
   }
 
   function startPmrStep(s: number, phase: "tense" | "release") {
@@ -332,16 +444,58 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
     }, 1000);
   }
 
+  function startPmrGrace() {
+    clearPmrGraceInterval();
+    setPmrGraceCount(3);
+    pmrGraceRef.current = setInterval(() => {
+      setPmrGraceCount((c) => {
+        if (c === null || c <= 1) {
+          clearPmrGraceInterval();
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (pmrGraceCount === 0) {
+      setPmrGraceCount(null);
+      startPmrStep(0, "tense");
+    }
+  }, [pmrGraceCount]);
+
   function selectTechnique(t: GroundTechnique) {
     setTechnique(t);
     setStep(0);
     setPmrPhase("tense");
-    if (t === "pmr") startPmrStep(0, "tense");
+    if (t === "pmr") startPmrGrace();
   }
 
-  function handleBack() { stopTimer(); setTechnique(null); onBack(); }
+  function handlePmrRestart() {
+    stopTimer();
+    setStep(0);
+    setPmrPhase("tense");
+    setCountdown(PMR_DURATION);
+    startPmrGrace();
+  }
 
-  useEffect(() => () => stopTimer(), []);
+  function handleBack() {
+    stopTimer();
+    clearPmrGraceInterval();
+    setPmrGraceCount(null);
+    setTechnique(null);
+    onBack();
+  }
+
+  useEffect(() => () => {
+    stopTimer();
+    clearPmrGraceInterval();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const inPmrGrace = pmrGraceCount !== null;
 
   return (
     <>
@@ -352,9 +506,9 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
         <>
           <Text style={{ color: theme.textSoft, fontSize: 13, marginBottom: 10 }}>Choose a technique.</Text>
           {([
-            { key: "54321", label: "5-4-3-2-1 Sensory",           desc: "Engage all five senses sequentially" },
+            { key: "54321", label: "5-4-3-2-1 Sensory",            desc: "Engage all five senses sequentially" },
             { key: "pmr",   label: "Progressive Muscle Relaxation", desc: "Tense and release each muscle group" },
-            { key: "stop",  label: "STOP Technique",               desc: "Stop · Take a breath · Observe · Proceed" },
+            { key: "stop",  label: "STOP Technique",                desc: "Stop · Take a breath · Observe · Proceed" },
           ] as const).map((t) => (
             <Pressable
               key={t.key}
@@ -410,29 +564,57 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
               </View>
             );
           })}
+          {step > 0 && (
+            <Pressable
+              onPress={() => { Haptics.selectionAsync(); setStep(0); }}
+              style={[styles.endBtn, { borderColor: ink, backgroundColor: theme.card }]}
+              accessibilityRole="button"
+            >
+              <Text style={{ color: ink, fontSize: 13, fontWeight: "800", letterSpacing: 0.5 }}>↺ RESTART</Text>
+            </Pressable>
+          )}
         </View>
       ) : technique === "pmr" ? (
         <View style={{ gap: 14 }}>
-          <Text style={{ color: theme.textSoft, fontSize: 13 }}>
-            {step < PMR_STEPS.length ? `Step ${step + 1} of ${PMR_STEPS.length}` : "Complete"}
-          </Text>
-          {step < PMR_STEPS.length && (
-            <View style={[styles.card, { backgroundColor: (theme.coral as any)?.tint, borderColor: ink }]}>
-              <Text style={{ color: (theme.coral as any)?.fg, fontSize: 19, fontWeight: "900", marginBottom: 6 }}>
-                {PMR_STEPS[step]}
+          {inPmrGrace ? (
+            <GraceCountdown count={pmrGraceCount!} accentColor={coralSolid} theme={theme} ink={ink} />
+          ) : (
+            <>
+              <Text style={{ color: theme.textSoft, fontSize: 13 }}>
+                {step < PMR_STEPS.length ? `Step ${step + 1} of ${PMR_STEPS.length}` : "Complete"}
               </Text>
-              <Text style={{ color: (theme.coral as any)?.sub, fontSize: 15, marginBottom: 14 }}>
-                {pmrPhase === "tense" ? "Tense this area as hard as you can." : "Slowly release the tension. Notice the difference."}
-              </Text>
-              <View style={{ alignItems: "center" }}>
-                <Text style={{ color: (theme.coral as any)?.fg, fontSize: 42, fontWeight: "900" }}>{countdown}</Text>
-                <Text style={{ color: (theme.coral as any)?.sub, fontSize: 11, letterSpacing: 0.5 }}>{pmrPhase.toUpperCase()}</Text>
+              {step < PMR_STEPS.length && (
+                <View style={[styles.card, { backgroundColor: (theme.coral as any)?.tint, borderColor: ink }]}>
+                  <Text style={{ color: (theme.coral as any)?.fg, fontSize: 19, fontWeight: "900", marginBottom: 6 }}>
+                    {PMR_STEPS[step]}
+                  </Text>
+                  <Text style={{ color: (theme.coral as any)?.sub, fontSize: 15, marginBottom: 14 }}>
+                    {pmrPhase === "tense" ? "Tense this area as hard as you can." : "Slowly release the tension. Notice the difference."}
+                  </Text>
+                  <View style={{ alignItems: "center" }}>
+                    <Text style={{ color: (theme.coral as any)?.fg, fontSize: 42, fontWeight: "900" }}>{countdown}</Text>
+                    <Text style={{ color: (theme.coral as any)?.sub, fontSize: 11, letterSpacing: 0.5 }}>{pmrPhase.toUpperCase()}</Text>
+                  </View>
+                </View>
+              )}
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <Pressable
+                  onPress={handlePmrRestart}
+                  style={[styles.endBtn, { borderColor: ink, backgroundColor: theme.card, flex: 1 }]}
+                  accessibilityRole="button"
+                >
+                  <Text style={{ color: ink, fontSize: 13, fontWeight: "800" }}>↺ RESTART</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => { stopTimer(); setTechnique(null); }}
+                  style={[styles.endBtn, { borderColor: ink, backgroundColor: theme.card, flex: 1 }]}
+                  accessibilityRole="button"
+                >
+                  <Text style={{ color: ink, fontSize: 13, fontWeight: "800" }}>STOP</Text>
+                </Pressable>
               </View>
-            </View>
+            </>
           )}
-          <Pressable onPress={() => { stopTimer(); setTechnique(null); }} style={[styles.endBtn, { borderColor: ink, backgroundColor: theme.card }]}>
-            <Text style={{ color: ink, fontSize: 13, fontWeight: "800" }}>STOP</Text>
-          </Pressable>
         </View>
       ) : (
         // STOP technique
@@ -472,6 +654,15 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
               </View>
             );
           })}
+          {step > 0 && (
+            <Pressable
+              onPress={() => { Haptics.selectionAsync(); setStep(0); }}
+              style={[styles.endBtn, { borderColor: ink, backgroundColor: theme.card }]}
+              accessibilityRole="button"
+            >
+              <Text style={{ color: ink, fontSize: 13, fontWeight: "800", letterSpacing: 0.5 }}>↺ RESTART</Text>
+            </Pressable>
+          )}
         </View>
       )}
     </>
@@ -480,19 +671,26 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
 
 // ─── Meditation section ───────────────────────────────────────────────────────
 
-const DURATIONS = [5, 10, 15, 20, 30];
-
 function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; onBack: () => void }) {
   const [duration, setDuration] = useState<number | null>(null);
   const [remaining, setRemaining] = useState(0);
   const [running, setRunning] = useState(false);
+  const [graceCount, setGraceCount] = useState<number | null>(null);
+  const [gracePendingDuration, setGracePendingDuration] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const graceRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const purpleSolid = (theme.purple as any)?.solid ?? ink;
 
   function stopTimer() {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
   }
 
-  function startSession(mins: number) {
+  function clearGraceInterval() {
+    if (graceRef.current) { clearInterval(graceRef.current); graceRef.current = null; }
+  }
+
+  function beginMeditation(mins: number) {
     stopTimer();
     setDuration(mins);
     setRemaining(mins * 60);
@@ -511,6 +709,31 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
     }, 1000);
   }
 
+  function startGrace(mins: number) {
+    clearGraceInterval();
+    setGracePendingDuration(mins);
+    setGraceCount(3);
+    graceRef.current = setInterval(() => {
+      setGraceCount((c) => {
+        if (c === null || c <= 1) {
+          clearGraceInterval();
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (graceCount === 0 && gracePendingDuration !== null) {
+      const mins = gracePendingDuration;
+      setGraceCount(null);
+      setGracePendingDuration(null);
+      beginMeditation(mins);
+    }
+  }, [graceCount, gracePendingDuration]);
+
   function stopSession() {
     stopTimer();
     setRunning(false);
@@ -518,30 +741,56 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
     setRemaining(0);
   }
 
-  useEffect(() => () => stopTimer(), []);
+  function handleRestart() {
+    if (duration === null) return;
+    const savedDuration = duration;
+    stopTimer();
+    setRunning(false);
+    setDuration(null);
+    setRemaining(0);
+    startGrace(savedDuration);
+  }
+
+  function fullStop() {
+    clearGraceInterval();
+    setGraceCount(null);
+    setGracePendingDuration(null);
+    stopSession();
+  }
+
+  useEffect(() => () => {
+    stopTimer();
+    clearGraceInterval();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const mins = Math.floor(remaining / 60);
   const secs = remaining % 60;
   const fmtTime = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   const done = duration !== null && remaining === 0 && !running;
+  const inGrace = graceCount !== null;
 
   return (
     <>
-      <BackBtn ink={ink} onBack={() => { stopSession(); onBack(); }} />
+      <BackBtn ink={ink} onBack={() => { fullStop(); onBack(); }} />
       <Text style={{ color: theme.textStrong, fontSize: 20, fontWeight: "900", marginBottom: 2 }}>Meditation</Text>
 
-      {!running && !done ? (
+      {inGrace ? (
+        <GraceCountdown count={graceCount!} accentColor={purpleSolid} theme={theme} ink={ink} />
+      ) : !running && !done ? (
         <>
           <Text style={{ color: theme.textSoft, fontSize: 13, marginBottom: 10 }}>Choose a duration.</Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
             {DURATIONS.map((d) => (
               <Pressable
                 key={d}
-                onPress={() => startSession(d)}
+                onPress={() => startGrace(d)}
                 style={{
-                  borderWidth: 2, borderColor: ink, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 18,
+                  borderWidth: 2, borderColor: ink, borderRadius: 12,
+                  paddingVertical: 14, paddingHorizontal: 18,
                   backgroundColor: (theme.purple as any)?.tint,
-                  shadowColor: ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2,
+                  shadowColor: ink, shadowOffset: { width: 2, height: 2 },
+                  shadowOpacity: 1, shadowRadius: 0, elevation: 2,
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={d + " minutes"}
@@ -566,7 +815,7 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
           <Text style={{ color: theme.textSoft, fontSize: 13 }}>{duration} min session</Text>
           <View style={{
             width: 180, height: 180, borderRadius: 90,
-            backgroundColor: (theme.purple as any)?.solid,
+            backgroundColor: purpleSolid,
             borderWidth: 3, borderColor: ink,
             shadowColor: ink, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 6,
             alignItems: "center", justifyContent: "center",
@@ -574,9 +823,22 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
             <Text style={{ color: "#fff", fontSize: 36, fontWeight: "900" }}>{fmtTime}</Text>
             <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 11, letterSpacing: 0.5, marginTop: 4 }}>REMAINING</Text>
           </View>
-          <Pressable onPress={stopSession} style={[styles.endBtn, { borderColor: ink, backgroundColor: theme.card }]}>
-            <Text style={{ color: ink, fontSize: 13, fontWeight: "800" }}>END SESSION</Text>
-          </Pressable>
+          <View style={{ flexDirection: "row", gap: 10, width: "100%" }}>
+            <Pressable
+              onPress={handleRestart}
+              style={[styles.endBtn, { borderColor: ink, backgroundColor: theme.card, flex: 1 }]}
+              accessibilityRole="button"
+            >
+              <Text style={{ color: ink, fontSize: 13, fontWeight: "800", letterSpacing: 0.5 }}>↺ RESTART</Text>
+            </Pressable>
+            <Pressable
+              onPress={stopSession}
+              style={[styles.endBtn, { borderColor: ink, backgroundColor: theme.card, flex: 1 }]}
+              accessibilityRole="button"
+            >
+              <Text style={{ color: ink, fontSize: 13, fontWeight: "800", letterSpacing: 0.5 }}>END SESSION</Text>
+            </Pressable>
+          </View>
         </View>
       )}
     </>

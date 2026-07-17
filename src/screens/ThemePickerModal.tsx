@@ -33,7 +33,6 @@ type Props = {
 
 export function ThemePickerModal({ visible, onClose }: Props) {
   const { theme, paletteId, setPalette } = useTheme();
-  const ink = theme.ink;
 
   return (
     <Modal
@@ -43,11 +42,10 @@ export function ThemePickerModal({ visible, onClose }: Props) {
       statusBarTranslucent
     >
       <SafeAreaView style={[styles.root, { backgroundColor: theme.page }]}>
-        {/* Header */}
         <View style={[styles.header, { borderBottomColor: theme.cardBorder }]}>
           <Text style={[styles.headerTitle, { color: theme.textStrong }]}>Appearance</Text>
           <Pressable onPress={onClose} style={styles.closeBtn} hitSlop={12}>
-            <Ionicons name="close" size={22} color={ink} />
+            <Ionicons name="close" size={22} color={theme.ink} />
           </Pressable>
         </View>
 
@@ -60,22 +58,17 @@ export function ThemePickerModal({ visible, onClose }: Props) {
               <Text style={[styles.groupLabel, { color: theme.textSoft }]}>
                 {groupName.toUpperCase()}
               </Text>
-              <View style={ids.length > 1 ? styles.row2 : styles.row1}>
-                {ids.map((id) => {
-                  const p = PALETTES[id];
-                  const selected = paletteId === id;
-                  return (
-                    <PaletteCard
-                      key={id}
-                      palette={p}
-                      selected={selected}
-                      wide={ids.length === 1}
-                      activeInk={ink}
-                      onPress={() => { setPalette(id); onClose(); }}
-                    />
-                  );
-                })}
-              </View>
+              {ids.map((id) => {
+                const p = PALETTES[id];
+                return (
+                  <ThemeRow
+                    key={id}
+                    palette={p}
+                    selected={paletteId === id}
+                    onPress={() => { setPalette(id); onClose(); }}
+                  />
+                );
+              })}
             </View>
           ))}
           <View style={{ height: 32 }} />
@@ -85,17 +78,26 @@ export function ThemePickerModal({ visible, onClose }: Props) {
   );
 }
 
-// ─── Palette card ─────────────────────────────────────────────────────────────
+// ─── Theme row ────────────────────────────────────────────────────────────────
 
-type CardProps = {
+type RowProps = {
   palette: Theme;
   selected: boolean;
-  wide: boolean;
-  activeInk: string;
   onPress: () => void;
 };
 
-function PaletteCard({ palette: p, selected, wide, activeInk, onPress }: CardProps) {
+function ThemeRow({ palette: p, selected, onPress }: RowProps) {
+  // 7-color swatch: background, card surface, then 5 distinct accent roles
+  const swatchColors = [
+    p.page,
+    p.card,
+    p.teal.solid,
+    p.coral.solid,
+    p.amber.solid,
+    p.berry.solid,
+    p.violet.solid,
+  ];
+
   return (
     <Pressable
       onPress={onPress}
@@ -103,47 +105,42 @@ function PaletteCard({ palette: p, selected, wide, activeInk, onPress }: CardPro
       accessibilityLabel={`${p.name} theme — ${BEST_FOR[p.id] ?? ""}`}
       accessibilityState={{ checked: selected }}
       style={[
-        styles.card,
-        wide && styles.cardWide,
+        styles.row,
         {
           backgroundColor: p.card,
           borderColor: selected ? p.teal.solid : p.cardBorder,
-          borderWidth: selected ? 3 : 2,
-          shadowColor: activeInk,
-          shadowOffset: { width: selected ? 3 : 2, height: selected ? 3 : 2 },
-          shadowOpacity: selected ? 0.9 : 0.4,
-          shadowRadius: 0,
-          elevation: selected ? 4 : 2,
+          borderWidth: selected ? 2.5 : 1.5,
         },
       ]}
     >
-      {/* Swatch strip */}
-      <View style={styles.swatchRow}>
-        {[p.ink, p.page, p.teal.solid, p.coral.solid, p.berry.solid].map((color, i) => (
+      {/* Color swatch strip */}
+      <View style={styles.swatchStrip}>
+        {swatchColors.map((color, i) => (
           <View
             key={i}
             style={[
-              styles.swatch,
+              styles.swatchSegment,
               { backgroundColor: color },
-              i === 0 && styles.swatchFirst,
-              i === 4 && styles.swatchLast,
+              i === 0 && styles.swatchLeft,
+              i === swatchColors.length - 1 && styles.swatchRight,
             ]}
           />
         ))}
       </View>
 
-      {/* Name + checkmark row */}
+      {/* Name + checkmark */}
       <View style={styles.nameRow}>
-        <Text style={[styles.paletteName, { color: p.textStrong }]} numberOfLines={1}>
+        <Text style={[styles.themeName, { color: p.textStrong }]} numberOfLines={1}>
           {p.name}
         </Text>
-        {selected && (
-          <Ionicons name="checkmark-circle" size={16} color={p.teal.solid} />
-        )}
+        {selected
+          ? <Ionicons name="checkmark-circle" size={20} color={p.teal.solid} />
+          : <View style={styles.checkPlaceholder} />
+        }
       </View>
 
-      {/* Best for */}
-      <Text style={[styles.bestFor, { color: p.textSoft }]} numberOfLines={2}>
+      {/* Description */}
+      <Text style={[styles.description, { color: p.textSoft }]} numberOfLines={1}>
         {BEST_FOR[p.id] ?? ""}
       </Text>
     </Pressable>
@@ -165,39 +162,36 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 20, fontWeight: "800", letterSpacing: -0.5 },
   closeBtn: { padding: 4 },
   scroll: { paddingHorizontal: 16, paddingTop: 20 },
-  group: { marginBottom: 24 },
+  group: { marginBottom: 28 },
   groupLabel: {
     fontSize: 10,
     fontWeight: "800",
-    letterSpacing: 1.2,
+    letterSpacing: 1.5,
     marginBottom: 10,
   },
-  row2: { flexDirection: "row", gap: 10 },
-  row1: { flexDirection: "row" },
-  card: {
-    flex: 1,
+  row: {
     borderRadius: 14,
     overflow: "hidden",
-    padding: 0,
+    marginBottom: 10,
   },
-  cardWide: { flex: 1 },
-  swatchRow: {
+  swatchStrip: {
     flexDirection: "row",
-    height: 48,
+    height: 56,
   },
-  swatch: {
+  swatchSegment: {
     flex: 1,
   },
-  swatchFirst: { borderTopLeftRadius: 12 },
-  swatchLast: { borderTopRightRadius: 12 },
+  swatchLeft: { borderTopLeftRadius: 12 },
+  swatchRight: { borderTopRightRadius: 12 },
   nameRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 10,
-    paddingTop: 8,
+    paddingHorizontal: 14,
+    paddingTop: 10,
     paddingBottom: 2,
   },
-  paletteName: { fontSize: 13, fontWeight: "800", flex: 1, marginRight: 4 },
-  bestFor: { fontSize: 10, paddingHorizontal: 10, paddingBottom: 10, lineHeight: 14 },
+  themeName: { fontSize: 15, fontWeight: "800", flex: 1, marginRight: 6 },
+  checkPlaceholder: { width: 20, height: 20 },
+  description: { fontSize: 11, paddingHorizontal: 14, paddingBottom: 12, lineHeight: 15 },
 });
