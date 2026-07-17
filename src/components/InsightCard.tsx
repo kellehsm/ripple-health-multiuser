@@ -49,13 +49,25 @@ function getConfidenceColor(confidence: Confidence, theme: any): string {
   }
 }
 
+const ALLOWED_SUPPORTING_KEYS = new Set([
+  "sample_size", "streak_length", "streak_days",
+  "high_sleep_mood_avg", "low_sleep_mood_avg",
+  "high_steps_glucose_avg", "low_steps_glucose_avg",
+  "pages_read_days_mood_avg", "no_pages_days_mood_avg",
+  "hobby_days_mood_avg", "no_hobby_days_mood_avg",
+  "consistent_days", "inconsistent_days",
+  "days_with_water", "days_without_water",
+  "weekend_avg", "weekday_avg",
+  "high_spend_mood_avg", "low_spend_mood_avg",
+  "time_in_range_pct",
+]);
+
 function formatSupportingData(data: Record<string, unknown>): Array<{ label: string; value: string }> {
-  const skip = new Set(["direction", "higher_on", "lower_on", "top_hobby", "highest_bucket", "lowest_bucket", "highest_type", "lowest_type", "meal_types", "buckets", "streak_type"]);
   return Object.entries(data)
-    .filter(([k]) => !skip.has(k))
+    .filter(([k, v]) => ALLOWED_SUPPORTING_KEYS.has(k) && (typeof v === "number" || typeof v === "string"))
     .map(([k, v]) => ({
       label: k.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
-      value: typeof v === "number" ? String(v) : String(v),
+      value: typeof v === "number" ? String(Math.round(v * 10) / 10) : String(v),
     }))
     .slice(0, 6);
 }

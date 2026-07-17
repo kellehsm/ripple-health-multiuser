@@ -1,7 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { Appearance } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import type { Theme } from "./theme";
 import { PALETTES, DEFAULT_PALETTE_ID } from "./palettes";
+
+const DEFAULT_DARK_PALETTE_ID = "midnight-steel";
 
 const STORAGE_KEY = "ripple_palette_id";
 
