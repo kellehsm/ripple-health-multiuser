@@ -14,18 +14,16 @@ import { PALETTES, PALETTE_GROUPS } from "../theme/palettes";
 import type { Theme } from "../theme/theme";
 
 const BEST_FOR: Record<string, string> = {
-  "morning-mist":   "Daily wellness trackers, morning routines",
-  "garden-path":    "Mindful eating, nutrition-focused users",
-  "clinical-trust": "Medical monitoring, glucose management",
-  "precision-slate":"Data-heavy use, professional review",
-  "midnight-neon":  "Night-shift, AMOLED screens, tech fans",
-  "carbon-arc":     "Evening review, low-light comfort",
-  "onyx-gold":      "Premium feel, health optimization",
-  "velvet-plum":    "Wellness journaling, mood tracking",
-  "forest-floor":   "Outdoor athletes, nature lovers",
-  "vivid-motion":   "Fitness motivation, step goals",
-  "pure-clarity":   "iOS familiarity, minimal style",
-  "still-water":    "ADHD, focus, reduced distraction",
+  "morning-mist":   "Warm & calm — the classic default",
+  "pale-sage":      "Outdoor athletes, botanical vibes",
+  "blush-hour":     "Wellness journaling, warm pastels",
+  "jewel-light":    "Vibrant jewel tones, crisp contrast",
+  "clean-slate":    "Minimal & modern, bold accents",
+  "midnight-steel": "Professional dark, data-focused",
+  "deep-navy":      "Tech aesthetic, AMOLED screens",
+  "velvet-dusk":    "Evening reflection, plum ambiance",
+  "forest-night":   "Earthy dark, warm forest glow",
+  "espresso":       "Coffee-shop comfort, warm dark",
 };
 
 type Props = {
@@ -101,6 +99,9 @@ function PaletteCard({ palette: p, selected, wide, activeInk, onPress }: CardPro
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="radio"
+      accessibilityLabel={`${p.name} theme — ${BEST_FOR[p.id] ?? ""}`}
+      accessibilityState={{ checked: selected }}
       style={[
         styles.card,
         wide && styles.cardWide,

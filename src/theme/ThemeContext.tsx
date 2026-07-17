@@ -37,7 +37,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const mode: "light" | "dark" = theme.isDark ? "dark" : "light";
 
   const toggle = useCallback(() => {
-    setPalette(theme.isDark ? "morning-mist" : "midnight-neon");
+    setPalette(theme.isDark ? "morning-mist" : "midnight-steel");
   }, [theme.isDark, setPalette]);
 
   return (

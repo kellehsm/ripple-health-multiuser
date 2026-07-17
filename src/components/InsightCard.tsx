@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
+import { onSolid } from "../theme/colorUtils";
 
 export type Confidence = "low" | "moderate" | "high" | "very_high";
 
@@ -39,12 +40,14 @@ const CONFIDENCE_LABEL: Record<Confidence, string> = {
   very_high: "Very Strong",
 };
 
-const CONFIDENCE_COLOR: Record<Confidence, string> = {
-  low: "#9B8EA0",
-  moderate: "#D4A843",
-  high: "#3FA0A6",
-  very_high: "#1D9E75",
-};
+function getConfidenceColor(confidence: Confidence, theme: any): string {
+  switch (confidence) {
+    case "low":       return theme.textSoft;
+    case "moderate":  return theme.amber.solid;
+    case "high":      return theme.teal.solid;
+    case "very_high": return theme.success;
+  }
+}
 
 function formatSupportingData(data: Record<string, unknown>): Array<{ label: string; value: string }> {
   const skip = new Set(["direction", "higher_on", "lower_on", "top_hobby", "highest_bucket", "lowest_bucket", "highest_type", "lowest_type", "meal_types", "buckets", "streak_type"]);
@@ -68,7 +71,7 @@ export function InsightCard({ insight, onDismiss, compact = false }: InsightCard
   const [expanded, setExpanded] = useState(false);
 
   const icon = TYPE_ICON[insight.type] ?? "bulb-outline";
-  const confColor = CONFIDENCE_COLOR[insight.confidence];
+  const confColor = getConfidenceColor(insight.confidence, theme);
   const confLabel = CONFIDENCE_LABEL[insight.confidence];
   const ink = theme.ink;
   const card = theme.card;
@@ -80,14 +83,14 @@ export function InsightCard({ insight, onDismiss, compact = false }: InsightCard
   return (
     <Pressable
       onPress={() => setExpanded(e => !e)}
-      style={[styles.card, { backgroundColor: card, borderColor: ink }]}
+      style={[styles.card, { backgroundColor: card, borderColor: ink, shadowColor: ink }]}
       accessibilityRole="button"
       accessibilityLabel={insight.title}
     >
       {/* Header row */}
       <View style={styles.headerRow}>
         <View style={[styles.iconBox, { backgroundColor: confColor }]}>
-          <Ionicons name={icon as any} size={15} color="#fff" />
+          <Ionicons name={icon as any} size={15} color={onSolid(confColor)} />
         </View>
         <View style={{ flex: 1, marginLeft: 10 }}>
           <Text style={[styles.title, { color: theme.textStrong }]}>{insight.title}</Text>
@@ -155,7 +158,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 2,
     padding: 14,
-    shadowColor: "#000",
     shadowOffset: { width: 3, height: 3 },
     shadowOpacity: 1,
     shadowRadius: 0,

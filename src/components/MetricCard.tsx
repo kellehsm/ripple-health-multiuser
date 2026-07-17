@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
+import { onSolid } from "../theme/colorUtils";
 
 type ColorKey = "teal" | "blue" | "amber" | "coral" | "pink" | "green" | "red" | "berry" | "violet" | "purple";
 
@@ -22,9 +23,11 @@ export function MetricCard({ label, value, icon, colorKey, sublabel, onAction, v
   const c = (theme as any)[colorKey];
 
   const bg = variant === "solid" ? c.solid : c.tint;
-  const textColor = variant === "solid" ? "#ffffff" : c.fg;
-  const subColor = variant === "solid" ? "rgba(255,255,255,0.8)" : c.sub;
-  const iconColor = variant === "solid" ? "rgba(255,255,255,0.9)" : c.fg;
+  const solidText = onSolid(c.solid);
+  const solidSub = solidText === "#ffffff" ? "rgba(255,255,255,0.75)" : "rgba(0,0,0,0.55)";
+  const textColor = variant === "solid" ? solidText : c.fg;
+  const subColor = variant === "solid" ? solidSub : c.sub;
+  const iconColor = variant === "solid" ? solidText : c.fg;
 
   return (
     <View style={[styles.tile, { backgroundColor: bg, borderColor: ink, shadowColor: ink }]}>
@@ -40,14 +43,14 @@ export function MetricCard({ label, value, icon, colorKey, sublabel, onAction, v
           style={[
             styles.actionButton,
             {
-              backgroundColor: variant === "solid" ? "rgba(255,255,255,0.2)" : "#ffffff",
-              borderColor: variant === "solid" ? "rgba(255,255,255,0.5)" : ink,
+              backgroundColor: variant === "solid" ? (solidText === "#ffffff" ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.12)") : theme.card,
+              borderColor: variant === "solid" ? (solidText === "#ffffff" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.3)") : ink,
               shadowColor: ink,
             },
           ]}
         >
-          <Ionicons name="add" size={11} color={variant === "solid" ? "#fff" : c.fg} />
-          <Text style={[styles.actionLabel, { color: variant === "solid" ? "#fff" : c.fg }]}>+1</Text>
+          <Ionicons name="add" size={11} color={variant === "solid" ? solidText : c.fg} />
+          <Text style={[styles.actionLabel, { color: variant === "solid" ? solidText : c.fg }]}>+1</Text>
         </Pressable>
       ) : null}
     </View>

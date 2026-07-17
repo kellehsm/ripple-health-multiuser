@@ -6,6 +6,7 @@ import Svg, { Polyline, Line, Text as SvgText, Rect, Circle } from "react-native
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
 import { useTheme } from "../theme/ThemeContext";
+import { onSolid } from "../theme/colorUtils";
 import { Ionicons } from "@expo/vector-icons";
 import { MetricCard } from "../components/MetricCard";
 import { api } from "../api/client";
@@ -472,10 +473,10 @@ export function HealthScreen() {
       >
         <Text style={{ fontSize: 32 }}>🧘</Text>
         <View style={{ flex: 1 }}>
-          <Text style={{ color: "#fff", fontSize: 18, fontWeight: "900", marginBottom: 2 }}>Mindfulness</Text>
-          <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 12 }}>Breathing · grounding · gratitude</Text>
+          <Text style={{ color: onSolid(theme.purple.solid), fontSize: 18, fontWeight: "900", marginBottom: 2 }}>Mindfulness</Text>
+          <Text style={{ color: onSolid(theme.purple.solid), fontSize: 12, opacity: 0.75 }}>Breathing · grounding · gratitude</Text>
         </View>
-        <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 20, fontWeight: "800" }}>›</Text>
+        <Text style={{ color: onSolid(theme.purple.solid), fontSize: 20, fontWeight: "800", opacity: 0.85 }}>›</Text>
       </Pressable>
 
       {/* 2×2 metric tile grid */}
@@ -577,18 +578,18 @@ export function HealthScreen() {
         {status && status.hasData ? (
           <View style={[styles.glucoseCurrentBox, { backgroundColor: theme.berry.solid }]}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.glucoseCurrentValue}>
+              <Text style={[styles.glucoseCurrentValue, { color: onSolid(theme.berry.solid) }]}>
                 {status.mg_dl}{status.arrow ? " " + status.arrow : ""}
               </Text>
               {status.minutesSinceReading != null ? (
-                <Text style={styles.glucoseMinAgo}>
+                <Text style={[styles.glucoseMinAgo, { color: onSolid(theme.berry.solid), opacity: 0.8 }]}>
                   {status.minutesSinceReading} min ago
                 </Text>
               ) : null}
             </View>
             {status.delta != null ? (
               <View style={styles.deltaBadge}>
-                <Text style={styles.deltaBadgeText}>
+                <Text style={[styles.deltaBadgeText, { color: onSolid(theme.berry.solid) }]}>
                   {status.delta > 0 ? "+" : ""}{status.delta}
                 </Text>
               </View>
@@ -905,16 +906,16 @@ function makeStyles(ink: string, card: string) {
     shadowRadius: 0,
     elevation: 3,
   },
-  glucoseCurrentValue: { fontSize: 26, fontWeight: "800", color: "#ffffff" },
-  glucoseMinAgo: { color: "rgba(255,255,255,0.8)", fontSize: 11, marginTop: 2 },
+  glucoseCurrentValue: { fontSize: 26, fontWeight: "800" },
+  glucoseMinAgo: { fontSize: 11, marginTop: 2 },
   deltaBadge: {
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.6)",
+    borderColor: "rgba(128,128,128,0.4)",
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  deltaBadgeText: { color: "#ffffff", fontSize: 14, fontWeight: "800" },
+  deltaBadgeText: { fontSize: 14, fontWeight: "800" },
   legendRow: { flexDirection: "row", gap: 16, marginTop: 10 },
   legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },

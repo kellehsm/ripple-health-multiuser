@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "../theme/ThemeContext";
+import { onSolid } from "../theme/colorUtils";
 import { api } from "../api/client";
 import { toast } from "../lib/toast";
 
@@ -273,8 +274,8 @@ export function MoodCheckInModal({ visible, period, onDismiss, onSubmitted }: Pr
               accessibilityLabel="Log mood"
             >
               {submitting
-                ? <ActivityIndicator size="small" color="#fff" />
-                : <Text style={styles.logText}>LOG</Text>}
+                ? <ActivityIndicator size="small" color={onSolid(selected ? theme.coral.solid : (theme.cardBorder ?? theme.ink))} />
+                : <Text style={[styles.logText, { color: onSolid(selected ? theme.coral.solid : (theme.cardBorder ?? theme.ink)) }]}>LOG</Text>}
             </Pressable>
           </View>
         </View>
@@ -419,7 +420,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   logText: {
-    color: "#fff",
     fontSize: 13,
     fontWeight: "800",
     letterSpacing: 1,
