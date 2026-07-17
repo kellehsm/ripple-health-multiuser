@@ -81,8 +81,7 @@
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:gravity="center_vertical"
-        android:gap="8dp">
+        android:gravity="center_vertical">
 
         <LinearLayout
             android:id="@+id/btn_water"
