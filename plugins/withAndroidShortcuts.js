@@ -12,7 +12,7 @@ const SHORTCUTS_XML = `<?xml version="1.0" encoding="utf-8"?>
       android:shortcutLongLabel="@string/shortcut_log_meal_long">
     <intent
         android:action="android.intent.action.VIEW"
-        android:data="wellnessfresh://meals" />
+        android:data="ripple://meals" />
   </shortcut>
   <shortcut
       android:shortcutId="log_water"
@@ -22,7 +22,7 @@ const SHORTCUTS_XML = `<?xml version="1.0" encoding="utf-8"?>
       android:shortcutLongLabel="@string/shortcut_log_water_long">
     <intent
         android:action="android.intent.action.VIEW"
-        android:data="wellnessfresh://log-water" />
+        android:data="ripple://log-water" />
   </shortcut>
 </shortcuts>`;
 

@@ -18,14 +18,16 @@ import { setToken } from "../lib/auth";
 import { useTheme } from "../theme/ThemeContext";
 
 interface Props {
-  onLoginSuccess: () => void;
-  onShowSignup: () => void;
+  onSignupSuccess: () => void;
+  onBackToLogin: () => void;
 }
 
-export function LoginScreen({ onLoginSuccess, onShowSignup }: Props) {
+export function SignupScreen({ onSignupSuccess, onBackToLogin }: Props) {
   const { theme } = useTheme();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,13 +53,13 @@ export function LoginScreen({ onLoginSuccess, onShowSignup }: Props) {
   useEffect(() => {
     // Blob drift loops
     const blobCfgs = [
-      { x: blob1X, y: blob1Y, xTo: 35, yTo: -25, dur: 11000 },
-      { x: blob2X, y: blob2Y, xTo: -28, yTo: 32, dur: 9500 },
-      { x: blob3X, y: blob3Y, xTo: 20, yTo: 18, dur: 13000 },
-      { x: blob4X, y: blob4Y, xTo: -22, yTo: -30, dur: 10500 },
+      { x: blob1X, y: blob1Y, xTo: -30, yTo: 28, dur: 10500 },
+      { x: blob2X, y: blob2Y, xTo: 25, yTo: -20, dur: 12000 },
+      { x: blob3X, y: blob3Y, xTo: -18, yTo: -35, dur: 9000 },
+      { x: blob4X, y: blob4Y, xTo: 22, yTo: 30, dur: 11500 },
     ];
     blobCfgs.forEach((cfg, i) => {
-      const delay = i * 800;
+      const delay = i * 700;
       Animated.loop(
         Animated.sequence([
           Animated.delay(delay),
@@ -104,23 +106,49 @@ export function LoginScreen({ onLoginSuccess, onShowSignup }: Props) {
     ).start();
   }, []);
 
-  async function handleLogin() {
+  async function handleSignup() {
     setError(null);
     const trimmedEmail = email.trim().toLowerCase();
-    if (!trimmedEmail || !password) {
-      setError("Email and password are required.");
+    const trimmedName = name.trim();
+
+    if (!trimmedEmail || !trimmedEmail.includes("@")) {
+      setError("Please enter a valid email address.");
       return;
     }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords don't match.");
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await api.login(trimmedEmail, password);
-      if (!res.token) throw new Error("No token received");
+      const res = await api.signup(trimmedEmail, password, trimmedName || undefined);
       await setToken(res.token);
-      onLoginSuccess();
+      onSignupSuccess();
     } catch (err: any) {
       const msg = err?.message ?? "";
-      if (msg.includes("401") || msg.includes("Invalid")) {
-        setError("Incorrect email or password.");
+      if (msg.includes("409")) {
+        setError("An account with this email already exists.");
+      } else if (msg.includes("400")) {
+        // Try to extract error message from body
+        const match = msg.match(/400: (.+)/);
+        const body = match ? match[1] : null;
+        try {
+          const parsed = body ? JSON.parse(body) : null;
+          setError(parsed?.error ?? "Invalid request. Please check your details.");
+        } catch {
+          setError("Invalid request. Please check your details.");
+        }
+      } else if (
+        msg.includes("Network request failed") ||
+        msg.includes("Failed to fetch") ||
+        msg.includes("network")
+      ) {
+        setError("Couldn't connect. Check your network and try again.");
       } else {
         setError("Couldn't connect. Check your network and try again.");
       }
@@ -131,25 +159,25 @@ export function LoginScreen({ onLoginSuccess, onShowSignup }: Props) {
 
   // ── HeartbeatLine ─────────────────────────────────────────────────────────
   function HeartbeatLine() {
-    const ink = theme.berry?.solid ?? "#A62A50";
+    const lineColor = "#7B3FBF";
     return (
       <View style={{ width: 88, height: 22, overflow: "hidden" }}>
         <Animated.View style={{ transform: [{ translateX: heartbeatReveal }] }}>
           <View style={{ width: 88, height: 22, position: "relative" }}>
             {/* baseline left */}
-            <View style={{ position: "absolute", left: 0, width: 30, height: 2, top: 10, backgroundColor: ink }} />
+            <View style={{ position: "absolute", left: 0, width: 30, height: 2, top: 10, backgroundColor: lineColor }} />
             {/* small up */}
-            <View style={{ position: "absolute", left: 30, width: 2, height: 8, top: 4, backgroundColor: ink }} />
+            <View style={{ position: "absolute", left: 30, width: 2, height: 8, top: 4, backgroundColor: lineColor }} />
             {/* down to base */}
-            <View style={{ position: "absolute", left: 32, width: 2, height: 8, top: 10, backgroundColor: ink }} />
+            <View style={{ position: "absolute", left: 32, width: 2, height: 8, top: 10, backgroundColor: lineColor }} />
             {/* baseline mid */}
-            <View style={{ position: "absolute", left: 34, width: 6, height: 2, top: 10, backgroundColor: ink }} />
+            <View style={{ position: "absolute", left: 34, width: 6, height: 2, top: 10, backgroundColor: lineColor }} />
             {/* main up spike */}
-            <View style={{ position: "absolute", left: 40, width: 2, height: 20, top: 0, backgroundColor: ink }} />
+            <View style={{ position: "absolute", left: 40, width: 2, height: 20, top: 0, backgroundColor: lineColor }} />
             {/* main down spike */}
-            <View style={{ position: "absolute", left: 42, width: 2, height: 20, top: 2, backgroundColor: ink }} />
+            <View style={{ position: "absolute", left: 42, width: 2, height: 20, top: 2, backgroundColor: lineColor }} />
             {/* baseline right */}
-            <View style={{ position: "absolute", left: 44, right: 0, height: 2, top: 10, backgroundColor: ink }} />
+            <View style={{ position: "absolute", left: 44, right: 0, height: 2, top: 10, backgroundColor: lineColor }} />
           </View>
         </Animated.View>
       </View>
@@ -161,10 +189,10 @@ export function LoginScreen({ onLoginSuccess, onShowSignup }: Props) {
       {/* Background blobs */}
       <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
         {[
-          { anim: blob1X, animY: blob1Y, size: 140, top: -30, left: -40, color: "#A62A50" },
-          { anim: blob2X, animY: blob2Y, size: 110, top: 160, right: -30, color: "#E8654E" },
-          { anim: blob3X, animY: blob3Y, size: 160, bottom: 100, left: -50, color: "#A62A50" },
-          { anim: blob4X, animY: blob4Y, size: 100, bottom: 120, right: 20, color: "#E8654E" },
+          { anim: blob1X, animY: blob1Y, size: 140, top: -30, left: -40, color: "#7B3FBF" },
+          { anim: blob2X, animY: blob2Y, size: 110, top: 160, right: -30, color: "#3FA0A6" },
+          { anim: blob3X, animY: blob3Y, size: 160, bottom: 100, left: -50, color: "#7B3FBF" },
+          { anim: blob4X, animY: blob4Y, size: 100, bottom: 120, right: 20, color: "#3FA0A6" },
         ].map((b, i) => (
           <Animated.View
             key={i}
@@ -205,18 +233,32 @@ export function LoginScreen({ onLoginSuccess, onShowSignup }: Props) {
 
           {/* Title */}
           <Animated.View
-            style={{ alignItems: "center", marginBottom: 32, opacity: fadeAnims[1], transform: [{ translateY: slideAnims[1] }] }}
+            style={{ alignItems: "center", marginBottom: 28, opacity: fadeAnims[1], transform: [{ translateY: slideAnims[1] }] }}
           >
-            <Text style={{ fontSize: 30, fontWeight: "900", color: theme.textStrong ?? "#111", letterSpacing: -0.5 }}>
-              Ripple Wellness
+            <Text style={{ fontSize: 28, fontWeight: "900", color: theme.textStrong ?? "#111", letterSpacing: -0.5 }}>
+              Create your account
             </Text>
             <Text style={{ fontSize: 15, color: theme.textSoft ?? "#888", marginTop: 6 }}>
-              See how it all connects
+              Join Ripple Wellness
             </Text>
           </Animated.View>
 
-          {/* Email field */}
+          {/* Name field */}
           <Animated.View style={{ marginBottom: 14, opacity: fadeAnims[2], transform: [{ translateY: slideAnims[2] }] }}>
+            <Text style={[styles.label, { color: theme.ink ?? "#111" }]}>FULL NAME (OPTIONAL)</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: "#fff", borderColor: theme.ink ?? "#111", color: theme.textStrong ?? "#111" }]}
+              value={name}
+              onChangeText={setName}
+              autoCapitalize="words"
+              autoCorrect={false}
+              placeholder="Your name"
+              placeholderTextColor={theme.textSoft ?? "#aaa"}
+            />
+          </Animated.View>
+
+          {/* Email field */}
+          <Animated.View style={{ marginBottom: 14, opacity: fadeAnims[3], transform: [{ translateY: slideAnims[3] }] }}>
             <Text style={[styles.label, { color: theme.ink ?? "#111" }]}>EMAIL</Text>
             <TextInput
               style={[styles.input, { backgroundColor: "#fff", borderColor: theme.ink ?? "#111", color: theme.textStrong ?? "#111" }]}
@@ -231,12 +273,21 @@ export function LoginScreen({ onLoginSuccess, onShowSignup }: Props) {
           </Animated.View>
 
           {/* Password field */}
-          <Animated.View style={{ marginBottom: 8, opacity: fadeAnims[3], transform: [{ translateY: slideAnims[3] }] }}>
+          <Animated.View style={{ marginBottom: 14, opacity: fadeAnims[4], transform: [{ translateY: slideAnims[4] }] }}>
             <Text style={[styles.label, { color: theme.ink ?? "#111" }]}>PASSWORD</Text>
             <TextInput
               style={[styles.input, { backgroundColor: "#fff", borderColor: theme.ink ?? "#111", color: theme.textStrong ?? "#111" }]}
               value={password}
               onChangeText={setPassword}
+              secureTextEntry
+              placeholder="At least 8 characters"
+              placeholderTextColor={theme.textSoft ?? "#aaa"}
+            />
+            <Text style={[styles.label, { color: theme.ink ?? "#111", marginTop: 14 }]}>CONFIRM PASSWORD</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: "#fff", borderColor: theme.ink ?? "#111", color: theme.textStrong ?? "#111" }]}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
               secureTextEntry
               placeholder="••••••••"
               placeholderTextColor={theme.textSoft ?? "#aaa"}
@@ -250,36 +301,29 @@ export function LoginScreen({ onLoginSuccess, onShowSignup }: Props) {
             </Text>
           ) : null}
 
-          {/* Forgot password */}
-          <Pressable onPress={() => {/* no-op for now */}} style={{ alignSelf: "flex-end", marginBottom: 20 }}>
-            <Text style={{ color: theme.textSoft ?? "#888", fontSize: 13 }}>Forgot password?</Text>
-          </Pressable>
-
-          {/* Sign in button */}
-          <Animated.View style={{ opacity: fadeAnims[4], transform: [{ translateY: slideAnims[4] }] }}>
+          {/* Create account button */}
+          <Animated.View style={{ opacity: fadeAnims[5], transform: [{ translateY: slideAnims[5] }] }}>
             <Pressable
-              style={[styles.primaryBtn, { backgroundColor: "#A62A50", borderColor: theme.ink ?? "#111" }]}
-              onPress={handleLogin}
+              style={[styles.primaryBtn, { backgroundColor: "#7B3FBF", borderColor: theme.ink ?? "#111" }]}
+              onPress={handleSignup}
               disabled={loading}
             >
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.primaryBtnText}>SIGN IN</Text>
+                <Text style={styles.primaryBtnText}>CREATE ACCOUNT</Text>
               )}
             </Pressable>
-          </Animated.View>
 
-          {/* Create account link */}
-          <Animated.View
-            style={{ alignItems: "center", marginTop: 20, opacity: fadeAnims[5], transform: [{ translateY: slideAnims[5] }] }}
-          >
-            <Pressable onPress={onShowSignup}>
-              <Text style={{ color: theme.textStrong ?? "#111", fontSize: 14 }}>
-                {"Don't have an account? "}
-                <Text style={{ fontWeight: "700", textDecorationLine: "underline" }}>Create one</Text>
-              </Text>
-            </Pressable>
+            {/* Sign in link */}
+            <View style={{ alignItems: "center", marginTop: 20 }}>
+              <Pressable onPress={onBackToLogin}>
+                <Text style={{ color: theme.textStrong ?? "#111", fontSize: 14 }}>
+                  Already have an account?{" "}
+                  <Text style={{ fontWeight: "700", textDecorationLine: "underline" }}>Sign in</Text>
+                </Text>
+              </Pressable>
+            </View>
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>

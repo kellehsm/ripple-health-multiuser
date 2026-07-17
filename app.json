@@ -20,6 +20,11 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "statusBar": {
+        "backgroundColor": "#F5F1E8",
+        "style": "dark",
+        "translucent": false
+      },
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.CAMERA",

@@ -53,6 +53,18 @@ export const api = {
   login: function (email: string, password: string) {
     return request("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
   },
+  signup: function (email: string, password: string, name?: string) {
+    return request("/auth/signup", {
+      method: "POST",
+      body: JSON.stringify({ email, password, ...(name ? { name } : {}) }),
+    });
+  },
+  dexcomVerifyShare: function (params: { username?: string; account_id?: string; password: string; region?: string }) {
+    return request("/dexcom/verify-share", {
+      method: "POST",
+      body: JSON.stringify(params),
+    });
+  },
   me: function () {
     return request("/auth/me", { method: "POST" });
   },

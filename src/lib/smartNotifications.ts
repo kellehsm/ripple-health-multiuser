@@ -59,6 +59,14 @@ function plural(n: number, word: string): string {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
 }
 
+const MOOD_SCORE_LABELS: Record<number, string> = { 5: "great", 4: "good", 3: "okay", 2: "low", 1: "rough" };
+
+function moodDescription(entry: any): string | null {
+  if (entry?.mood_label) return entry.mood_label.toLowerCase();
+  const s = Number(entry?.mood_score);
+  return MOOD_SCORE_LABELS[s] ?? null;
+}
+
 // ─── Meal reminders ───────────────────────────────────────────────────────────
 
 type MealCfg = { key: string; label: string; defaultHour: number; windowStart: number; windowEnd: number };
@@ -100,15 +108,19 @@ export async function checkMealReminders(settings: any, now: Date) {
     if (alreadyLogged) continue;
 
     const mealCount = Array.isArray(meals) ? meals.length : 0;
-    let body = `No ${m.label.toLowerCase()} logged yet — tap to add it.`;
+    let body = `No ${m.label.toLowerCase()} logged yet — want to add it?`;
     if (m.key === "breakfast" && streak >= 3) {
       body = `You have a ${plural(streak, "day")} streak — keep it going with ${m.label.toLowerCase()}.`;
     } else if (m.key === "lunch" && mealCount > 0) {
       body = `You logged breakfast. Lunch time?`;
+    } else if (m.key === "lunch" && mealCount === 0) {
+      body = `Nothing logged yet today — still time for lunch.`;
     } else if (m.key === "dinner" && mealCount >= 2) {
       body = `You've logged ${plural(mealCount, "meal")} today. How did dinner go?`;
+    } else if (m.key === "dinner" && mealCount === 1) {
+      body = `You logged 1 meal today. How did dinner go?`;
     } else if (m.key === "dinner" && mealCount === 0) {
-      body = `No meals logged yet today — you can catch up now.`;
+      body = `No meals logged yet today — you can still add dinner.`;
     }
 
     await notifee.displayNotification({
@@ -158,7 +170,7 @@ export async function checkGlucoseSpike(settings: any, now: Date) {
     await notifee.displayNotification({
       id: "glucose-spike",
       title: "Glucose rising \u{1F4C8}",
-      body: `Up ${rise} mg/dL in the last hour (${earliest} → ${latest} mg/dL${rangeNote}). Did you eat something?`,
+      body: `Up ${rise} mg/dL in the last hour (${earliest} → ${latest} mg/dL${rangeNote}). Worth logging if you ate recently.`,
       data: { target: "meals", action: "add" },
       android: {
         channelId: CH_GLUCOSE,
@@ -228,8 +240,11 @@ export async function checkWaterReminder(settings: any, now: Date) {
 
     let body: string;
     const remaining = goal - todayCount;
+    const lateInDay = now.getHours() >= 15;
     if (todayCount === 0) {
-      body = `You haven't logged water yet today. Starting now makes it easier to stay on track.`;
+      body = lateInDay
+        ? `No water logged yet today — even a few glasses before evening helps.`
+        : `No water logged yet today — a good time to start.`;
     } else if (todayCount < goal / 2) {
       body = `You've logged ${plural(todayCount, "glass")} of ${goal}. ${remaining} more to reach your goal.`;
     } else {
@@ -258,11 +273,10 @@ export async function checkWaterReminder(settings: any, now: Date) {
 
 export async function checkMoodReminder(settings: any, now: Date) {
   const moodCfg = settings?.smart_notifications?.mood_checkin;
-  if (moodCfg?.enabled === false) return;
+  if (!moodCfg?.enabled) return;
   if (isNighttime(now)) return;
 
   const h = now.getHours();
-  const today = now.toISOString().slice(0, 10);
 
   const windowKey = h >= 14 && h < 19 ? "afternoon" : h >= 19 && h < 23 ? "evening" : null;
   if (!windowKey) return;
@@ -279,10 +293,29 @@ export async function checkMoodReminder(settings: any, now: Date) {
     });
     if (hasRecentMood) return;
 
-    const title = windowKey === "afternoon" ? "Afternoon check-in" : "Evening check-in";
-    const body = windowKey === "afternoon"
-      ? "How are you feeling mid-day? A quick mood note takes 5 seconds."
-      : "How did your day go? A quick check-in helps you notice patterns over time.";
+    const morningEntry = Array.isArray(entries)
+      ? entries.find((e: any) => { const eh = new Date(e.logged_at).getHours(); return eh >= 4 && eh < 12; })
+      : null;
+    const afternoonEntry = Array.isArray(entries)
+      ? entries.find((e: any) => { const eh = new Date(e.logged_at).getHours(); return eh >= 12 && eh < 17; })
+      : null;
+
+    let title: string;
+    let body: string;
+    if (windowKey === "afternoon") {
+      title = "Afternoon check-in";
+      const desc = moodDescription(morningEntry);
+      body = desc
+        ? `How's your afternoon? You logged '${desc}' this morning.`
+        : "How are you feeling right now? A quick mood note takes a moment.";
+    } else {
+      title = "Evening check-in";
+      const desc = moodDescription(afternoonEntry) ?? moodDescription(morningEntry);
+      const when = afternoonEntry ? "this afternoon" : morningEntry ? "this morning" : null;
+      body = desc && when
+        ? `How did the rest of your day go? You were '${desc}' ${when}.`
+        : "How did your day go? A quick check-in helps you notice patterns.";
+    }
 
     await notifee.displayNotification({
       id: `mood-checkin-${windowKey}`,
@@ -314,7 +347,7 @@ export async function checkEveningCheckin(settings: any, now: Date) {
   markSent("evening_checkin");
 
   const today = now.toISOString().slice(0, 10);
-  let body = "Tap to review how your day went.";
+  let body = "Nothing logged today — add a quick note before bed?";
   try {
     const [meals, streakData, dse] = await Promise.all([
       api.meals(today).catch(() => [] as any[]),
@@ -378,7 +411,7 @@ export async function checkStreakProtection(settings: any, now: Date) {
     await notifee.displayNotification({
       id: "streak-protection",
       title: `${plural(streak, "day")} streak — don't stop now \u{1F525}`,
-      body: "Log one meal before midnight to keep your streak alive.",
+      body: "No meals logged today yet — one entry before midnight keeps it going.",
       data: { target: "meals", action: "add" },
       android: {
         channelId: CH_STREAK,
@@ -397,7 +430,7 @@ export async function checkStreakProtection(settings: any, now: Date) {
 
 export async function checkBookReminder(settings: any, now: Date) {
   const bookCfg = settings?.smart_notifications?.book_reminder;
-  if (bookCfg?.enabled === false) return;
+  if (!bookCfg?.enabled) return;
   if (isNighttime(now)) return;
 
   const targetH = bookCfg?.hour ?? 20;
@@ -416,7 +449,7 @@ export async function checkBookReminder(settings: any, now: Date) {
     await notifee.displayNotification({
       id: "book-reminder",
       title: "Reading time 📖",
-      body: `Did you read today? You have "${truncated}" in progress.`,
+      body: `You have "${truncated}" in progress — did you get to read today?`,
       data: { target: "life" },
       android: {
         channelId: CH_BOOKS,
@@ -435,7 +468,7 @@ export async function checkBookReminder(settings: any, now: Date) {
 
 export async function checkHobbyReminder(settings: any, now: Date) {
   const hobbyCfg = settings?.smart_notifications?.hobby_reminder;
-  if (hobbyCfg?.enabled === false) return;
+  if (!hobbyCfg?.enabled) return;
   if (isNighttime(now)) return;
 
   const targetH = hobbyCfg?.hour ?? 17;
@@ -453,7 +486,7 @@ export async function checkHobbyReminder(settings: any, now: Date) {
     await notifee.displayNotification({
       id: "hobby-reminder",
       title: "Activity time",
-      body: `Did you do any ${name} today? Log it to track your consistency.`,
+      body: `Any ${name} today? Tap to log it.`,
       data: { target: "life" },
       android: {
         channelId: CH_HOBBIES,
