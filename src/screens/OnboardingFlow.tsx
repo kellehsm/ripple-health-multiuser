@@ -5,10 +5,10 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  ActivityIndicator,
   TextInput,
-  useWindowDimensions,
+  useWindowDimensions
 } from "react-native";
+import { LoadingIndicator } from "../components/LoadingIndicator";
 import * as WebBrowser from "expo-web-browser";
 import notifee from "@notifee/react-native";
 import { useTheme } from "../theme/ThemeContext";
@@ -582,7 +582,7 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
           onPress={cfg.primaryAction}
           disabled={loading || dexcomConnecting}
         >
-          {loading || dexcomConnecting ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>{cfg.primaryLabel}</Text>}
+          {loading || dexcomConnecting ? <LoadingIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>{cfg.primaryLabel}</Text>}
         </Pressable>
         <Pressable
           style={[styles.secondaryBtn, { backgroundColor: theme.card, borderColor: ink }]}

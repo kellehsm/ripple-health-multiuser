@@ -6,11 +6,11 @@ import {
   TextInput,
   Pressable,
   StyleSheet,
-  ActivityIndicator,
   Alert,
   Dimensions,
-  RefreshControl,
+  RefreshControl
 } from "react-native";
+import { LoadingIndicator } from "../components/LoadingIndicator";
 import * as Haptics from "expo-haptics";
 import notifee from "@notifee/react-native";
 import Svg, { Polyline, Text as SvgText } from "react-native-svg";
@@ -86,6 +86,17 @@ function CaffeineForm({
     const parsed = parseFloat(mg);
     if (!mg.trim() || isNaN(parsed) || parsed <= 0) { setMgErr("Enter caffeine amount in mg (e.g. 95)."); valid = false; } else setMgErr("");
     if (!valid) return;
+    if (parsed > 1000) {
+      Alert.alert(
+        "Does this look right?",
+        `${parsed} mg caffeine is quite a lot for one drink — just checking it's not a typo.`,
+        [
+          { text: "Let me fix it", style: "cancel" },
+          { text: "Yes, save it", onPress: () => onSave({ ...initial, name: name.trim(), caffeine_mg: parsed }) },
+        ]
+      );
+      return;
+    }
     onSave({ ...initial, name: name.trim(), caffeine_mg: parsed });
   }
 
@@ -161,6 +172,20 @@ function AlcoholForm({
     if (!abv.trim() || isNaN(pAbv) || pAbv <= 0) { setAbvErr("Enter the ABV % (e.g. 5)."); valid = false; } else setAbvErr("");
     if (!vol.trim() || isNaN(pVol) || pVol <= 0) { setVolErr("Enter the volume in mL (e.g. 355)."); valid = false; } else setVolErr("");
     if (!valid) return;
+    const unusual: string[] = [];
+    if (pAbv > 96) unusual.push(`${pAbv}% ABV`);
+    if (pVol > 2000) unusual.push(`${pVol} mL`);
+    if (unusual.length > 0) {
+      Alert.alert(
+        "Does this look right?",
+        `${unusual.join(", ")} seems unusual for one drink — just checking it's not a typo.`,
+        [
+          { text: "Let me fix it", style: "cancel" },
+          { text: "Yes, save it", onPress: () => onSave({ ...initial, name: name.trim(), abv_percent: pAbv, volume_ml: pVol }) },
+        ]
+      );
+      return;
+    }
     onSave({ ...initial, name: name.trim(), abv_percent: pAbv, volume_ml: pVol });
   }
 
@@ -383,6 +408,10 @@ function MacroEditForm({
     return isNaN(n) ? null : n;
   }
 
+  function doSaveMacro() {
+    onSave({ name: name.trim(), carbs_g: parseNum(carbs), sugar_g: parseNum(sugar), calories: parseNum(cals) });
+  }
+
   function handleSave() {
     let valid = true;
     if (!name.trim()) { setNameErr("Please enter a meal name."); valid = false; } else setNameErr("");
@@ -391,7 +420,25 @@ function MacroEditForm({
       (cals.trim() && isNaN(parseFloat(cals)));
     if (badMacro) { setMacroErr("Carbs, sugar, and calories must be numbers or left blank."); valid = false; } else setMacroErr("");
     if (!valid) return;
-    onSave({ name: name.trim(), carbs_g: parseNum(carbs), sugar_g: parseNum(sugar), calories: parseNum(cals) });
+    const carbsVal = parseNum(carbs);
+    const sugarVal = parseNum(sugar);
+    const calsVal = parseNum(cals);
+    const unusual: string[] = [];
+    if (carbsVal !== null && carbsVal > 500) unusual.push(`${carbsVal}g carbs`);
+    if (sugarVal !== null && sugarVal > 200) unusual.push(`${sugarVal}g sugar`);
+    if (calsVal !== null && (calsVal > 5000 || calsVal < 0)) unusual.push(`${calsVal} cal`);
+    if (unusual.length > 0) {
+      Alert.alert(
+        "Does this look right?",
+        `${unusual.join(", ")} seems high for a single meal — just checking it's not a typo.`,
+        [
+          { text: "Let me fix it", style: "cancel" },
+          { text: "Yes, save it", onPress: doSaveMacro },
+        ]
+      );
+      return;
+    }
+    doSaveMacro();
   }
 
   return (
@@ -867,7 +914,7 @@ export function MealsScreen() {
           />
           <Pressable style={[styles.actionBtn, { backgroundColor: theme.coral.solid }]} onPress={handleSearch}>
             {searching ? (
-              <ActivityIndicator color={onSolid(theme.coral.solid)} size="small" />
+              <LoadingIndicator color={onSolid(theme.coral.solid)} size="small" />
             ) : (
               <Text style={[styles.actionBtnText, { color: onSolid(theme.coral.solid) }]}>SEARCH</Text>
             )}
@@ -991,7 +1038,7 @@ export function MealsScreen() {
             onPress={handleSubSearch}
           >
             {subSearching ? (
-              <ActivityIndicator color={onSolid(subType === "caffeine" ? theme.coral.sub : theme.purple.solid)} size="small" />
+              <LoadingIndicator color={onSolid(subType === "caffeine" ? theme.coral.sub : theme.purple.solid)} size="small" />
             ) : (
               <Text style={[styles.actionBtnText, { color: onSolid(subType === "caffeine" ? theme.coral.sub : theme.purple.solid) }]}>SEARCH</Text>
             )}
@@ -1071,7 +1118,7 @@ export function MealsScreen() {
 
         {/* Today's logged substances */}
         {subLoading ? (
-          <ActivityIndicator style={{ marginTop: 8 }} />
+          <LoadingIndicator style={{ marginTop: 8 }} />
         ) : subEntries.length > 0 ? (
           <View style={{ marginTop: 10, gap: 6 }}>
             <Text style={[styles.sectionLabel, { color: theme.textSoft }]}>TODAY</Text>
@@ -1116,7 +1163,7 @@ export function MealsScreen() {
         ) : null}
 
         {loadingMeals ? (
-          <ActivityIndicator style={{ marginTop: 10 }} />
+          <LoadingIndicator style={{ marginTop: 10 }} />
         ) : meals.length === 0 ? (
           <Text style={{ color: theme.textSoft, fontSize: 12, marginTop: 10 }}>No meals logged yet today.</Text>
         ) : (
@@ -1180,7 +1227,7 @@ export function MealsScreen() {
                 ) : isExpanded ? (
                   <View style={[styles.glucosePanel, { borderTopColor: theme.cardBorder }]}>
                     {isLoadingG ? (
-                      <ActivityIndicator style={{ marginVertical: 10 }} />
+                      <LoadingIndicator style={{ marginVertical: 10 }} />
                     ) : gError ? (
                       <Text style={{ color: theme.coral.sub, fontSize: 12 }}>{gError}</Text>
                     ) : (

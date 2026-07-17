@@ -23,6 +23,8 @@ import { InsightCard, type Insight } from "../components/InsightCard";
 import { toast, Msg } from "../lib/toast";
 import { MoodCheckInModal, type MoodPeriod } from "../components/MoodCheckInModal";
 import { MoodPageSheet } from "../components/MoodPageSheet";
+import { MilestoneBanner } from "../components/MilestoneBanner";
+import { checkMilestone, milestoneCopy } from "../utils/milestones";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -318,6 +320,8 @@ export function OverviewScreen() {
   const [showMoodSheet, setShowMoodSheet] = useState(false);
   const moodModalShownKeyRef = useRef<string | null>(null);
 
+  const [milestoneMessage, setMilestoneMessage] = useState<string | null>(null);
+
   // Correlation toggle
   const [correlation, setCorrelation] = useState<"sleep" | "spend">("sleep");
 
@@ -385,10 +389,22 @@ export function OverviewScreen() {
       setWeeklyData(Array.isArray(weekly) ? weekly : []);
       setPatternEvents(Array.isArray(pattern) ? pattern : []);
       setDigest(dig ?? null);
-      setStreak(Number(streakData?.meal_streak ?? 0));
+      const mealStreak = Number(streakData?.meal_streak ?? 0);
+      const moodStreak = Number(streakData?.mood_streak ?? 0);
+      const stepsVal = steps?.steps ?? null;
+      setStreak(mealStreak);
       setGlucoseStatus(glucSt);
       setTodayMeals(Array.isArray(meals) ? meals : []);
-      setStepsCount(steps?.steps ?? null);
+      setStepsCount(stepsVal);
+
+      // Milestone checks — fire at most one celebration per load
+      const candidates = await Promise.all([
+        stepsVal !== null ? checkMilestone("steps_daily", stepsVal) : null,
+        mealStreak > 0 ? checkMilestone("meal_streak", mealStreak) : null,
+        moodStreak > 0 ? checkMilestone("mood_streak", moodStreak) : null,
+      ]);
+      const winner = candidates.find(c => c?.isNew);
+      if (winner) setMilestoneMessage(milestoneCopy(winner));
       setSleepStats(sleep ?? null);
       setWaterCount(wCount);
       setDailySummary(dse ?? null);
@@ -575,6 +591,7 @@ export function OverviewScreen() {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView
       style={{ backgroundColor: theme.page }}
       contentContainerStyle={styles.content}
@@ -974,6 +991,13 @@ export function OverviewScreen() {
         </View>
       ) : null}
     </ScrollView>
+    {milestoneMessage && (
+      <MilestoneBanner
+        message={milestoneMessage}
+        onDismiss={() => setMilestoneMessage(null)}
+      />
+    )}
+    </View>
   );
 }
 

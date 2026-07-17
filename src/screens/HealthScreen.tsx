@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { ScrollView, View, Text, Pressable, StyleSheet, ActivityIndicator, Dimensions, Platform, Alert, RefreshControl } from "react-native";
+import { ScrollView, View, Text, Pressable, StyleSheet, Dimensions, Platform, Alert, RefreshControl } from "react-native";
+import { LoadingIndicator } from "../components/LoadingIndicator";
 import { useNavigation } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
 import Svg, { Polyline, Line, Text as SvgText, Rect, Circle } from "react-native-svg";
@@ -598,7 +599,7 @@ export function HealthScreen() {
         ) : null}
 
         {loading ? (
-          <ActivityIndicator style={{ marginVertical: 30 }} />
+          <LoadingIndicator style={{ marginVertical: 30 }} />
         ) : todayReadings.length === 0 ? (
           <Text style={{ color: theme.textSoft, fontSize: 12, marginTop: 10 }}>
             No glucose readings in this window yet.
@@ -787,7 +788,7 @@ export function HealthScreen() {
               })}
             </View>
             {hrLoading ? (
-              <ActivityIndicator style={{ marginVertical: 30 }} />
+              <LoadingIndicator style={{ marginVertical: 30 }} />
             ) : hrReadings.length === 0 ? (
               <Text style={{ color: theme.textSoft, fontSize: 12, marginTop: 10 }}>
                 No heart rate data in this window.
@@ -813,7 +814,7 @@ export function HealthScreen() {
             style={[styles.hcBtn, { backgroundColor: theme.teal.tint }]}
           >
             {hcSyncing
-              ? <ActivityIndicator size="small" color={theme.teal.fg} />
+              ? <LoadingIndicator size="small" color={theme.teal.fg} />
               : <Text style={[styles.hcBtnText, { color: theme.teal.fg }]}>SYNC FROM HEALTH CONNECT</Text>
             }
           </Pressable>

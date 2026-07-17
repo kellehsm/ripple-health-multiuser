@@ -4,9 +4,9 @@ import {
   View,
   Text,
   Pressable,
-  StyleSheet,
-  ActivityIndicator,
+  StyleSheet
 } from "react-native";
+import { LoadingIndicator } from "./LoadingIndicator";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
@@ -149,7 +149,7 @@ export function BarcodeScannerModal({
 
         {!permission ? (
           <View style={styles.center}>
-            <ActivityIndicator color="#fff" />
+            <LoadingIndicator color="#fff" />
           </View>
         ) : !permission.granted ? (
           <View style={styles.center}>
@@ -186,7 +186,7 @@ export function BarcodeScannerModal({
             <View style={styles.statusArea}>
               {loading ? (
                 <>
-                  <ActivityIndicator color="#fff" />
+                  <LoadingIndicator color="#fff" />
                   <Text style={styles.statusText}>Looking up product…</Text>
                 </>
               ) : notFound ? (

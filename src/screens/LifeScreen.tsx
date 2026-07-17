@@ -7,10 +7,10 @@ import {
   Pressable,
   Image,
   StyleSheet,
-  ActivityIndicator,
   Alert,
-  RefreshControl,
+  RefreshControl
 } from "react-native";
+import { LoadingIndicator } from "../components/LoadingIndicator";
 import { toast, Msg } from "../lib/toast";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
@@ -346,7 +346,7 @@ export function LifeScreen() {
             placeholderTextColor={theme.textSoft}
           />
           <Pressable style={[styles.actionBtn, { backgroundColor: theme.teal.solid }]} onPress={handleSearch}>
-            {searching ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionBtnText}>SEARCH</Text>}
+            {searching ? <LoadingIndicator color="#fff" /> : <Text style={styles.actionBtnText}>SEARCH</Text>}
           </Pressable>
         </View>
 
@@ -381,7 +381,7 @@ export function LifeScreen() {
 
       {/* Currently reading — each book its own card */}
       {loadingBooks ? (
-        <ActivityIndicator style={{ marginTop: 10 }} color={theme.teal.bar} />
+        <LoadingIndicator style={{ marginTop: 10 }} color={theme.teal.bar} />
       ) : books.length === 0 ? (
         <View style={[styles.card, { borderColor: ink, borderWidth: 2 }]}>
           <Text style={{ color: theme.textSoft, fontSize: 13 }}>No books in progress — search above to add one.</Text>
@@ -474,7 +474,7 @@ export function LifeScreen() {
             placeholderTextColor={theme.textSoft}
           />
           <Pressable style={[styles.actionBtn, { backgroundColor: theme.teal.solid }]} onPress={handleCreateHobby}>
-            {creatingHobby ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionBtnText}>ADD</Text>}
+            {creatingHobby ? <LoadingIndicator color="#fff" /> : <Text style={styles.actionBtnText}>ADD</Text>}
           </Pressable>
         </View>
         {createHobbyError ? <Text style={{ color: theme.teal.sub, fontSize: 12, marginTop: 6 }}>{createHobbyError}</Text> : null}
@@ -484,7 +484,7 @@ export function LifeScreen() {
 
       {/* Individual hobby cards */}
       {loadingHobbies ? (
-        <ActivityIndicator style={{ marginTop: 4 }} color={theme.teal.bar} />
+        <LoadingIndicator style={{ marginTop: 4 }} color={theme.teal.bar} />
       ) : hobbies.length === 0 ? (
         <View style={[styles.card, { borderColor: ink, borderWidth: 2 }]}>
           <Text style={{ color: theme.textSoft, fontSize: 13 }}>No hobbies yet — add one above.</Text>

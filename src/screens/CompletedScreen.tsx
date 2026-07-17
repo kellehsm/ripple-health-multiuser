@@ -5,11 +5,11 @@ import {
   Text,
   Image,
   StyleSheet,
-  ActivityIndicator,
   Alert,
   Pressable,
-  RefreshControl,
+  RefreshControl
 } from "react-native";
+import { LoadingIndicator } from "../components/LoadingIndicator";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
@@ -100,7 +100,7 @@ export function CompletedScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
     >
       {loading ? (
-        <ActivityIndicator color={theme.teal.bar} style={{ marginTop: 32 }} />
+        <LoadingIndicator color={theme.teal.bar} style={{ marginTop: 32 }} />
       ) : items.length === 0 ? (
         <View style={[styles.card, { backgroundColor: theme.card }]}>
           <Text style={{ color: theme.textSoft, fontSize: 14, textAlign: "center" }}>

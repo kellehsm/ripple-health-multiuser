@@ -7,10 +7,10 @@ import {
   TextInput,
   Pressable,
   StyleSheet,
-  ActivityIndicator,
   Alert,
-  Platform,
+  Platform
 } from "react-native";
+import { LoadingIndicator } from "../components/LoadingIndicator";
 import { Ionicons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
@@ -109,6 +109,7 @@ export function SettingsScreen() {
   const [driveBackups, setDriveBackups] = useState<Array<{ id: string; name: string; createdTime: string; size?: string }> | null>(null);
   const [loadingBackups, setLoadingBackups] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [journey, setJourney] = useState<{ total_meals: number; total_mood_checkins: number; total_active_days: number; member_since: string | null } | null>(null);
 
   const loadDriveStatus = useCallback(async function () {
     try {
@@ -131,6 +132,7 @@ export function SettingsScreen() {
       setLoading(false);
     }
     loadDriveStatus();
+    api.journey().then(setJourney).catch(() => {});
   }, [loadDriveStatus]);
 
   useEffect(function () { load(); }, [load]);
@@ -486,7 +488,7 @@ export function SettingsScreen() {
   if (loading) {
     return (
       <View style={[styles.center, { backgroundColor: theme.page }]}>
-        <ActivityIndicator color={theme.teal.bar} />
+        <LoadingIndicator color={theme.teal.bar} />
       </View>
     );
   }
@@ -530,7 +532,7 @@ export function SettingsScreen() {
           <View style={styles.toggleRow}>
             <Text style={{ color: theme.textStrong, flex: 1 }}>Always-on tracking notification</Text>
             {trackingBusy
-              ? <ActivityIndicator size="small" color={theme.teal.bar} />
+              ? <LoadingIndicator size="small" color={theme.teal.bar} />
               : (
                 <Switch
                   value={trackingEnabled}
@@ -620,7 +622,7 @@ export function SettingsScreen() {
       {/* Health Connect sync toggles */}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
         <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Health Connect Sync</Text>
-        {saving ? <ActivityIndicator size="small" style={styles.savingIndicator} /> : null}
+        {saving ? <LoadingIndicator size="small" style={styles.savingIndicator} /> : null}
         <ToggleRow
           label="Auto-sync enabled"
           value={hc.auto_sync_enabled !== false}
@@ -662,7 +664,7 @@ export function SettingsScreen() {
           style={[styles.saveButton, { backgroundColor: theme.teal.bg, borderColor: theme.teal.sub, opacity: backfilling ? 0.6 : 1 }]}
         >
           {backfilling
-            ? <ActivityIndicator size="small" color={theme.teal.fg} />
+            ? <LoadingIndicator size="small" color={theme.teal.fg} />
             : <Text style={{ color: theme.teal.fg, fontWeight: "500" }}>Backfill 30-day history</Text>
           }
         </Pressable>
@@ -995,7 +997,7 @@ export function SettingsScreen() {
           style={[styles.saveButton, { backgroundColor: theme.teal.bg, borderColor: theme.teal.sub, opacity: exporting ? 0.6 : 1 }]}
         >
           {exporting
-            ? <ActivityIndicator size="small" color={theme.teal.fg} />
+            ? <LoadingIndicator size="small" color={theme.teal.fg} />
             : <Text style={{ color: theme.teal.fg, fontWeight: "500" }}>Generate &amp; share PDF</Text>
           }
         </Pressable>
@@ -1012,7 +1014,7 @@ export function SettingsScreen() {
           style={[styles.saveButton, { backgroundColor: theme.teal.bg, borderColor: theme.teal.sub, opacity: exportingAll ? 0.6 : 1 }]}
         >
           {exportingAll
-            ? <ActivityIndicator size="small" color={theme.teal.fg} />
+            ? <LoadingIndicator size="small" color={theme.teal.fg} />
             : <Text style={{ color: theme.teal.fg, fontWeight: "500" }}>Download full backup</Text>
           }
         </Pressable>
@@ -1054,7 +1056,7 @@ export function SettingsScreen() {
               style={[styles.saveButton, { backgroundColor: theme.teal.bg, borderColor: theme.teal.sub, opacity: driveBackingUp ? 0.6 : 1 }]}
             >
               {driveBackingUp
-                ? <ActivityIndicator size="small" color={theme.teal.fg} />
+                ? <LoadingIndicator size="small" color={theme.teal.fg} />
                 : <Text style={{ color: theme.teal.fg, fontWeight: "500" }}>Back up now</Text>
               }
             </Pressable>
@@ -1066,7 +1068,7 @@ export function SettingsScreen() {
               style={[styles.saveButton, { backgroundColor: theme.purple.bg ?? theme.card, borderColor: theme.purple.sub, opacity: loadingBackups ? 0.6 : 1 }]}
             >
               {loadingBackups
-                ? <ActivityIndicator size="small" color={theme.purple.fg} />
+                ? <LoadingIndicator size="small" color={theme.purple.fg} />
                 : <Text style={{ color: theme.purple.fg, fontWeight: "500" }}>View backups to restore</Text>
               }
             </Pressable>
@@ -1093,7 +1095,7 @@ export function SettingsScreen() {
                         style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: theme.purple.sub, backgroundColor: theme.purple.bg ?? theme.card }}
                       >
                         {restoringId === file.id
-                          ? <ActivityIndicator size="small" color={theme.purple.fg} />
+                          ? <LoadingIndicator size="small" color={theme.purple.fg} />
                           : <Text style={{ color: theme.purple.fg, fontSize: 12, fontWeight: "600" }}>Restore</Text>
                         }
                       </Pressable>
@@ -1117,12 +1119,38 @@ export function SettingsScreen() {
             style={[styles.saveButton, { backgroundColor: theme.blue.bg, borderColor: theme.blue.sub, opacity: driveConnecting ? 0.6 : 1 }]}
           >
             {driveConnecting
-              ? <ActivityIndicator size="small" color={theme.blue.fg} />
+              ? <LoadingIndicator size="small" color={theme.blue.fg} />
               : <Text style={{ color: theme.blue.fg, fontWeight: "500" }}>Connect Google Drive</Text>
             }
           </Pressable>
         )}
       </View>
+
+      {/* Your journey so far */}
+      {journey && (
+        <View style={[styles.card, { backgroundColor: theme.teal.tint, borderColor: theme.ink }]}>
+          <Text style={[styles.sectionTitle, { color: theme.teal.fg }]}>Your journey so far</Text>
+          {journey.member_since && (
+            <Text style={{ color: theme.teal.sub, fontSize: 12, marginBottom: 12 }}>
+              Member since {new Date(journey.member_since).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+            </Text>
+          )}
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <View style={[styles.journeyChip, { backgroundColor: theme.card, borderColor: theme.teal.sub }]}>
+              <Text style={{ color: theme.teal.fg, fontSize: 22, fontWeight: "800" }}>{journey.total_meals}</Text>
+              <Text style={{ color: theme.teal.sub, fontSize: 11, fontWeight: "600" }}>meals logged</Text>
+            </View>
+            <View style={[styles.journeyChip, { backgroundColor: theme.card, borderColor: theme.teal.sub }]}>
+              <Text style={{ color: theme.teal.fg, fontSize: 22, fontWeight: "800" }}>{journey.total_mood_checkins}</Text>
+              <Text style={{ color: theme.teal.sub, fontSize: 11, fontWeight: "600" }}>mood check-ins</Text>
+            </View>
+            <View style={[styles.journeyChip, { backgroundColor: theme.card, borderColor: theme.teal.sub }]}>
+              <Text style={{ color: theme.teal.fg, fontSize: 22, fontWeight: "800" }}>{journey.total_active_days}</Text>
+              <Text style={{ color: theme.teal.sub, fontSize: 11, fontWeight: "600" }}>active days</Text>
+            </View>
+          </View>
+        </View>
+      )}
 
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>ACCOUNT</Text>
 
@@ -1206,6 +1234,7 @@ const styles = StyleSheet.create({
   weekLabel: { fontSize: 13 },
   dayScroll: { flexGrow: 0 },
   dayChip: { borderWidth: 2, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, marginRight: 6 },
+  journeyChip: { flex: 1, borderWidth: 1.5, borderRadius: 10, padding: 10, alignItems: "center", gap: 2 },
   toggleRow: { flexDirection: "row", alignItems: "center", paddingVertical: 4 },
   fieldLabel: { fontSize: 12, marginTop: 8 },
   textInput: {

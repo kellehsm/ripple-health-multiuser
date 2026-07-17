@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import notifee, { EventType } from "@notifee/react-native";
 import { CommonActions } from "@react-navigation/native";
 import { ThemeProvider } from "./src/theme/ThemeContext";
+import { OfflineBanner } from "./src/components/OfflineBanner";
 import { RootTabs } from "./src/navigation/RootTabs";
 import { OnboardingFlow } from "./src/screens/OnboardingFlow";
 import { LoginScreen } from "./src/screens/LoginScreen";
@@ -214,6 +215,7 @@ export default function App() {
     <ThemeProvider>
       <StatusBar style="dark" />
       <RootTabs />
+      <OfflineBanner />
     </ThemeProvider>
   );
 }

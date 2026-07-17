@@ -1,8 +1,9 @@
 import React, { useState, useCallback, useMemo } from "react";
 import {
   ScrollView, View, Text, TextInput, Pressable,
-  StyleSheet, ActivityIndicator, RefreshControl, Alert,
+  StyleSheet, RefreshControl, Alert
 } from "react-native";
+import { LoadingIndicator } from "../components/LoadingIndicator";
 import { useFocusEffect } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
@@ -100,13 +101,7 @@ export function FinanceScreen() {
     [entries]
   );
 
-  async function handleAddExpense() {
-    setAmountError(null);
-    const parsed = parseFloat(amount.replace(",", "."));
-    if (!amount.trim() || isNaN(parsed) || parsed <= 0) {
-      setAmountError("Please enter a valid amount greater than $0.");
-      return;
-    }
+  async function submitExpense(parsed: number) {
     setSubmitting(true);
     try {
       await api.addSpending({ amount: parsed, category, logged_at: new Date().toISOString() });
@@ -123,6 +118,27 @@ export function FinanceScreen() {
     }
   }
 
+  async function handleAddExpense() {
+    setAmountError(null);
+    const parsed = parseFloat(amount.replace(",", "."));
+    if (!amount.trim() || isNaN(parsed) || parsed <= 0) {
+      setAmountError("Please enter a valid amount greater than $0.");
+      return;
+    }
+    if (parsed > 10000) {
+      Alert.alert(
+        "Does this look right?",
+        `$${parsed.toFixed(2)} is a large single expense — just checking it's not a typo.`,
+        [
+          { text: "Let me fix it", style: "cancel" },
+          { text: "Yes, save it", onPress: () => submitExpense(parsed) },
+        ]
+      );
+      return;
+    }
+    await submitExpense(parsed);
+  }
+
   return (
     <ScrollView
       style={{ backgroundColor: theme.page }}
@@ -131,7 +147,7 @@ export function FinanceScreen() {
     >
       {loading ? (
         <View style={{ paddingVertical: 40, alignItems: "center" }}>
-          <ActivityIndicator size="large" color={theme.purple.solid} />
+          <LoadingIndicator size="large" color={theme.purple.solid} />
         </View>
       ) : error ? (
         <EmptyState emoji="⚠️" title="Couldn't load spending" message={error} actionLabel="Retry" onAction={() => load()} />
@@ -206,7 +222,7 @@ export function FinanceScreen() {
                 accessibilityLabel="Save expense"
               >
                 {submitting
-                  ? <ActivityIndicator size="small" color="#fff" />
+                  ? <LoadingIndicator size="small" color="#fff" />
                   : <Text style={styles.submitText}>Save</Text>}
               </Pressable>
             </View>

@@ -5,12 +5,15 @@ import {
   Text,
   Pressable,
   StyleSheet,
-  ActivityIndicator,
-  Dimensions,
+  Dimensions
 } from "react-native";
+import { LoadingIndicator } from "../components/LoadingIndicator";
 import Svg, { Circle, Line } from "react-native-svg";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
+import { useFocusEffect } from "@react-navigation/native";
+import { TooltipBubble } from "../components/TooltipBubble";
+import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
 
 
 const SCREEN_W = Dimensions.get("window").width;
@@ -201,6 +204,18 @@ export function TrendsScreen() {
   const [days, setDays] = useState(30);
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<DayRow[]>([]);
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      hasSeenTooltip("trends").then(seen => {
+        if (!seen) {
+          setShowTooltip(true);
+          markTooltipSeen("trends");
+        }
+      });
+    }, [])
+  );
 
   const load = useCallback(async (n: number) => {
     setLoading(true);
@@ -272,6 +287,12 @@ export function TrendsScreen() {
       style={{ flex: 1, backgroundColor: theme.page }}
       contentContainerStyle={s.page}
     >
+      {showTooltip && (
+        <TooltipBubble
+          message="Pick any two things to compare — sleep, mood, glucose, spending — and see how they move together over your logged days. Tap a chart to explore."
+          onDismiss={() => setShowTooltip(false)}
+        />
+      )}
       {/* Period selector */}
       <View style={s.periodRow}>
         {[14, 30, 60].map(n => (
@@ -295,7 +316,7 @@ export function TrendsScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator color={theme.textSoft} style={{ marginTop: 48 }} />
+        <LoadingIndicator color={theme.textSoft} style={{ marginTop: 48 }} />
       ) : rows.length === 0 ? (
         <View style={s.empty}>
           <Text style={[s.emptyTxt, { color: theme.textSoft }]}>

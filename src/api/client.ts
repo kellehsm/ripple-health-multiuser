@@ -1,4 +1,5 @@
 import { getToken } from "../lib/auth";
+import { setNetworkOnline } from "../utils/networkState";
 
 const BASE_URL = __DEV__ ? "http://129.121.125.214:4002" : "https://app.kels.gg/api";
 
@@ -6,9 +7,22 @@ async function request(path: string, options: RequestInit = {}): Promise<any> {
   const token = await getToken();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (token) headers["Authorization"] = "Bearer " + token;
-  const res = await fetch(BASE_URL + path, { headers, ...options });
-  if (!res.ok) throw new Error("API error " + res.status + ": " + (await res.text()));
-  return res.json();
+  try {
+    const res = await fetch(BASE_URL + path, { headers, ...options });
+    if (!res.ok) throw new Error("API error " + res.status + ": " + (await res.text()));
+    setNetworkOnline(true);
+    return res.json();
+  } catch (err) {
+    const msg = (err as Error)?.message ?? "";
+    if (
+      msg.includes("Network request failed") ||
+      msg.includes("Failed to fetch") ||
+      (msg.includes("network") && !msg.includes("API error"))
+    ) {
+      setNetworkOnline(false);
+    }
+    throw err;
+  }
 }
 
 function isNetworkOrServerError(err: unknown): boolean {
@@ -29,9 +43,11 @@ async function requestQueued(
   try {
     return await request(path, options);
   } catch (err) {
-    const { queueOfflineRequest, isQueueableEndpoint } = await import("../utils/syncQueue");
+    const { queueOfflineRequest, isQueueableEndpoint, getPendingQueueCount } = await import("../utils/syncQueue");
     if (isNetworkOrServerError(err) && isQueueableEndpoint(path)) {
       queueOfflineRequest(path, options.method as string, payload);
+      const { setNetworkPending } = await import("../utils/networkState");
+      setNetworkPending(getPendingQueueCount());
       return null;
     }
     throw err;
@@ -370,5 +386,8 @@ export const api = {
   contextCorrelation: function (key: string, compareTo: "mood" | "glucose", days?: number) {
     const qs = new URLSearchParams({ key, compare_to: compareTo, ...(days ? { days: String(days) } : {}) });
     return request("/analytics/context-correlation?" + qs.toString());
+  },
+  journey: function () {
+    return request("/analytics/journey");
   },
 };

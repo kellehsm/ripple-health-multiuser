@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
-  ActivityIndicator,
   Dimensions,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  View,
+  View
 } from "react-native";
+import { LoadingIndicator } from "../components/LoadingIndicator";
 import Svg, { Line, Polyline, Text as SvgText } from "react-native-svg";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
@@ -163,7 +163,7 @@ export function HeartRateDetailScreen() {
         </View>
 
         {loadingChart ? (
-          <ActivityIndicator style={{ marginVertical: 30 }} color={theme.red.sub} />
+          <LoadingIndicator style={{ marginVertical: 30 }} color={theme.red.sub} />
         ) : readings.length === 0 ? (
           <View style={s.emptyBox}>
             <Text style={{ color: theme.textSoft, fontSize: 13 }}>No heart rate data in this window.</Text>
@@ -194,7 +194,7 @@ export function HeartRateDetailScreen() {
         <Text style={[s.sectionTitle, { color: theme.textStrong }]}>7-Day History</Text>
 
         {loadingDaily ? (
-          <ActivityIndicator color={theme.red.sub} style={{ marginVertical: 16 }} />
+          <LoadingIndicator color={theme.red.sub} style={{ marginVertical: 16 }} />
         ) : dailyRows.length === 0 ? (
           <View style={s.emptyBox}>
             <Text style={{ color: theme.textSoft, fontSize: 13 }}>No historical data yet.</Text>
