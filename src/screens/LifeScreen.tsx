@@ -297,10 +297,11 @@ export function LifeScreen() {
   async function handleLogHobby(hobbyId: string, amount: number) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLogHobbyError(null);
+    const hobbyName = hobbies.find(h => h.id === hobbyId)?.name ?? "hobby";
     try {
       await api.logHobby(hobbyId, amount, undefined, undefined);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      toast("Session logged.");
+      toast(`Logged ${amount} min for ${hobbyName} today.`);
       const s: HobbyStats = await api.hobbyStats(hobbyId);
       setHobbyStats((prev) => ({ ...prev, [hobbyId]: s }));
     } catch {

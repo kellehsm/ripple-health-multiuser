@@ -9,6 +9,7 @@ import {
   Dimensions,
   RefreshControl,
   PanResponder,
+  AccessibilityInfo,
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import Svg, { Rect, Text as SvgText, Polyline, Circle, Line as SvgLine } from "react-native-svg";
@@ -257,14 +258,19 @@ function computeInsights(params: {
 function SkeletonBox({ style }: { style?: object }) {
   const { theme } = useTheme();
   const anim = useRef(new Animated.Value(0.35)).current;
+  const [reduceMotion, setReduceMotion] = useState(false);
   useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion).catch(() => {});
+  }, []);
+  useEffect(() => {
+    if (reduceMotion) { anim.setValue(0.55); return; }
     Animated.loop(
       Animated.sequence([
         Animated.timing(anim, { toValue: 0.75, duration: 750, useNativeDriver: true }),
         Animated.timing(anim, { toValue: 0.35, duration: 750, useNativeDriver: true }),
       ])
     ).start();
-  }, [anim]);
+  }, [anim, reduceMotion]);
   return <Animated.View style={[{ backgroundColor: theme.cardBorder, borderRadius: 10, opacity: anim }, style]} />;
 }
 
