@@ -192,6 +192,8 @@ export default function App() {
         await clearToken();
         setAppState("login");
       } else {
+        markUnlocked();
+        setBiometricLocked(false);
         setAppState("app");
       }
     }
@@ -204,6 +206,8 @@ export default function App() {
       markUnlocked();
       setAppState(user?.onboarding_completed ? "app" : "onboarding");
     } catch {
+      markUnlocked();
+      setBiometricLocked(false);
       setAppState("app");
     }
   }
@@ -212,6 +216,8 @@ export default function App() {
     try {
       await api.markOnboardingComplete();
     } catch (_) {}
+    markUnlocked();
+    setBiometricLocked(false);
     setAppState("app");
   }
 
@@ -236,7 +242,7 @@ export default function App() {
       <ThemeProvider>
         <StatusBar style="dark" />
         <SignupScreen
-          onSignupSuccess={() => setAppState("onboarding")}
+          onSignupSuccess={() => { markUnlocked(); setBiometricLocked(false); setAppState("onboarding"); }}
           onBackToLogin={() => setAppState("login")}
         />
       </ThemeProvider>
