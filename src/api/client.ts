@@ -179,6 +179,23 @@ export const api = {
   lookupBarcode: function (code: string, type?: "caffeine" | "alcohol") {
     return request("/food/barcode/" + code + (type ? "?type=" + type : ""));
   },
+  saveBarcodeCorrection: function (
+    barcode: string,
+    correction: {
+      name?: string | null;
+      carbs_g?: number | null;
+      calories?: number | null;
+      sugar_g?: number | null;
+      caffeine_mg?: number | null;
+      abv_percent?: number | null;
+      serving_size?: string | null;
+    }
+  ) {
+    return request("/food/barcode/" + barcode + "/correction", {
+      method: "POST",
+      body: JSON.stringify(correction),
+    });
+  },
 
   // ── Meals ─────────────────────────────────────────────────────────────────
   meals: function (date: string) {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import {
   ScrollView,
   View,
@@ -20,6 +20,7 @@ import { onSolid } from "../theme/colorUtils";
 import { api } from "../api/client";
 
 import { BarcodeScannerModal } from "../components/BarcodeScannerModal";
+import { invalidateBarcodeCache } from "../utils/barcodeCache";
 import { RecipeBuilderModal, Recipe } from "../components/RecipeBuilderModal";
 import { toast, Msg } from "../lib/toast";
 
@@ -33,6 +34,7 @@ type SubstanceResult = {
   caffeine_mg?: number | null;
   abv_percent?: number | null;
   source_db: string;
+  barcode?: string;
 };
 
 type SubstancePending = {
@@ -43,6 +45,9 @@ type SubstancePending = {
   volume_ml: number | null;
   source_food_id?: string;
   source_db?: string;
+  barcode?: string;
+  original_caffeine_mg?: number | null;
+  original_abv_percent?: number | null;
 };
 
 type SubstanceEntry = {
@@ -272,6 +277,7 @@ type FoodResult = {
   sugar_g: number | null;
   calories: number | null;
   source_db?: string;
+  barcode?: string;
 };
 
 type Meal = {
@@ -291,6 +297,7 @@ type PendingFood = {
   calories: number | null;
   source_food_id?: string;
   source_db?: string;
+  barcode?: string;
 };
 
 type MacroValues = {
@@ -633,16 +640,36 @@ export function MealsScreen() {
       .catch(function () {});
   }, [loadMeals, loadSubstances]);
 
-  function handleSearch() {
-    if (!searchQuery.trim()) return;
+  const foodDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const foodSearchSeqRef = useRef(0);
+
+  function handleSearch(query?: string) {
+    const q = (query ?? searchQuery).trim();
+    if (!q) return;
+    const seq = ++foodSearchSeqRef.current;
     setSearching(true);
     setSearchError(null);
     setSearchResults([]);
     setPendingFood(null);
-    api.searchFood(searchQuery)
-      .then(function (data: FoodResult[]) { setSearchResults(Array.isArray(data) ? data : []); })
-      .catch(function (e: Error) { setSearchError(e.message || "Food search failed"); })
-      .finally(function () { setSearching(false); });
+    api.searchFood(q)
+      .then(function (data: FoodResult[]) {
+        if (seq !== foodSearchSeqRef.current) return;
+        setSearchResults(Array.isArray(data) ? data : []);
+      })
+      .catch(function (e: Error) {
+        if (seq !== foodSearchSeqRef.current) return;
+        setSearchError(e.message || "Food search failed");
+      })
+      .finally(function () {
+        if (seq === foodSearchSeqRef.current) setSearching(false);
+      });
+  }
+
+  function handleFoodQueryChange(text: string) {
+    setSearchQuery(text);
+    if (foodDebounceRef.current) clearTimeout(foodDebounceRef.current);
+    if (!text.trim()) { setSearchResults([]); return; }
+    foodDebounceRef.current = setTimeout(function () { handleSearch(text); }, 450);
   }
 
   function handleSelectFood(food: FoodResult) {
@@ -653,6 +680,7 @@ export function MealsScreen() {
       calories: food.calories,
       source_food_id: food.source_food_id,
       source_db: food.source_db,
+      barcode: food.barcode,
     });
   }
 
@@ -710,6 +738,26 @@ export function MealsScreen() {
     if (!pendingFood) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSearchError(null);
+
+    // Save correction if this came from a barcode scan and the user changed any value
+    const barcode = pendingFood.barcode;
+    if (barcode && pendingFood.source_db !== "manual" && pendingFood.source_db !== "user_correction") {
+      const changed =
+        values.name !== pendingFood.name ||
+        values.carbs_g !== pendingFood.carbs_g ||
+        values.calories !== pendingFood.calories ||
+        values.sugar_g !== pendingFood.sugar_g;
+      if (changed) {
+        invalidateBarcodeCache(barcode);
+        api.saveBarcodeCorrection(barcode, {
+          name: values.name,
+          carbs_g: values.carbs_g,
+          calories: values.calories,
+          sugar_g: values.sugar_g,
+        }).catch(function () {});
+      }
+    }
+
     api.addMeal({
       meal_type: mealType,
       source_food_id: pendingFood.source_food_id,
@@ -761,15 +809,35 @@ export function MealsScreen() {
 
   // ── Substance handlers ────────────────────────────────────────────────────
 
-  function handleSubSearch() {
-    if (!subQuery.trim()) return;
+  const subDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const subSearchSeqRef = useRef(0);
+
+  function handleSubSearch(query?: string) {
+    const q = (query ?? subQuery).trim();
+    if (!q) return;
+    const seq = ++subSearchSeqRef.current;
     setSubSearching(true);
     setSubSearchError(null);
     setPendingSub(null);
-    api.searchSubstances(subQuery, subType)
-      .then(function (data: SubstanceResult[]) { setSubResults(Array.isArray(data) ? data : []); })
-      .catch(function (e: Error) { setSubSearchError(e.message || "Search failed"); })
-      .finally(function () { setSubSearching(false); });
+    api.searchSubstances(q, subType)
+      .then(function (data: SubstanceResult[]) {
+        if (seq !== subSearchSeqRef.current) return;
+        setSubResults(Array.isArray(data) ? data : []);
+      })
+      .catch(function (e: Error) {
+        if (seq !== subSearchSeqRef.current) return;
+        setSubSearchError(e.message || "Search failed");
+      })
+      .finally(function () {
+        if (seq === subSearchSeqRef.current) setSubSearching(false);
+      });
+  }
+
+  function handleSubQueryChange(text: string) {
+    setSubQuery(text);
+    if (subDebounceRef.current) clearTimeout(subDebounceRef.current);
+    if (!text.trim()) { setSubResults([]); return; }
+    subDebounceRef.current = setTimeout(function () { handleSubSearch(text); }, 450);
   }
 
   function handleSelectSubResult(result: SubstanceResult) {
@@ -782,11 +850,30 @@ export function MealsScreen() {
       volume_ml: null,
       source_food_id: result.source_food_id,
       source_db: result.source_db,
+      barcode: result.barcode,
+      original_caffeine_mg: result.caffeine_mg ?? null,
+      original_abv_percent: result.abv_percent ?? null,
     });
   }
 
   function handleLogSubstance(values: SubstancePending) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    // Save correction if barcode-scanned and user changed the substance value
+    const barcode = values.barcode;
+    if (barcode && values.source_db !== "manual" && values.source_db !== "user_correction") {
+      const cafChanged = values.caffeine_mg !== values.original_caffeine_mg;
+      const abvChanged = values.abv_percent !== values.original_abv_percent;
+      if (cafChanged || abvChanged) {
+        invalidateBarcodeCache(barcode);
+        api.saveBarcodeCorrection(barcode, {
+          name: values.name,
+          caffeine_mg: values.caffeine_mg,
+          abv_percent: values.abv_percent,
+        }).catch(function () {});
+      }
+    }
+
     api.logSubstance({
       substance_type: values.substance_type,
       name: values.name,
@@ -975,7 +1062,7 @@ export function MealsScreen() {
           <TextInput
             placeholder="search food..."
             value={searchQuery}
-            onChangeText={setSearchQuery}
+            onChangeText={handleFoodQueryChange}
             onSubmitEditing={handleSearch}
             style={[styles.textInput, { color: theme.textStrong, flex: 1 }]}
             placeholderTextColor={theme.textSoft}
@@ -1096,7 +1183,7 @@ export function MealsScreen() {
           <TextInput
             placeholder={subType === "caffeine" ? "search coffee, tea, energy drinks..." : "search beer, wine, spirits..."}
             value={subQuery}
-            onChangeText={setSubQuery}
+            onChangeText={handleSubQueryChange}
             onSubmitEditing={handleSubSearch}
             style={[styles.textInput, { color: theme.textStrong, flex: 1 }]}
             placeholderTextColor={theme.textSoft}

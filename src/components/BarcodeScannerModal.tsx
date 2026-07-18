@@ -11,22 +11,25 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
+import { getCachedBarcode, setCachedBarcode } from "../utils/barcodeCache";
 
-type FoodResult = {
+export type FoodResult = {
   source_food_id: string;
   name: string;
   carbs_g: number | null;
   sugar_g: number | null;
   calories: number | null;
   source_db?: string;
+  barcode?: string;
 };
 
-type SubstanceResult = {
+export type SubstanceResult = {
   source_food_id: string;
   name: string;
   caffeine_mg?: number | null;
   abv_percent?: number | null;
   source_db: string;
+  barcode?: string;
 };
 
 type Props = {
@@ -71,11 +74,46 @@ export function BarcodeScannerModal({
     onClose();
   }
 
+  function dispatchResult(barcode: string, result: any) {
+    if (mode === "food") {
+      const food: FoodResult = {
+        source_food_id: result.source_food_id,
+        name: result.name,
+        carbs_g: result.carbs_g ?? null,
+        sugar_g: result.sugar_g ?? null,
+        calories: result.calories ?? null,
+        source_db: result.source_db,
+        barcode,
+      };
+      handleClose();
+      onResult?.(food);
+    } else {
+      const substance: SubstanceResult = {
+        source_food_id: result.source_food_id,
+        name: result.name,
+        caffeine_mg: result.caffeine_mg ?? null,
+        abv_percent: result.abv_percent ?? null,
+        source_db: result.source_db,
+        barcode,
+      };
+      handleClose();
+      onSubstanceResult?.(substance);
+    }
+  }
+
   function handleScan({ data }: { data: string }) {
     setScanned(true);
     setError(null);
     setNotFound(false);
     setLoading(true);
+
+    // Check local cache first — instant result, no network round-trip needed
+    const cached = getCachedBarcode(data);
+    if (cached) {
+      setLoading(false);
+      dispatchResult(data, cached);
+      return;
+    }
 
     const lookupType = mode === "food" ? undefined : (mode as "caffeine" | "alcohol");
 
@@ -96,28 +134,9 @@ export function BarcodeScannerModal({
           return;
         }
 
-        if (mode === "food") {
-          const food: FoodResult = {
-            source_food_id: result.source_food_id,
-            name: result.name,
-            carbs_g: result.carbs_g ?? null,
-            sugar_g: result.sugar_g ?? null,
-            calories: result.calories ?? null,
-            source_db: result.source_db,
-          };
-          handleClose();
-          onResult?.(food);
-        } else {
-          const substance: SubstanceResult = {
-            source_food_id: result.source_food_id,
-            name: result.name,
-            caffeine_mg: result.caffeine_mg ?? null,
-            abv_percent: result.abv_percent ?? null,
-            source_db: result.source_db,
-          };
-          handleClose();
-          onSubstanceResult?.(substance);
-        }
+        // Cache the successful lookup for future offline/fast access
+        setCachedBarcode(data, result);
+        dispatchResult(data, result);
       })
       .catch(function (e: Error) {
         setError(e.message || "Barcode lookup failed");
