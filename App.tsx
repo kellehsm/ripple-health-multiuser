@@ -1,7 +1,21 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Linking, Platform, ToastAndroid, Alert, View, StyleSheet, Text, Pressable, AppState as RNAppState } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import notifee, { EventType } from "@notifee/react-native";
+// Notifee is a native module — stub it so the app doesn't crash if the module
+// isn't linked (e.g. development builds without native rebuild).
+let notifee: any;
+let EventType: any;
+try {
+  const mod = require("@notifee/react-native");
+  notifee = mod.default;
+  EventType = mod.EventType;
+} catch {
+  notifee = {
+    getInitialNotification: () => Promise.resolve(null),
+    onForegroundEvent: () => () => {},
+  };
+  EventType = { PRESS: "press", ACTION_PRESS: "action_press" };
+}
 import { CommonActions } from "@react-navigation/native";
 import { ThemeProvider } from "./src/theme/ThemeContext";
 import { OfflineBanner } from "./src/components/OfflineBanner";
@@ -10,6 +24,7 @@ import { RippleLoader } from "./src/components/RippleLoader";
 import { OnboardingFlow } from "./src/screens/OnboardingFlow";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { SignupScreen } from "./src/screens/SignupScreen";
+import { AppErrorBoundary } from "./src/components/AppErrorBoundary";
 import { navigationRef } from "./src/navigation/navigationRef";
 import { api } from "./src/api/client";
 import { getToken, clearToken, registerLogoutHandler } from "./src/lib/auth";
@@ -183,6 +198,7 @@ export default function App() {
       const user = await api.me();
       if (!user) throw new Error("no user");
       markUnlocked();
+      setBiometricLocked(false);
       setAppState(user.onboarding_completed ? "app" : "onboarding");
     } catch (err: any) {
       // Only clear the token on actual auth rejection (401/403). Network errors or
@@ -200,10 +216,10 @@ export default function App() {
   }
 
   async function handleLoginSuccess() {
-    // After login, re-check onboarding status from server
     try {
       const user = await api.me();
       markUnlocked();
+      setBiometricLocked(false);
       setAppState(user?.onboarding_completed ? "app" : "onboarding");
     } catch {
       markUnlocked();
@@ -227,57 +243,65 @@ export default function App() {
 
   if (appState === "login") {
     return (
-      <ThemeProvider>
-        <StatusBar style="dark" />
-        <LoginScreen
-          onLoginSuccess={handleLoginSuccess}
-          onShowSignup={() => setAppState("signup")}
-        />
-      </ThemeProvider>
+      <AppErrorBoundary>
+        <ThemeProvider>
+          <StatusBar style="dark" />
+          <LoginScreen
+            onLoginSuccess={handleLoginSuccess}
+            onShowSignup={() => setAppState("signup")}
+          />
+        </ThemeProvider>
+      </AppErrorBoundary>
     );
   }
 
   if (appState === "signup") {
     return (
-      <ThemeProvider>
-        <StatusBar style="dark" />
-        <SignupScreen
-          onSignupSuccess={() => { markUnlocked(); setBiometricLocked(false); setAppState("onboarding"); }}
-          onBackToLogin={() => setAppState("login")}
-        />
-      </ThemeProvider>
+      <AppErrorBoundary>
+        <ThemeProvider>
+          <StatusBar style="dark" />
+          <SignupScreen
+            onSignupSuccess={() => { markUnlocked(); setBiometricLocked(false); setAppState("onboarding"); }}
+            onBackToLogin={() => setAppState("login")}
+          />
+        </ThemeProvider>
+      </AppErrorBoundary>
     );
   }
 
   if (appState === "onboarding") {
     return (
-      <ThemeProvider>
-        <StatusBar style="dark" />
-        <OnboardingFlow onComplete={handleOnboardingComplete} />
-      </ThemeProvider>
+      <AppErrorBoundary>
+        <ThemeProvider>
+          <StatusBar style="dark" />
+          <OnboardingFlow onComplete={handleOnboardingComplete} />
+        </ThemeProvider>
+      </AppErrorBoundary>
     );
   }
 
   return (
-    <ThemeProvider>
-      <StatusBar style="dark" />
-      <RootTabs onNavigationStateChange={handleNavigationStateChange} />
-      <OfflineBanner />
-      {showRippleTransition && (
-        <View pointerEvents="none" style={transitionStyles.overlay}>
-          <RippleLoader size="large" />
-        </View>
-      )}
-      {biometricLocked && (
-        <View style={lockStyles.overlay}>
-          <Text style={lockStyles.appName}>Ripple</Text>
-          <Text style={lockStyles.subtitle}>Your data is private</Text>
-          <Pressable onPress={handleBiometricUnlock} style={lockStyles.unlockBtn}>
-            <Text style={lockStyles.unlockBtnText}>Unlock with Biometrics</Text>
-          </Pressable>
-        </View>
-      )}
-    </ThemeProvider>
+    <AppErrorBoundary>
+      <ThemeProvider>
+        <StatusBar style="dark" />
+        <RootTabs onNavigationStateChange={handleNavigationStateChange} />
+        <OfflineBanner />
+        {showRippleTransition && (
+          <View pointerEvents="none" style={transitionStyles.overlay}>
+            <RippleLoader size="large" />
+          </View>
+        )}
+        {biometricLocked && (
+          <View style={lockStyles.overlay}>
+            <Text style={lockStyles.appName}>Ripple</Text>
+            <Text style={lockStyles.subtitle}>Your data is private</Text>
+            <Pressable onPress={handleBiometricUnlock} style={lockStyles.unlockBtn}>
+              <Text style={lockStyles.unlockBtnText}>Unlock with Biometrics</Text>
+            </Pressable>
+          </View>
+        )}
+      </ThemeProvider>
+    </AppErrorBoundary>
   );
 }
 
