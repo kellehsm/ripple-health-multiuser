@@ -130,8 +130,12 @@ export function LoginScreen({ onLoginSuccess, onShowSignup }: Props) {
   }
 
   // ── HeartbeatLine ─────────────────────────────────────────────────────────
+  // Rendered as an absolute overlay crossing the droplet at its vertical midpoint.
+  // Color matches the app icon's black (#111111) outline; baseline sits at top:10
+  // within a 22px container, so the container is positioned at top:34 of the 88px
+  // icon (44 - 10 = 34) to align the baseline with the droplet's center.
   function HeartbeatLine() {
-    const ink = theme.berry?.solid ?? "#A62A50";
+    const ink = "#111111";
     return (
       <View style={{ width: 88, height: 22, overflow: "hidden" }}>
         <Animated.View style={{ transform: [{ translateX: heartbeatReveal }] }}>
@@ -190,17 +194,22 @@ export function LoginScreen({ onLoginSuccess, onShowSignup }: Props) {
           contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingHorizontal: 28, paddingVertical: 48 }}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Logo block */}
+          {/* Logo block — pulse line overlaid at droplet's vertical midpoint */}
           <Animated.View
             style={{ alignItems: "center", marginBottom: 32, opacity: fadeAnims[0], transform: [{ translateY: slideAnims[0] }] }}
           >
             <Animated.View style={{ transform: [{ scale: logoScale }] }}>
-              <Image
-                source={require("../../assets/images/icon.png")}
-                style={{ width: 88, height: 88 }}
-              />
+              <View style={{ width: 88, height: 88 }}>
+                <Image
+                  source={require("../../assets/images/icon.png")}
+                  style={{ width: 88, height: 88 }}
+                />
+                {/* Pulse line at y=44 (icon vertical midpoint): container top = 44 - 10 = 34 */}
+                <View style={{ position: "absolute", top: 34, left: 0, right: 0 }}>
+                  <HeartbeatLine />
+                </View>
+              </View>
             </Animated.View>
-            <HeartbeatLine />
           </Animated.View>
 
           {/* Title */}
