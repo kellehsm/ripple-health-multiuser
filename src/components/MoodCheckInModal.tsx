@@ -116,6 +116,14 @@ interface Props {
   onSubmitted: () => void;
 }
 
+const CONTEXT_SLIDERS = [
+  { key: "energy",         label: "ENERGY",         lo: "Drained", hi: "Electric" },
+  { key: "stress",         label: "STRESS",          lo: "Calm",    hi: "Maxed out" },
+  { key: "social_battery", label: "SOCIAL BATTERY",  lo: "Empty",   hi: "Full" },
+] as const;
+
+type ContextKey = typeof CONTEXT_SLIDERS[number]["key"];
+
 export function MoodCheckInModal({ visible, period, onDismiss, onSubmitted }: Props) {
   const { theme } = useTheme();
   const ink = theme.ink;
@@ -123,6 +131,12 @@ export function MoodCheckInModal({ visible, period, onDismiss, onSubmitted }: Pr
   const [selected, setSelected] = useState<{ label: string; score: number; colorKey: string } | null>(null);
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [context, setContext] = useState<Partial<Record<ContextKey, number>>>({});
+
+  function setCtx(key: ContextKey, val: number) {
+    Haptics.selectionAsync();
+    setContext(prev => ({ ...prev, [key]: val }));
+  }
 
   const meta = PERIOD_META[period];
 
@@ -136,11 +150,13 @@ export function MoodCheckInModal({ visible, period, onDismiss, onSubmitted }: Pr
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSubmitting(true);
     try {
-      await api.upsertPeriodMood(selected.score, period, selected.label, note.trim() || undefined);
+      const ctxPayload = Object.keys(context).length > 0 ? (context as Record<string, number>) : undefined;
+      await api.upsertPeriodMood(selected.score, period, selected.label, note.trim() || undefined, ctxPayload);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       toast("Check-in saved.");
       setSelected(null);
       setNote("");
+      setContext({});
       onSubmitted();
     } catch {
       toast("Couldn't save — try again.", "error");
@@ -152,6 +168,7 @@ export function MoodCheckInModal({ visible, period, onDismiss, onSubmitted }: Pr
   function handleDismiss() {
     setSelected(null);
     setNote("");
+    setContext({});
     onDismiss();
   }
 
@@ -235,6 +252,40 @@ export function MoodCheckInModal({ visible, period, onDismiss, onSubmitted }: Pr
                 </View>
               );
             })}
+
+            {/* Context sliders */}
+            <View style={styles.contextSection}>
+              <Text style={[styles.contextHeading, { color: theme.textSoft }]}>CONTEXT  <Text style={{ fontWeight: "400", letterSpacing: 0 }}>optional</Text></Text>
+              {CONTEXT_SLIDERS.map(({ key, label, lo, hi }) => {
+                const val = context[key] ?? null;
+                return (
+                  <View key={key} style={styles.ctxRow}>
+                    <Text style={[styles.ctxLabel, { color: theme.textSoft }]}>{label}</Text>
+                    <View style={styles.ctxDots}>
+                      {[1, 2, 3, 4, 5].map(n => (
+                        <Pressable
+                          key={n}
+                          onPress={() => setCtx(key, n)}
+                          hitSlop={6}
+                          style={[
+                            styles.ctxDot,
+                            {
+                              backgroundColor: val !== null && n <= val ? ink : "transparent",
+                              borderColor: ink,
+                            },
+                          ]}
+                        />
+                      ))}
+                    </View>
+                    {val !== null && (
+                      <Text style={[styles.ctxHint, { color: theme.textSoft }]}>
+                        {val <= 2 ? lo : val === 3 ? "Okay" : hi}
+                      </Text>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
 
             {/* Note input */}
             <TextInput
@@ -379,6 +430,40 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 0.3,
     textAlign: "center",
+  },
+  contextSection: {
+    gap: 10,
+  },
+  contextHeading: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1,
+  },
+  ctxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  ctxLabel: {
+    fontSize: 9,
+    fontWeight: "800",
+    letterSpacing: 0.6,
+    width: 92,
+  },
+  ctxDots: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  ctxDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+  },
+  ctxHint: {
+    fontSize: 10,
+    fontStyle: "italic",
+    flex: 1,
   },
   noteInput: {
     borderWidth: 2,
