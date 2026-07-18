@@ -14,6 +14,7 @@ import { api } from "../api/client";
 import { useFocusEffect } from "@react-navigation/native";
 import { TooltipBubble } from "../components/TooltipBubble";
 import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
+import { DefinedTerm } from "../components/DefinedTerm";
 
 
 const SCREEN_W = Dimensions.get("window").width;
@@ -144,11 +145,13 @@ function CorrCard({ title, xLabel, yLabel, xs, ys, insight, dotColor, lineColor,
       <View style={s.cardHead}>
         <Text style={[s.cardTitle, { color: theme.textStrong }]}>{title}</Text>
         {!isNaN(r) && (
-          <View style={[s.badge, { backgroundColor: badge.bg }]}>
-            <Text style={[s.badgeTxt, { color: badge.fg }]}>
-              {(r >= 0 ? "+" : "") + r.toFixed(2)}{"  "}{corrStrength(r)}
-            </Text>
-          </View>
+          <DefinedTerm term="pearson_r">
+            <View style={[s.badge, { backgroundColor: badge.bg }]}>
+              <Text style={[s.badgeTxt, { color: badge.fg }]}>
+                {(r >= 0 ? "+" : "") + r.toFixed(2)}{"  "}{corrStrength(r)}
+              </Text>
+            </View>
+          </DefinedTerm>
         )}
       </View>
 
@@ -419,9 +422,17 @@ export function TrendsScreen() {
             />
           )}
 
-          <Text style={[s.footnote, { color: theme.textSoft }]}>
-            Each dot represents one day. Dashed line shows the overall trend. Correlations based on {days}-day window.
-          </Text>
+          <View style={{ alignItems: "center" }}>
+            <Text style={[s.footnote, { color: theme.textSoft }]}>
+              Each dot is one day. Dashed line shows the overall trend.{" "}
+            </Text>
+            <DefinedTerm term="pearson_r" style={{ marginTop: 2 }}>
+              <Text style={[s.footnote, { color: theme.textSoft }]}>r values</Text>
+            </DefinedTerm>
+            <Text style={[s.footnote, { color: theme.textSoft }]}>
+              {" "}based on {days}-day window.
+            </Text>
+          </View>
         </>
       )}
     </ScrollView>

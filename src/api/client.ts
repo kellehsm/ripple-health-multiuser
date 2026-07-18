@@ -429,4 +429,15 @@ export const api = {
   syncStatus: function () {
     return request("/settings/sync-status");
   },
+
+  // ── Chart annotations ─────────────────────────────────────────────────────────
+  getAnnotations: function (start: string, end: string) {
+    return request("/annotations?start=" + encodeURIComponent(start) + "&end=" + encodeURIComponent(end));
+  },
+  createAnnotation: function (annotated_at: string, label: string) {
+    return request("/annotations", { method: "POST", body: JSON.stringify({ annotated_at, label }) });
+  },
+  deleteAnnotation: function (id: string) {
+    return request("/annotations/" + id, { method: "DELETE" });
+  },
 };
