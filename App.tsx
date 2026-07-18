@@ -15,6 +15,7 @@ import { getToken, clearToken, registerLogoutHandler } from "./src/lib/auth";
 import {
   isBiometricLockEnabled,
   isCurrentlyUnlocked,
+  markUnlocked,
   authenticateWithBiometrics,
   setBiometricLockEnabled,
 } from "./src/lib/biometricLock";
@@ -172,6 +173,7 @@ export default function App() {
     try {
       const user = await api.me();
       if (!user) throw new Error("no user");
+      markUnlocked();
       setAppState(user.onboarding_completed ? "app" : "onboarding");
     } catch (err: any) {
       // Only clear the token on actual auth rejection (401/403). Network errors or
@@ -190,6 +192,7 @@ export default function App() {
     // After login, re-check onboarding status from server
     try {
       const user = await api.me();
+      markUnlocked();
       setAppState(user?.onboarding_completed ? "app" : "onboarding");
     } catch {
       setAppState("app");
