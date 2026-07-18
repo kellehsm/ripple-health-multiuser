@@ -6,13 +6,16 @@ import {
   Pressable,
   TextInput,
   StyleSheet,
-  Animated,
-  ActivityIndicator,
+  Animated
 } from "react-native";
+import { LoadingIndicator } from "../components/LoadingIndicator";
 import * as Haptics from "expo-haptics";
+import { useFocusEffect } from "@react-navigation/native";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { toast } from "../lib/toast";
+import { TooltipBubble } from "../components/TooltipBubble";
+import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -101,7 +104,19 @@ export function MindfulnessScreen() {
   const ink = theme.ink;
 
   const [activeSection, setActiveSection] = useState<Section | null>(null);
+  const [showTooltip, setShowTooltip] = useState(false);
   const contentFade = useRef(new Animated.Value(1)).current;
+
+  useFocusEffect(
+    useCallback(() => {
+      hasSeenTooltip("mindfulness").then(seen => {
+        if (!seen) {
+          setShowTooltip(true);
+          markTooltipSeen("mindfulness");
+        }
+      });
+    }, [])
+  );
 
   function fadeTransition(onChange: () => void) {
     Animated.timing(contentFade, { toValue: 0, duration: 140, useNativeDriver: true }).start(() => {
@@ -126,6 +141,12 @@ export function MindfulnessScreen() {
       keyboardShouldPersistTaps="handled"
     >
       <Animated.View style={{ opacity: contentFade, gap: 14 }}>
+        {showTooltip && activeSection === null && (
+          <TooltipBubble
+            message="Your mindfulness hub — breathing exercises, grounding techniques, guided meditation, and gratitude prompts. Each section guides you step by step."
+            onDismiss={() => setShowTooltip(false)}
+          />
+        )}
         {activeSection === null && <TileGrid theme={theme} ink={ink} onSelect={navigateTo} />}
         {activeSection === "breathing"  && <BreathingSection  theme={theme} ink={ink} onBack={goBack} />}
         {activeSection === "grounding"  && <GroundingSection  theme={theme} ink={ink} onBack={goBack} />}
@@ -913,7 +934,7 @@ function GratitudeSection({ theme, ink, onBack }: { theme: any; ink: string; onB
             accessibilityRole="button"
           >
             {saving
-              ? <ActivityIndicator size="small" color="#fff" />
+              ? <LoadingIndicator size="small" color="#fff" />
               : <Text style={{ color: "#fff", fontSize: 14, fontWeight: "800", letterSpacing: 0.5 }}>SAVE TO JOURNAL</Text>}
           </Pressable>
         </>

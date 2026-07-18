@@ -5,14 +5,14 @@ import {
   TextInput,
   Pressable,
   StyleSheet,
-  ActivityIndicator,
   KeyboardAvoidingView,
   ScrollView,
   Platform,
   Animated,
   Easing,
-  Image,
+  Image
 } from "react-native";
+import { LoadingIndicator } from "../components/LoadingIndicator";
 import { api } from "../api/client";
 import { setToken } from "../lib/auth";
 import { useTheme } from "../theme/ThemeContext";
@@ -309,7 +309,7 @@ export function SignupScreen({ onSignupSuccess, onBackToLogin }: Props) {
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator color="#fff" />
+                <LoadingIndicator color="#fff" />
               ) : (
                 <Text style={styles.primaryBtnText}>CREATE ACCOUNT</Text>
               )}

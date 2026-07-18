@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from "react";
 import {
   ScrollView, View, Text, TextInput, Pressable,
-  StyleSheet, ActivityIndicator,
+  StyleSheet
 } from "react-native";
+import { LoadingIndicator } from "../components/LoadingIndicator";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { EmptyState } from "../components/EmptyState";
@@ -197,7 +198,7 @@ export function HistoryScreen() {
           style={[styles.searchBtn, { backgroundColor: theme.teal.bar }]}
         >
           {loading
-            ? <ActivityIndicator size="small" color="#fff" />
+            ? <LoadingIndicator size="small" color="#fff" />
             : <Text style={{ color: "#fff", fontWeight: "600", fontSize: 14 }}>Search</Text>
           }
         </Pressable>

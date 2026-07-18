@@ -1,4 +1,5 @@
 import * as SQLite from "expo-sqlite";
+import { setNetworkOnline, setNetworkPending } from "./networkState";
 
 const db = SQLite.openDatabaseSync("ripple_sync.db");
 
@@ -90,6 +91,8 @@ export async function processSyncQueue(): Promise<{ processed: number; remaining
     return { processed: 0, remaining: items.length };
   }
 
+  setNetworkOnline(true);
+
   const results: Array<{ sync_id: string; status: string }> = await res.json();
   let processed = 0;
 
@@ -111,6 +114,7 @@ export async function processSyncQueue(): Promise<{ processed: number; remaining
 
   const remaining =
     db.getFirstSync<{ count: number }>(`SELECT COUNT(*) as count FROM sync_queue`)?.count ?? 0;
+  setNetworkPending(remaining);
   return { processed, remaining };
 }
 

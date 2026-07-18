@@ -1,7 +1,8 @@
 import React, { useCallback, useState } from "react";
 import {
-  ScrollView, View, Text, StyleSheet, RefreshControl, Pressable, ActivityIndicator,
+  ScrollView, View, Text, StyleSheet, RefreshControl, Pressable
 } from "react-native";
+import { LoadingIndicator } from "../components/LoadingIndicator";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
@@ -107,7 +108,7 @@ export function InsightsScreen() {
           disabled={regenerating}
         >
           {regenerating
-            ? <ActivityIndicator size="small" color={theme.textSoft} />
+            ? <LoadingIndicator size="small" color={theme.textSoft} />
             : <><Ionicons name="refresh" size={13} color={theme.textSoft} /><Text style={[styles.regenText, { color: theme.textSoft }]}>  Refresh analysis</Text></>
           }
         </Pressable>
@@ -138,7 +139,7 @@ export function InsightsScreen() {
 
       {loading && (
         <View style={{ paddingVertical: 40, alignItems: "center" }}>
-          <ActivityIndicator size="large" color={theme.teal.solid} />
+          <LoadingIndicator size="large" color={theme.teal.solid} />
           <Text style={[styles.emptyText, { color: theme.textSoft, marginTop: 12 }]}>Analyzing your data…</Text>
         </View>
       )}

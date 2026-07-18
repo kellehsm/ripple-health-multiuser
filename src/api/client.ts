@@ -1,4 +1,5 @@
 import { getToken } from "../lib/auth";
+import { setNetworkOnline } from "../utils/networkState";
 
 const BASE_URL = __DEV__ ? "http://129.121.125.214:4002" : "https://app.kels.gg/api";
 
@@ -6,9 +7,22 @@ async function request(path: string, options: RequestInit = {}): Promise<any> {
   const token = await getToken();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (token) headers["Authorization"] = "Bearer " + token;
-  const res = await fetch(BASE_URL + path, { headers, ...options });
-  if (!res.ok) throw new Error("API error " + res.status + ": " + (await res.text()));
-  return res.json();
+  try {
+    const res = await fetch(BASE_URL + path, { headers, ...options });
+    if (!res.ok) throw new Error("API error " + res.status + ": " + (await res.text()));
+    setNetworkOnline(true);
+    return res.json();
+  } catch (err) {
+    const msg = (err as Error)?.message ?? "";
+    if (
+      msg.includes("Network request failed") ||
+      msg.includes("Failed to fetch") ||
+      (msg.includes("network") && !msg.includes("API error"))
+    ) {
+      setNetworkOnline(false);
+    }
+    throw err;
+  }
 }
 
 function isNetworkOrServerError(err: unknown): boolean {
@@ -29,9 +43,11 @@ async function requestQueued(
   try {
     return await request(path, options);
   } catch (err) {
-    const { queueOfflineRequest, isQueueableEndpoint } = await import("../utils/syncQueue");
+    const { queueOfflineRequest, isQueueableEndpoint, getPendingQueueCount } = await import("../utils/syncQueue");
     if (isNetworkOrServerError(err) && isQueueableEndpoint(path)) {
       queueOfflineRequest(path, options.method as string, payload);
+      const { setNetworkPending } = await import("../utils/networkState");
+      setNetworkPending(getPendingQueueCount());
       return null;
     }
     throw err;
@@ -162,6 +178,23 @@ export const api = {
   },
   lookupBarcode: function (code: string, type?: "caffeine" | "alcohol") {
     return request("/food/barcode/" + code + (type ? "?type=" + type : ""));
+  },
+  saveBarcodeCorrection: function (
+    barcode: string,
+    correction: {
+      name?: string | null;
+      carbs_g?: number | null;
+      calories?: number | null;
+      sugar_g?: number | null;
+      caffeine_mg?: number | null;
+      abv_percent?: number | null;
+      serving_size?: string | null;
+    }
+  ) {
+    return request("/food/barcode/" + barcode + "/correction", {
+      method: "POST",
+      body: JSON.stringify(correction),
+    });
   },
 
   // ── Meals ─────────────────────────────────────────────────────────────────
@@ -295,6 +328,9 @@ export const api = {
     const qs = new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])));
     return request("/search/spending?" + qs.toString());
   },
+  searchGlobal: function (q: string) {
+    return request("/search/global?q=" + encodeURIComponent(q));
+  },
 
   // ── Export (URL-based, token appended as query param) ─────────────────────
   reportUrl: async function (start: string, end: string): Promise<string> {
@@ -370,5 +406,27 @@ export const api = {
   contextCorrelation: function (key: string, compareTo: "mood" | "glucose", days?: number) {
     const qs = new URLSearchParams({ key, compare_to: compareTo, ...(days ? { days: String(days) } : {}) });
     return request("/analytics/context-correlation?" + qs.toString());
+  },
+  journey: function () {
+    return request("/analytics/journey");
+  },
+
+  // ── Recipes ───────────────────────────────────────────────────────────────────
+  recipes: function () {
+    return request("/recipes");
+  },
+  createRecipe: function (payload: Record<string, unknown>) {
+    return request("/recipes", { method: "POST", body: JSON.stringify(payload) });
+  },
+  updateRecipe: function (id: string, payload: Record<string, unknown>) {
+    return request("/recipes/" + id, { method: "PATCH", body: JSON.stringify(payload) });
+  },
+  deleteRecipe: function (id: string) {
+    return request("/recipes/" + id, { method: "DELETE" });
+  },
+
+  // ── Sync status ───────────────────────────────────────────────────────────────
+  syncStatus: function () {
+    return request("/settings/sync-status");
   },
 };

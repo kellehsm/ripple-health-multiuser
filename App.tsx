@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Linking, Platform, ToastAndroid, Alert, View } from "react-native";
+import { Linking, Platform, ToastAndroid, Alert, View, StyleSheet, Text, Pressable, AppState as RNAppState } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import notifee, { EventType } from "@notifee/react-native";
 import { CommonActions } from "@react-navigation/native";
 import { ThemeProvider } from "./src/theme/ThemeContext";
+import { OfflineBanner } from "./src/components/OfflineBanner";
 import { RootTabs } from "./src/navigation/RootTabs";
 import { OnboardingFlow } from "./src/screens/OnboardingFlow";
 import { LoginScreen } from "./src/screens/LoginScreen";
@@ -11,6 +12,12 @@ import { SignupScreen } from "./src/screens/SignupScreen";
 import { navigationRef } from "./src/navigation/navigationRef";
 import { api } from "./src/api/client";
 import { getToken, clearToken, registerLogoutHandler } from "./src/lib/auth";
+import {
+  isBiometricLockEnabled,
+  isCurrentlyUnlocked,
+  authenticateWithBiometrics,
+  setBiometricLockEnabled,
+} from "./src/lib/biometricLock";
 
 type AppState = "loading" | "login" | "signup" | "onboarding" | "app";
 
@@ -103,9 +110,32 @@ function shouldGoToMeals(data: any, actionId?: string): boolean {
 
 export default function App() {
   const [appState, setAppState] = useState<AppState>("loading");
+  const [biometricLocked, setBiometricLocked] = useState(false);
 
   // Register logout handler so Settings can sign the user out
   registerLogoutHandler(() => setAppState("login"));
+
+  useEffect(() => {
+    const appStateSub = RNAppState.addEventListener("change", async (nextState) => {
+      if (nextState === "active") {
+        const enabled = await isBiometricLockEnabled().catch(() => false);
+        if (enabled && !isCurrentlyUnlocked()) {
+          setBiometricLocked(true);
+        }
+      }
+    });
+    return () => appStateSub.remove();
+  }, []);
+
+  async function handleBiometricUnlock() {
+    const result = await authenticateWithBiometrics();
+    if (result === "success") {
+      setBiometricLocked(false);
+    } else if (result === "unavailable") {
+      await setBiometricLockEnabled(false);
+      setBiometricLocked(false);
+    }
+  }
 
   useEffect(() => {
     initAuth();
@@ -214,6 +244,35 @@ export default function App() {
     <ThemeProvider>
       <StatusBar style="dark" />
       <RootTabs />
+      <OfflineBanner />
+      {biometricLocked && (
+        <View style={lockStyles.overlay}>
+          <Text style={lockStyles.appName}>Ripple</Text>
+          <Text style={lockStyles.subtitle}>Your data is private</Text>
+          <Pressable onPress={handleBiometricUnlock} style={lockStyles.unlockBtn}>
+            <Text style={lockStyles.unlockBtnText}>Unlock with Biometrics</Text>
+          </Pressable>
+        </View>
+      )}
     </ThemeProvider>
   );
 }
+
+const lockStyles = StyleSheet.create({
+  overlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "#161A20",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 9999,
+  },
+  appName: { color: "#FFFFFF", fontSize: 32, fontWeight: "800", marginBottom: 8 },
+  subtitle: { color: "#9BA3AF", fontSize: 14, marginBottom: 40 },
+  unlockBtn: {
+    backgroundColor: "#4AB8D0",
+    borderRadius: 14,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+  },
+  unlockBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 16 },
+});

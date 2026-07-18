@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import {
   ScrollView,
   View,
@@ -6,11 +6,11 @@ import {
   TextInput,
   Pressable,
   StyleSheet,
-  ActivityIndicator,
   Alert,
   Dimensions,
-  RefreshControl,
+  RefreshControl
 } from "react-native";
+import { LoadingIndicator } from "../components/LoadingIndicator";
 import * as Haptics from "expo-haptics";
 import notifee from "@notifee/react-native";
 import Svg, { Polyline, Text as SvgText } from "react-native-svg";
@@ -20,7 +20,10 @@ import { onSolid } from "../theme/colorUtils";
 import { api } from "../api/client";
 
 import { BarcodeScannerModal } from "../components/BarcodeScannerModal";
+import { invalidateBarcodeCache } from "../utils/barcodeCache";
+import { RecipeBuilderModal, Recipe } from "../components/RecipeBuilderModal";
 import { toast, Msg } from "../lib/toast";
+import { UndoBanner } from "../components/UndoBanner";
 
 // ── Substance types ───────────────────────────────────────────────────────────
 
@@ -32,6 +35,7 @@ type SubstanceResult = {
   caffeine_mg?: number | null;
   abv_percent?: number | null;
   source_db: string;
+  barcode?: string;
 };
 
 type SubstancePending = {
@@ -42,6 +46,9 @@ type SubstancePending = {
   volume_ml: number | null;
   source_food_id?: string;
   source_db?: string;
+  barcode?: string;
+  original_caffeine_mg?: number | null;
+  original_abv_percent?: number | null;
 };
 
 type SubstanceEntry = {
@@ -86,6 +93,17 @@ function CaffeineForm({
     const parsed = parseFloat(mg);
     if (!mg.trim() || isNaN(parsed) || parsed <= 0) { setMgErr("Enter caffeine amount in mg (e.g. 95)."); valid = false; } else setMgErr("");
     if (!valid) return;
+    if (parsed > 1000) {
+      Alert.alert(
+        "Does this look right?",
+        `${parsed} mg caffeine is quite a lot for one drink — just checking it's not a typo.`,
+        [
+          { text: "Let me fix it", style: "cancel" },
+          { text: "Yes, save it", onPress: () => onSave({ ...initial, name: name.trim(), caffeine_mg: parsed }) },
+        ]
+      );
+      return;
+    }
     onSave({ ...initial, name: name.trim(), caffeine_mg: parsed });
   }
 
@@ -161,6 +179,20 @@ function AlcoholForm({
     if (!abv.trim() || isNaN(pAbv) || pAbv <= 0) { setAbvErr("Enter the ABV % (e.g. 5)."); valid = false; } else setAbvErr("");
     if (!vol.trim() || isNaN(pVol) || pVol <= 0) { setVolErr("Enter the volume in mL (e.g. 355)."); valid = false; } else setVolErr("");
     if (!valid) return;
+    const unusual: string[] = [];
+    if (pAbv > 96) unusual.push(`${pAbv}% ABV`);
+    if (pVol > 2000) unusual.push(`${pVol} mL`);
+    if (unusual.length > 0) {
+      Alert.alert(
+        "Does this look right?",
+        `${unusual.join(", ")} seems unusual for one drink — just checking it's not a typo.`,
+        [
+          { text: "Let me fix it", style: "cancel" },
+          { text: "Yes, save it", onPress: () => onSave({ ...initial, name: name.trim(), abv_percent: pAbv, volume_ml: pVol }) },
+        ]
+      );
+      return;
+    }
     onSave({ ...initial, name: name.trim(), abv_percent: pAbv, volume_ml: pVol });
   }
 
@@ -246,6 +278,7 @@ type FoodResult = {
   sugar_g: number | null;
   calories: number | null;
   source_db?: string;
+  barcode?: string;
 };
 
 type Meal = {
@@ -265,6 +298,7 @@ type PendingFood = {
   calories: number | null;
   source_food_id?: string;
   source_db?: string;
+  barcode?: string;
 };
 
 type MacroValues = {
@@ -383,6 +417,10 @@ function MacroEditForm({
     return isNaN(n) ? null : n;
   }
 
+  function doSaveMacro() {
+    onSave({ name: name.trim(), carbs_g: parseNum(carbs), sugar_g: parseNum(sugar), calories: parseNum(cals) });
+  }
+
   function handleSave() {
     let valid = true;
     if (!name.trim()) { setNameErr("Please enter a meal name."); valid = false; } else setNameErr("");
@@ -391,7 +429,25 @@ function MacroEditForm({
       (cals.trim() && isNaN(parseFloat(cals)));
     if (badMacro) { setMacroErr("Carbs, sugar, and calories must be numbers or left blank."); valid = false; } else setMacroErr("");
     if (!valid) return;
-    onSave({ name: name.trim(), carbs_g: parseNum(carbs), sugar_g: parseNum(sugar), calories: parseNum(cals) });
+    const carbsVal = parseNum(carbs);
+    const sugarVal = parseNum(sugar);
+    const calsVal = parseNum(cals);
+    const unusual: string[] = [];
+    if (carbsVal !== null && carbsVal > 500) unusual.push(`${carbsVal}g carbs`);
+    if (sugarVal !== null && sugarVal > 200) unusual.push(`${sugarVal}g sugar`);
+    if (calsVal !== null && (calsVal > 5000 || calsVal < 0)) unusual.push(`${calsVal} cal`);
+    if (unusual.length > 0) {
+      Alert.alert(
+        "Does this look right?",
+        `${unusual.join(", ")} seems high for a single meal — just checking it's not a typo.`,
+        [
+          { text: "Let me fix it", style: "cancel" },
+          { text: "Yes, save it", onPress: doSaveMacro },
+        ]
+      );
+      return;
+    }
+    doSaveMacro();
   }
 
   return (
@@ -534,6 +590,9 @@ export function MealsScreen() {
   const [frequentMeals, setFrequentMeals] = useState<FrequentMeal[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedMealId, setExpandedMealId] = useState<string | null>(null);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [showRecipeBuilder, setShowRecipeBuilder] = useState(false);
+  const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const [glucoseData, setGlucoseData] = useState<Record<string, GlucoseReading[]>>({});
   const [loadingGlucose, setLoadingGlucose] = useState<Record<string, boolean>>({});
   const [glucoseErrors, setGlucoseErrors] = useState<Record<string, string>>({});
@@ -548,6 +607,11 @@ export function MealsScreen() {
   const [subEntries, setSubEntries] = useState<SubstanceEntry[]>([]);
   const [subTotals, setSubTotals] = useState<SubstanceTotals>({ caffeine_mg: 0, standard_drinks: 0 });
   const [subLoading, setSubLoading] = useState(false);
+
+  type UndoMeal =
+    | { type: "meal"; data: Meal; timer: ReturnType<typeof setTimeout> }
+    | { type: "substance"; data: SubstanceEntry; timer: ReturnType<typeof setTimeout> };
+  const [undoMeal, setUndoMeal] = useState<UndoMeal | null>(null);
 
   const loadMeals = useCallback(function () {
     const today = new Date().toISOString().split("T")[0];
@@ -577,18 +641,41 @@ export function MealsScreen() {
     api.frequentMeals()
       .then(function (data) { setFrequentMeals(Array.isArray(data) ? data : []); })
       .catch(function () {});
+    api.recipes()
+      .then(function (data: Recipe[]) { setRecipes(Array.isArray(data) ? data : []); })
+      .catch(function () {});
   }, [loadMeals, loadSubstances]);
 
-  function handleSearch() {
-    if (!searchQuery.trim()) return;
+  const foodDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const foodSearchSeqRef = useRef(0);
+
+  function handleSearch(query?: string) {
+    const q = (query ?? searchQuery).trim();
+    if (!q) return;
+    const seq = ++foodSearchSeqRef.current;
     setSearching(true);
     setSearchError(null);
     setSearchResults([]);
     setPendingFood(null);
-    api.searchFood(searchQuery)
-      .then(function (data: FoodResult[]) { setSearchResults(Array.isArray(data) ? data : []); })
-      .catch(function (e: Error) { setSearchError(e.message || "Food search failed"); })
-      .finally(function () { setSearching(false); });
+    api.searchFood(q)
+      .then(function (data: FoodResult[]) {
+        if (seq !== foodSearchSeqRef.current) return;
+        setSearchResults(Array.isArray(data) ? data : []);
+      })
+      .catch(function (e: Error) {
+        if (seq !== foodSearchSeqRef.current) return;
+        setSearchError(e.message || "Food search failed");
+      })
+      .finally(function () {
+        if (seq === foodSearchSeqRef.current) setSearching(false);
+      });
+  }
+
+  function handleFoodQueryChange(text: string) {
+    setSearchQuery(text);
+    if (foodDebounceRef.current) clearTimeout(foodDebounceRef.current);
+    if (!text.trim()) { setSearchResults([]); return; }
+    foodDebounceRef.current = setTimeout(function () { handleSearch(text); }, 450);
   }
 
   function handleSelectFood(food: FoodResult) {
@@ -599,6 +686,7 @@ export function MealsScreen() {
       calories: food.calories,
       source_food_id: food.source_food_id,
       source_db: food.source_db,
+      barcode: food.barcode,
     });
   }
 
@@ -622,16 +710,79 @@ export function MealsScreen() {
         loadMeals(),
         loadSubstances(),
         api.frequentMeals().then(d => setFrequentMeals(Array.isArray(d) ? d : [])).catch(() => {}),
+        api.recipes().then((d: Recipe[]) => setRecipes(Array.isArray(d) ? d : [])).catch(() => {}),
       ]);
     } finally {
       setRefreshing(false);
     }
   }
 
+  function handleLogRecipe(recipe: Recipe) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    api.addMeal({
+      name: recipe.name,
+      meal_type: mealType,
+      carbs_g: recipe.carbs_g,
+      sugar_g: recipe.sugar_g,
+      calories: recipe.calories,
+      source_db: "recipe",
+    })
+      .then(function () {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        toast("Meal logged.");
+        loadMeals();
+      })
+      .catch(function () { toast("Couldn't log that recipe. Try again.", "error"); });
+  }
+
+  function handleEditRecipe(recipe: Recipe) {
+    setEditingRecipe(recipe);
+    setShowRecipeBuilder(true);
+  }
+
   function handleSavePending(values: MacroValues) {
     if (!pendingFood) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSearchError(null);
+
+    // Save correction if this came from a barcode scan and the user changed any value
+    const barcode = pendingFood.barcode;
+    if (barcode && pendingFood.source_db !== "manual" && pendingFood.source_db !== "user_correction") {
+      const changed =
+        values.name !== pendingFood.name ||
+        values.carbs_g !== pendingFood.carbs_g ||
+        values.calories !== pendingFood.calories ||
+        values.sugar_g !== pendingFood.sugar_g;
+      if (changed) {
+        invalidateBarcodeCache(barcode);
+        api.saveBarcodeCorrection(barcode, {
+          name: values.name,
+          carbs_g: values.carbs_g,
+          calories: values.calories,
+          sugar_g: values.sugar_g,
+        }).catch(function () {});
+      }
+    }
+
+    const todayDuplicate = meals.find(
+      (m) => m.name.toLowerCase().trim() === (values.name ?? "").toLowerCase().trim()
+    );
+    if (todayDuplicate) {
+      Alert.alert(
+        "Already logged today",
+        `You already logged "${values.name}" today. Add it again?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Log again", onPress: () => doAddMeal(values) },
+        ]
+      );
+      return;
+    }
+    doAddMeal(values);
+  }
+
+  function doAddMeal(values: MacroValues) {
+    if (!pendingFood) return;
     api.addMeal({
       meal_type: mealType,
       source_food_id: pendingFood.source_food_id,
@@ -664,34 +815,49 @@ export function MealsScreen() {
   }
 
   function handleDeleteMeal(meal: Meal) {
-    Alert.alert("Delete meal", 'Remove "' + meal.name + '"?', [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete", style: "destructive",
-        onPress: function () {
-          api.deleteMeal(meal.id)
-            .then(function () {
-              if (expandedMealId === meal.id) setExpandedMealId(null);
-              if (editingMealId === meal.id) setEditingMealId(null);
-              loadMeals();
-            })
-            .catch(function (e: Error) { setMealsError(e.message || "Failed to delete meal"); });
-        },
-      },
-    ]);
+    if (undoMeal) clearTimeout(undoMeal.timer);
+    if (expandedMealId === meal.id) setExpandedMealId(null);
+    if (editingMealId === meal.id) setEditingMealId(null);
+    setMeals((prev) => prev.filter((m) => m.id !== meal.id));
+    const timer = setTimeout(async () => {
+      setUndoMeal(null);
+      try { await api.deleteMeal(meal.id); }
+      catch (e: any) { setMealsError(e.message || "Failed to delete meal"); loadMeals(); }
+    }, 4000);
+    setUndoMeal({ type: "meal", data: meal, timer });
   }
 
   // ── Substance handlers ────────────────────────────────────────────────────
 
-  function handleSubSearch() {
-    if (!subQuery.trim()) return;
+  const subDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const subSearchSeqRef = useRef(0);
+
+  function handleSubSearch(query?: string) {
+    const q = (query ?? subQuery).trim();
+    if (!q) return;
+    const seq = ++subSearchSeqRef.current;
     setSubSearching(true);
     setSubSearchError(null);
     setPendingSub(null);
-    api.searchSubstances(subQuery, subType)
-      .then(function (data: SubstanceResult[]) { setSubResults(Array.isArray(data) ? data : []); })
-      .catch(function (e: Error) { setSubSearchError(e.message || "Search failed"); })
-      .finally(function () { setSubSearching(false); });
+    api.searchSubstances(q, subType)
+      .then(function (data: SubstanceResult[]) {
+        if (seq !== subSearchSeqRef.current) return;
+        setSubResults(Array.isArray(data) ? data : []);
+      })
+      .catch(function (e: Error) {
+        if (seq !== subSearchSeqRef.current) return;
+        setSubSearchError(e.message || "Search failed");
+      })
+      .finally(function () {
+        if (seq === subSearchSeqRef.current) setSubSearching(false);
+      });
+  }
+
+  function handleSubQueryChange(text: string) {
+    setSubQuery(text);
+    if (subDebounceRef.current) clearTimeout(subDebounceRef.current);
+    if (!text.trim()) { setSubResults([]); return; }
+    subDebounceRef.current = setTimeout(function () { handleSubSearch(text); }, 450);
   }
 
   function handleSelectSubResult(result: SubstanceResult) {
@@ -704,11 +870,30 @@ export function MealsScreen() {
       volume_ml: null,
       source_food_id: result.source_food_id,
       source_db: result.source_db,
+      barcode: result.barcode,
+      original_caffeine_mg: result.caffeine_mg ?? null,
+      original_abv_percent: result.abv_percent ?? null,
     });
   }
 
   function handleLogSubstance(values: SubstancePending) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    // Save correction if barcode-scanned and user changed the substance value
+    const barcode = values.barcode;
+    if (barcode && values.source_db !== "manual" && values.source_db !== "user_correction") {
+      const cafChanged = values.caffeine_mg !== values.original_caffeine_mg;
+      const abvChanged = values.abv_percent !== values.original_abv_percent;
+      if (cafChanged || abvChanged) {
+        invalidateBarcodeCache(barcode);
+        api.saveBarcodeCorrection(barcode, {
+          name: values.name,
+          caffeine_mg: values.caffeine_mg,
+          abv_percent: values.abv_percent,
+        }).catch(function () {});
+      }
+    }
+
     api.logSubstance({
       substance_type: values.substance_type,
       name: values.name,
@@ -727,21 +912,25 @@ export function MealsScreen() {
   }
 
   function handleDeleteSubstance(entry: SubstanceEntry) {
-    Alert.alert(
-      "Remove entry",
-      `Remove "${entry.name}"?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Remove", style: "destructive",
-          onPress: function () {
-            api.deleteSubstance(entry.id)
-              .then(loadSubstances)
-              .catch(function () {});
-          },
-        },
-      ]
-    );
+    if (undoMeal) clearTimeout(undoMeal.timer);
+    setSubEntries((prev) => prev.filter((e) => e.id !== entry.id));
+    const timer = setTimeout(async () => {
+      setUndoMeal(null);
+      try { await api.deleteSubstance(entry.id); }
+      catch { loadSubstances(); }
+    }, 4000);
+    setUndoMeal({ type: "substance", data: entry, timer });
+  }
+
+  function handleUndoMealDelete() {
+    if (!undoMeal) return;
+    clearTimeout(undoMeal.timer);
+    if (undoMeal.type === "meal") {
+      setMeals((prev) => [...prev, undoMeal.data as Meal]);
+    } else {
+      setSubEntries((prev) => [...prev, undoMeal.data as SubstanceEntry]);
+    }
+    setUndoMeal(null);
   }
 
   function handleToggleGlucose(meal: Meal) {
@@ -775,6 +964,7 @@ export function MealsScreen() {
   } : null;
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView
       style={{ backgroundColor: theme.page }}
       contentContainerStyle={styles.content}
@@ -808,11 +998,40 @@ export function MealsScreen() {
       <View style={[styles.card, { backgroundColor: theme.coral.tint }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Log a meal</Text>
 
-        {/* Frequent meals */}
-        {frequentMeals.length > 0 ? (
+        {/* Frequent meals + recipes */}
+        {(frequentMeals.length > 0 || recipes.length > 0) ? (
           <View style={styles.frequentSection}>
-            <Text style={[styles.sectionLabel, { color: theme.textSoft }]}>YOUR USUAL</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
+              <Text style={[styles.sectionLabel, { color: theme.textSoft, flex: 1, marginBottom: 0 }]}>YOUR USUAL</Text>
+              <Pressable
+                onPress={function () { setEditingRecipe(null); setShowRecipeBuilder(true); }}
+                style={[styles.secondaryBtn, { paddingVertical: 4 }]}
+              >
+                <Ionicons name="bookmark-outline" size={12} color={ink} />
+                <Text style={styles.secondaryBtnText}>+ RECIPE</Text>
+              </Pressable>
+            </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.frequentRow}>
+              {recipes.map(function (recipe) {
+                return (
+                  <Pressable
+                    key={recipe.id}
+                    onPress={function () { handleLogRecipe(recipe); }}
+                    onLongPress={function () { handleEditRecipe(recipe); }}
+                    style={[styles.frequentChip, { backgroundColor: theme.teal.tint }]}
+                  >
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <Ionicons name="bookmark" size={11} color={theme.teal.fg} />
+                      <Text style={{ color: theme.teal.fg, fontSize: 13, fontWeight: "700" }} numberOfLines={1}>{recipe.name}</Text>
+                    </View>
+                    {(recipe.calories != null || recipe.carbs_g != null) ? (
+                      <Text style={{ color: theme.teal.sub, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
+                        {recipe.calories != null ? recipe.calories + " cal" : recipe.carbs_g + "g carbs"}
+                      </Text>
+                    ) : null}
+                  </Pressable>
+                );
+              })}
               {frequentMeals.map(function (meal, i) {
                 const cc = chipColors(i, theme);
                 return (
@@ -832,7 +1051,15 @@ export function MealsScreen() {
               })}
             </ScrollView>
           </View>
-        ) : null}
+        ) : (
+          <Pressable
+            onPress={function () { setEditingRecipe(null); setShowRecipeBuilder(true); }}
+            style={[styles.secondaryBtn, { alignSelf: "flex-start", marginBottom: 8 }]}
+          >
+            <Ionicons name="bookmark-outline" size={12} color={ink} />
+            <Text style={styles.secondaryBtnText}>+ SAVE A RECIPE</Text>
+          </Pressable>
+        )}
 
         {/* Meal type selector */}
         <View style={styles.chipRow}>
@@ -860,14 +1087,14 @@ export function MealsScreen() {
           <TextInput
             placeholder="search food..."
             value={searchQuery}
-            onChangeText={setSearchQuery}
-            onSubmitEditing={handleSearch}
+            onChangeText={handleFoodQueryChange}
+            onSubmitEditing={() => handleSearch()}
             style={[styles.textInput, { color: theme.textStrong, flex: 1 }]}
             placeholderTextColor={theme.textSoft}
           />
-          <Pressable style={[styles.actionBtn, { backgroundColor: theme.coral.solid }]} onPress={handleSearch}>
+          <Pressable style={[styles.actionBtn, { backgroundColor: theme.coral.solid }]} onPress={() => handleSearch()}>
             {searching ? (
-              <ActivityIndicator color={onSolid(theme.coral.solid)} size="small" />
+              <LoadingIndicator color={onSolid(theme.coral.solid)} size="small" />
             ) : (
               <Text style={[styles.actionBtnText, { color: onSolid(theme.coral.solid) }]}>SEARCH</Text>
             )}
@@ -981,17 +1208,17 @@ export function MealsScreen() {
           <TextInput
             placeholder={subType === "caffeine" ? "search coffee, tea, energy drinks..." : "search beer, wine, spirits..."}
             value={subQuery}
-            onChangeText={setSubQuery}
-            onSubmitEditing={handleSubSearch}
+            onChangeText={handleSubQueryChange}
+            onSubmitEditing={() => handleSubSearch()}
             style={[styles.textInput, { color: theme.textStrong, flex: 1 }]}
             placeholderTextColor={theme.textSoft}
           />
           <Pressable
             style={[styles.actionBtn, { backgroundColor: subType === "caffeine" ? theme.coral.sub : theme.purple.solid }]}
-            onPress={handleSubSearch}
+            onPress={() => handleSubSearch()}
           >
             {subSearching ? (
-              <ActivityIndicator color={onSolid(subType === "caffeine" ? theme.coral.sub : theme.purple.solid)} size="small" />
+              <LoadingIndicator color={onSolid(subType === "caffeine" ? theme.coral.sub : theme.purple.solid)} size="small" />
             ) : (
               <Text style={[styles.actionBtnText, { color: onSolid(subType === "caffeine" ? theme.coral.sub : theme.purple.solid) }]}>SEARCH</Text>
             )}
@@ -1071,7 +1298,7 @@ export function MealsScreen() {
 
         {/* Today's logged substances */}
         {subLoading ? (
-          <ActivityIndicator style={{ marginTop: 8 }} />
+          <LoadingIndicator style={{ marginTop: 8 }} />
         ) : subEntries.length > 0 ? (
           <View style={{ marginTop: 10, gap: 6 }}>
             <Text style={[styles.sectionLabel, { color: theme.textSoft }]}>TODAY</Text>
@@ -1116,7 +1343,7 @@ export function MealsScreen() {
         ) : null}
 
         {loadingMeals ? (
-          <ActivityIndicator style={{ marginTop: 10 }} />
+          <LoadingIndicator style={{ marginTop: 10 }} />
         ) : meals.length === 0 ? (
           <Text style={{ color: theme.textSoft, fontSize: 12, marginTop: 10 }}>No meals logged yet today.</Text>
         ) : (
@@ -1180,7 +1407,7 @@ export function MealsScreen() {
                 ) : isExpanded ? (
                   <View style={[styles.glucosePanel, { borderTopColor: theme.cardBorder }]}>
                     {isLoadingG ? (
-                      <ActivityIndicator style={{ marginVertical: 10 }} />
+                      <LoadingIndicator style={{ marginVertical: 10 }} />
                     ) : gError ? (
                       <Text style={{ color: theme.coral.sub, fontSize: 12 }}>{gError}</Text>
                     ) : (
@@ -1215,7 +1442,25 @@ export function MealsScreen() {
           });
         }}
       />
+      <RecipeBuilderModal
+        visible={showRecipeBuilder}
+        onClose={function () { setShowRecipeBuilder(false); setEditingRecipe(null); }}
+        onSaved={function (r) {
+          setRecipes(function (prev) { return [...prev.filter(function (x) { return x.id !== r.id; }), r]; });
+          setShowRecipeBuilder(false);
+          setEditingRecipe(null);
+        }}
+        existing={editingRecipe ?? undefined}
+      />
     </ScrollView>
+    {undoMeal && (
+      <UndoBanner
+        message={undoMeal.type === "meal" ? `"${(undoMeal.data as Meal).name}" removed` : `"${(undoMeal.data as SubstanceEntry).name}" removed`}
+        onUndo={handleUndoMealDelete}
+        theme={theme}
+      />
+    )}
+    </View>
   );
 }
 

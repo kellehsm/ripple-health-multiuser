@@ -7,16 +7,17 @@ import {
   Pressable,
   Image,
   StyleSheet,
-  ActivityIndicator,
   Alert,
-  RefreshControl,
+  RefreshControl
 } from "react-native";
+import { LoadingIndicator } from "../components/LoadingIndicator";
 import { toast, Msg } from "../lib/toast";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
+import { UndoBanner } from "../components/UndoBanner";
 
 
 type Book = {
@@ -100,6 +101,11 @@ export function LifeScreen() {
   const [createHobbyError, setCreateHobbyError] = useState<string | null>(null);
   const [logHobbyError, setLogHobbyError] = useState<string | null>(null);
   const [completedCount, setCompletedCount] = useState(0);
+
+  type UndoInfo =
+    | { type: "book"; data: Book; timer: ReturnType<typeof setTimeout> }
+    | { type: "hobby"; data: Hobby; timer: ReturnType<typeof setTimeout> };
+  const [undoInfo, setUndoInfo] = useState<UndoInfo | null>(null);
 
   const loadBooks = useCallback(async () => {
     setLoadingBooks(true);
@@ -234,16 +240,16 @@ export function LifeScreen() {
   }
 
   function handleDeleteBook(bookId: string, title: string) {
-    Alert.alert("Delete book", 'Remove "' + title + '" and all its reading logs?', [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete", style: "destructive",
-        onPress: async () => {
-          try { await api.deleteBook(bookId); loadBooks(); }
-          catch { toast("Couldn't delete that book. Try again.", "error"); }
-        },
-      },
-    ]);
+    const deleted = books.find((b) => b.id === bookId);
+    if (!deleted) return;
+    if (undoInfo) clearTimeout(undoInfo.timer);
+    setBooks((prev) => prev.filter((b) => b.id !== bookId));
+    const timer = setTimeout(async () => {
+      setUndoInfo(null);
+      try { await api.deleteBook(bookId); }
+      catch { toast("Couldn't delete that book. Try again.", "error"); loadBooks(); }
+    }, 4000);
+    setUndoInfo({ type: "book", data: deleted, timer });
   }
 
   async function handleMarkHobbyComplete(hobbyId: string, name: string) {
@@ -267,16 +273,27 @@ export function LifeScreen() {
   }
 
   function handleDeleteHobby(hobbyId: string, name: string) {
-    Alert.alert("Delete hobby", 'Remove "' + name + '" and all its logs?', [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete", style: "destructive",
-        onPress: async () => {
-          try { await api.deleteHobby(hobbyId); loadHobbies(); }
-          catch { toast("Couldn't delete that hobby. Try again.", "error"); }
-        },
-      },
-    ]);
+    const deleted = hobbies.find((h) => h.id === hobbyId);
+    if (!deleted) return;
+    if (undoInfo) clearTimeout(undoInfo.timer);
+    setHobbies((prev) => prev.filter((h) => h.id !== hobbyId));
+    const timer = setTimeout(async () => {
+      setUndoInfo(null);
+      try { await api.deleteHobby(hobbyId); }
+      catch { toast("Couldn't delete that hobby. Try again.", "error"); loadHobbies(); }
+    }, 4000);
+    setUndoInfo({ type: "hobby", data: deleted, timer });
+  }
+
+  function handleUndoDelete() {
+    if (!undoInfo) return;
+    clearTimeout(undoInfo.timer);
+    if (undoInfo.type === "book") {
+      setBooks((prev) => [...prev, undoInfo.data as Book]);
+    } else {
+      setHobbies((prev) => [...prev, undoInfo.data as Hobby]);
+    }
+    setUndoInfo(null);
   }
 
   function handleCreateHobby() {
@@ -317,6 +334,7 @@ export function LifeScreen() {
   }
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView
       style={{ backgroundColor: theme.page }}
       contentContainerStyle={styles.content}
@@ -346,7 +364,7 @@ export function LifeScreen() {
             placeholderTextColor={theme.textSoft}
           />
           <Pressable style={[styles.actionBtn, { backgroundColor: theme.teal.solid }]} onPress={handleSearch}>
-            {searching ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionBtnText}>SEARCH</Text>}
+            {searching ? <LoadingIndicator color="#fff" /> : <Text style={styles.actionBtnText}>SEARCH</Text>}
           </Pressable>
         </View>
 
@@ -381,7 +399,7 @@ export function LifeScreen() {
 
       {/* Currently reading — each book its own card */}
       {loadingBooks ? (
-        <ActivityIndicator style={{ marginTop: 10 }} color={theme.teal.bar} />
+        <LoadingIndicator style={{ marginTop: 10 }} color={theme.teal.bar} />
       ) : books.length === 0 ? (
         <View style={[styles.card, { borderColor: ink, borderWidth: 2 }]}>
           <Text style={{ color: theme.textSoft, fontSize: 13 }}>No books in progress — search above to add one.</Text>
@@ -474,7 +492,7 @@ export function LifeScreen() {
             placeholderTextColor={theme.textSoft}
           />
           <Pressable style={[styles.actionBtn, { backgroundColor: theme.teal.solid }]} onPress={handleCreateHobby}>
-            {creatingHobby ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionBtnText}>ADD</Text>}
+            {creatingHobby ? <LoadingIndicator color="#fff" /> : <Text style={styles.actionBtnText}>ADD</Text>}
           </Pressable>
         </View>
         {createHobbyError ? <Text style={{ color: theme.teal.sub, fontSize: 12, marginTop: 6 }}>{createHobbyError}</Text> : null}
@@ -484,7 +502,7 @@ export function LifeScreen() {
 
       {/* Individual hobby cards */}
       {loadingHobbies ? (
-        <ActivityIndicator style={{ marginTop: 4 }} color={theme.teal.bar} />
+        <LoadingIndicator style={{ marginTop: 4 }} color={theme.teal.bar} />
       ) : hobbies.length === 0 ? (
         <View style={[styles.card, { borderColor: ink, borderWidth: 2 }]}>
           <Text style={{ color: theme.textSoft, fontSize: 13 }}>No hobbies yet — add one above.</Text>
@@ -556,6 +574,14 @@ export function LifeScreen() {
         })
       )}
     </ScrollView>
+    {undoInfo && (
+      <UndoBanner
+        message={undoInfo.type === "book" ? `"${(undoInfo.data as Book).title}" deleted` : `"${(undoInfo.data as Hobby).name}" deleted`}
+        onUndo={handleUndoDelete}
+        theme={theme}
+      />
+    )}
+    </View>
   );
 }
 

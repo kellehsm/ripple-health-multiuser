@@ -6,11 +6,11 @@ import {
   Pressable,
   ScrollView,
   TextInput,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  StyleSheet,
+  StyleSheet
 } from "react-native";
+import { LoadingIndicator } from "./LoadingIndicator";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
@@ -371,7 +371,7 @@ export function MoodPageSheet({ visible, todayEntries, currentBucket, onDismiss,
                   accessibilityLabel="Log mood"
                 >
                   {submitting
-                    ? <ActivityIndicator size="small" color="#fff" />
+                    ? <LoadingIndicator size="small" color="#fff" />
                     : <Text style={styles.logText}>LOG</Text>}
                 </Pressable>
               </View>

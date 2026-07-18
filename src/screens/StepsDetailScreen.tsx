@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useMemo } from "react";
 import {
-  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
-  View,
+  View
 } from "react-native";
+import { LoadingIndicator } from "../components/LoadingIndicator";
 import { useRoute } from "@react-navigation/native";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
@@ -85,7 +85,7 @@ export function StepsDetailScreen() {
   if (loading) {
     return (
       <View style={[s.center, { backgroundColor: theme.page }]}>
-        <ActivityIndicator color={theme.teal.bar} />
+        <LoadingIndicator color={theme.teal.bar} />
       </View>
     );
   }

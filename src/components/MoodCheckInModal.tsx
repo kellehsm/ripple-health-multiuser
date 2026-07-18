@@ -6,11 +6,11 @@ import {
   Pressable,
   ScrollView,
   TextInput,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  StyleSheet,
+  StyleSheet
 } from "react-native";
+import { LoadingIndicator } from "./LoadingIndicator";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "../theme/ThemeContext";
 import { onSolid } from "../theme/colorUtils";
@@ -274,7 +274,7 @@ export function MoodCheckInModal({ visible, period, onDismiss, onSubmitted }: Pr
               accessibilityLabel="Log mood"
             >
               {submitting
-                ? <ActivityIndicator size="small" color={onSolid(selected ? theme.coral.solid : (theme.cardBorder ?? theme.ink))} />
+                ? <LoadingIndicator size="small" color={onSolid(selected ? theme.coral.solid : (theme.cardBorder ?? theme.ink))} />
                 : <Text style={[styles.logText, { color: onSolid(selected ? theme.coral.solid : (theme.cardBorder ?? theme.ink)) }]}>LOG</Text>}
             </Pressable>
           </View>
