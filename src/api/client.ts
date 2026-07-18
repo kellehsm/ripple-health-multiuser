@@ -230,8 +230,8 @@ export const api = {
     const payload = { mood_score, entry_text };
     return requestQueued("/journal", { method: "POST", body: JSON.stringify(payload) }, payload);
   },
-  upsertPeriodMood: function (mood_score: number, period: string, mood_label?: string, entry_text?: string) {
-    const payload = { mood_score, period, mood_label, entry_text, entry_type: "period" };
+  upsertPeriodMood: function (mood_score: number, period: string, mood_label?: string, entry_text?: string, context?: Record<string, number>) {
+    const payload = { mood_score, period, mood_label, entry_text, entry_type: "period", context: context ?? null };
     return requestQueued("/journal", { method: "POST", body: JSON.stringify(payload) }, payload);
   },
   logMoodMoment: function (mood_score: number, mood_label?: string, entry_text?: string) {

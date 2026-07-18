@@ -199,6 +199,14 @@ type DayRow = {
   standard_drinks: number;
 };
 
+interface CtxObs { key: string; label: string; observation: string; sample_days: number }
+
+const CTX_KEYS: Array<{ key: string; label: string }> = [
+  { key: "energy",         label: "Energy" },
+  { key: "stress",         label: "Stress" },
+  { key: "social_battery", label: "Social Battery" },
+];
+
 export function TrendsScreen() {
   const { theme } = useTheme();
   const ink = theme.ink;
@@ -208,6 +216,7 @@ export function TrendsScreen() {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<DayRow[]>([]);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [ctxObs, setCtxObs] = useState<CtxObs[]>([]);
 
   useFocusEffect(
     useCallback(() => {
@@ -225,10 +234,13 @@ export function TrendsScreen() {
     try {
       const end = new Date().toISOString().slice(0, 10);
       const start = new Date(Date.now() - (n - 1) * 86400000).toISOString().slice(0, 10);
-      const [moodData, glucoseData, substanceData] = await Promise.all([
+      const [moodData, glucoseData, substanceData, ...ctxResults] = await Promise.all([
         api.weeklyMoodSummary(n),
         api.searchGlucose({ start, end, threshold: 0 }).catch(() => [] as any[]),
         api.substancesSummary(start, end).catch(() => [] as any[]),
+        ...CTX_KEYS.map(({ key }) =>
+          api.contextCorrelation(key, "mood", n).catch(() => null)
+        ),
       ]);
 
       const glucoseByDate = new Map<string, number>();
@@ -258,6 +270,15 @@ export function TrendsScreen() {
             }))
           : []
       );
+
+      // Context correlation observations (only show keys with ≥3 days of data)
+      const obs: CtxObs[] = [];
+      ctxResults.forEach((res, i) => {
+        if (res && typeof res.observation === "string" && (res.sample_days ?? 0) >= 3) {
+          obs.push({ key: CTX_KEYS[i].key, label: CTX_KEYS[i].label, observation: res.observation, sample_days: res.sample_days });
+        }
+      });
+      setCtxObs(obs);
     } catch (e) {
       console.error("TrendsScreen load error", e);
     } finally {
@@ -422,6 +443,26 @@ export function TrendsScreen() {
             />
           )}
 
+          {ctxObs.length > 0 && (
+            <View style={[s.card, { borderColor: ink }]}>
+              <Text style={[s.cardTitle, { color: theme.textStrong }]}>Context Patterns</Text>
+              <Text style={[s.cardSubtitle, { color: theme.textSoft }]}>
+                Based on energy, stress, and social battery you logged during check-ins.
+              </Text>
+              {ctxObs.map(({ key, label, observation, sample_days }) => (
+                <View key={key} style={[s.ctxBlock, { borderTopColor: ink }]}>
+                  <Text style={[s.ctxKeyLabel, { color: theme.textStrong }]}>{label}</Text>
+                  <Text style={[s.ctxObsText, { color: theme.textSoft }]}>
+                    {observation}
+                  </Text>
+                  <Text style={[s.ctxSampleNote, { color: theme.textSoft }]}>
+                    {sample_days} days with data
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+
           <View style={{ alignItems: "center" }}>
             <Text style={[s.footnote, { color: theme.textSoft }]}>
               Each dot is one day. Dashed line shows the overall trend.{" "}
@@ -469,5 +510,10 @@ function makeStyles(ink: string, card: string) {
   footnote:   { fontSize: 11, lineHeight: 17, textAlign: "center", marginTop: 4 },
   empty:      { alignItems: "center", paddingVertical: 48 },
   emptyTxt:   { fontSize: 14, textAlign: "center", lineHeight: 22 },
+  cardSubtitle: { fontSize: 12, lineHeight: 18 },
+  ctxBlock:   { paddingTop: 12, borderTopWidth: 1, gap: 4 },
+  ctxKeyLabel: { fontSize: 13, fontWeight: "800" },
+  ctxObsText: { fontSize: 13, lineHeight: 20 },
+  ctxSampleNote: { fontSize: 11 },
   });
 }
