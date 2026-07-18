@@ -1,5 +1,6 @@
 import notifee, { AndroidImportance } from "@notifee/react-native";
 import { api } from "../api/client";
+import { isMuted } from "./muteNotifications";
 
 // ─── Channels ─────────────────────────────────────────────────────────────────
 
@@ -67,6 +68,14 @@ function moodDescription(entry: any): string | null {
   return MOOD_SCORE_LABELS[s] ?? null;
 }
 
+// ─── Mute guard ───────────────────────────────────────────────────────────────
+// All check* functions call this early-exit helper. If the user has activated a
+// mute window, every notification type is suppressed until it expires.
+
+async function areMuted(): Promise<boolean> {
+  return isMuted();
+}
+
 // ─── Meal reminders ───────────────────────────────────────────────────────────
 
 type MealCfg = { key: string; label: string; defaultHour: number; windowStart: number; windowEnd: number };
@@ -77,6 +86,7 @@ const MEALS: MealCfg[] = [
 ];
 
 export async function checkMealReminders(settings: any, now: Date) {
+  if (await areMuted()) return;
   const mealCfg = settings?.smart_notifications?.meal_reminders;
   if (!mealCfg?.enabled) return;
   if (isNighttime(now)) return;
@@ -148,6 +158,7 @@ let lastSpikeMs = 0;
 const SPIKE_COOLDOWN_MS = 2 * 60 * 60 * 1000;
 
 export async function checkGlucoseSpike(settings: any, now: Date) {
+  if (await areMuted()) return;
   const spikeCfg = settings?.smart_notifications?.glucose_spike;
   if (!spikeCfg?.enabled) return;
   if (now.getTime() - lastSpikeMs < SPIKE_COOLDOWN_MS) return;
@@ -202,6 +213,7 @@ const WATER_COOLDOWN_MS = 2 * 60 * 60 * 1000;
 const waterGoalCelebrationSent = new Set<string>();
 
 export async function checkWaterReminder(settings: any, now: Date) {
+  if (await areMuted()) return;
   const waterCfg = settings?.smart_notifications?.water_reminder;
   if (!waterCfg?.enabled) return;
 
@@ -288,6 +300,7 @@ export async function checkWaterReminder(settings: any, now: Date) {
 // Fires around 2pm and 7pm if no mood logged in that window.
 
 export async function checkMoodReminder(settings: any, now: Date) {
+  if (await areMuted()) return;
   const moodCfg = settings?.smart_notifications?.mood_checkin;
   if (!moodCfg?.enabled) return;
   if (isNighttime(now)) return;
@@ -354,6 +367,7 @@ export async function checkMoodReminder(settings: any, now: Date) {
 // ─── Evening summary ──────────────────────────────────────────────────────────
 
 export async function checkEveningCheckin(settings: any, now: Date) {
+  if (await areMuted()) return;
   const checkinCfg = settings?.smart_notifications?.evening_checkin;
   if (!checkinCfg?.enabled) return;
 
@@ -406,6 +420,7 @@ export async function checkEveningCheckin(settings: any, now: Date) {
 // ─── Streak protection ────────────────────────────────────────────────────────
 
 export async function checkStreakProtection(settings: any, now: Date) {
+  if (await areMuted()) return;
   const streakCfg = settings?.smart_notifications?.streak_protection;
   if (!streakCfg?.enabled) return;
 
@@ -445,6 +460,7 @@ export async function checkStreakProtection(settings: any, now: Date) {
 // ─── Book reminder ────────────────────────────────────────────────────────────
 
 export async function checkBookReminder(settings: any, now: Date) {
+  if (await areMuted()) return;
   const bookCfg = settings?.smart_notifications?.book_reminder;
   if (!bookCfg?.enabled) return;
   if (isNighttime(now)) return;
@@ -483,6 +499,7 @@ export async function checkBookReminder(settings: any, now: Date) {
 // ─── Hobby reminder ───────────────────────────────────────────────────────────
 
 export async function checkHobbyReminder(settings: any, now: Date) {
+  if (await areMuted()) return;
   const hobbyCfg = settings?.smart_notifications?.hobby_reminder;
   if (!hobbyCfg?.enabled) return;
   if (isNighttime(now)) return;

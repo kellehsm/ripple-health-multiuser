@@ -328,6 +328,9 @@ export const api = {
     const qs = new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])));
     return request("/search/spending?" + qs.toString());
   },
+  searchGlobal: function (q: string) {
+    return request("/search/global?q=" + encodeURIComponent(q));
+  },
 
   // ── Export (URL-based, token appended as query param) ─────────────────────
   reportUrl: async function (start: string, end: string): Promise<string> {

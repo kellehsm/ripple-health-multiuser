@@ -23,6 +23,7 @@ import { BarcodeScannerModal } from "../components/BarcodeScannerModal";
 import { invalidateBarcodeCache } from "../utils/barcodeCache";
 import { RecipeBuilderModal, Recipe } from "../components/RecipeBuilderModal";
 import { toast, Msg } from "../lib/toast";
+import { UndoBanner } from "../components/UndoBanner";
 
 // ── Substance types ───────────────────────────────────────────────────────────
 
@@ -607,6 +608,11 @@ export function MealsScreen() {
   const [subTotals, setSubTotals] = useState<SubstanceTotals>({ caffeine_mg: 0, standard_drinks: 0 });
   const [subLoading, setSubLoading] = useState(false);
 
+  type UndoMeal =
+    | { type: "meal"; data: Meal; timer: ReturnType<typeof setTimeout> }
+    | { type: "substance"; data: SubstanceEntry; timer: ReturnType<typeof setTimeout> };
+  const [undoMeal, setUndoMeal] = useState<UndoMeal | null>(null);
+
   const loadMeals = useCallback(function () {
     const today = new Date().toISOString().split("T")[0];
     setLoadingMeals(true);
@@ -758,6 +764,25 @@ export function MealsScreen() {
       }
     }
 
+    const todayDuplicate = meals.find(
+      (m) => m.name.toLowerCase().trim() === (values.name ?? "").toLowerCase().trim()
+    );
+    if (todayDuplicate) {
+      Alert.alert(
+        "Already logged today",
+        `You already logged "${values.name}" today. Add it again?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Log again", onPress: () => doAddMeal(values) },
+        ]
+      );
+      return;
+    }
+    doAddMeal(values);
+  }
+
+  function doAddMeal(values: MacroValues) {
+    if (!pendingFood) return;
     api.addMeal({
       meal_type: mealType,
       source_food_id: pendingFood.source_food_id,
@@ -790,21 +815,16 @@ export function MealsScreen() {
   }
 
   function handleDeleteMeal(meal: Meal) {
-    Alert.alert("Delete meal", 'Remove "' + meal.name + '"?', [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete", style: "destructive",
-        onPress: function () {
-          api.deleteMeal(meal.id)
-            .then(function () {
-              if (expandedMealId === meal.id) setExpandedMealId(null);
-              if (editingMealId === meal.id) setEditingMealId(null);
-              loadMeals();
-            })
-            .catch(function (e: Error) { setMealsError(e.message || "Failed to delete meal"); });
-        },
-      },
-    ]);
+    if (undoMeal) clearTimeout(undoMeal.timer);
+    if (expandedMealId === meal.id) setExpandedMealId(null);
+    if (editingMealId === meal.id) setEditingMealId(null);
+    setMeals((prev) => prev.filter((m) => m.id !== meal.id));
+    const timer = setTimeout(async () => {
+      setUndoMeal(null);
+      try { await api.deleteMeal(meal.id); }
+      catch (e: any) { setMealsError(e.message || "Failed to delete meal"); loadMeals(); }
+    }, 4000);
+    setUndoMeal({ type: "meal", data: meal, timer });
   }
 
   // ── Substance handlers ────────────────────────────────────────────────────
@@ -892,21 +912,25 @@ export function MealsScreen() {
   }
 
   function handleDeleteSubstance(entry: SubstanceEntry) {
-    Alert.alert(
-      "Remove entry",
-      `Remove "${entry.name}"?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Remove", style: "destructive",
-          onPress: function () {
-            api.deleteSubstance(entry.id)
-              .then(loadSubstances)
-              .catch(function () {});
-          },
-        },
-      ]
-    );
+    if (undoMeal) clearTimeout(undoMeal.timer);
+    setSubEntries((prev) => prev.filter((e) => e.id !== entry.id));
+    const timer = setTimeout(async () => {
+      setUndoMeal(null);
+      try { await api.deleteSubstance(entry.id); }
+      catch { loadSubstances(); }
+    }, 4000);
+    setUndoMeal({ type: "substance", data: entry, timer });
+  }
+
+  function handleUndoMealDelete() {
+    if (!undoMeal) return;
+    clearTimeout(undoMeal.timer);
+    if (undoMeal.type === "meal") {
+      setMeals((prev) => [...prev, undoMeal.data as Meal]);
+    } else {
+      setSubEntries((prev) => [...prev, undoMeal.data as SubstanceEntry]);
+    }
+    setUndoMeal(null);
   }
 
   function handleToggleGlucose(meal: Meal) {
@@ -940,6 +964,7 @@ export function MealsScreen() {
   } : null;
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView
       style={{ backgroundColor: theme.page }}
       contentContainerStyle={styles.content}
@@ -1063,11 +1088,11 @@ export function MealsScreen() {
             placeholder="search food..."
             value={searchQuery}
             onChangeText={handleFoodQueryChange}
-            onSubmitEditing={handleSearch}
+            onSubmitEditing={() => handleSearch()}
             style={[styles.textInput, { color: theme.textStrong, flex: 1 }]}
             placeholderTextColor={theme.textSoft}
           />
-          <Pressable style={[styles.actionBtn, { backgroundColor: theme.coral.solid }]} onPress={handleSearch}>
+          <Pressable style={[styles.actionBtn, { backgroundColor: theme.coral.solid }]} onPress={() => handleSearch()}>
             {searching ? (
               <LoadingIndicator color={onSolid(theme.coral.solid)} size="small" />
             ) : (
@@ -1184,13 +1209,13 @@ export function MealsScreen() {
             placeholder={subType === "caffeine" ? "search coffee, tea, energy drinks..." : "search beer, wine, spirits..."}
             value={subQuery}
             onChangeText={handleSubQueryChange}
-            onSubmitEditing={handleSubSearch}
+            onSubmitEditing={() => handleSubSearch()}
             style={[styles.textInput, { color: theme.textStrong, flex: 1 }]}
             placeholderTextColor={theme.textSoft}
           />
           <Pressable
             style={[styles.actionBtn, { backgroundColor: subType === "caffeine" ? theme.coral.sub : theme.purple.solid }]}
-            onPress={handleSubSearch}
+            onPress={() => handleSubSearch()}
           >
             {subSearching ? (
               <LoadingIndicator color={onSolid(subType === "caffeine" ? theme.coral.sub : theme.purple.solid)} size="small" />
@@ -1428,6 +1453,14 @@ export function MealsScreen() {
         existing={editingRecipe ?? undefined}
       />
     </ScrollView>
+    {undoMeal && (
+      <UndoBanner
+        message={undoMeal.type === "meal" ? `"${(undoMeal.data as Meal).name}" removed` : `"${(undoMeal.data as SubstanceEntry).name}" removed`}
+        onUndo={handleUndoMealDelete}
+        theme={theme}
+      />
+    )}
+    </View>
   );
 }
 

@@ -18,6 +18,8 @@ import { CompletedScreen } from "../screens/CompletedScreen";
 import { InsightsScreen } from "../screens/InsightsScreen";
 import { MindfulnessScreen } from "../screens/MindfulnessScreen";
 import { CustomizeDashboardScreen } from "../screens/CustomizeDashboardScreen";
+import { GlobalSearchScreen } from "../screens/GlobalSearchScreen";
+import { HelpScreen } from "../screens/HelpScreen";
 import { useTheme } from "../theme/ThemeContext";
 import { navigationRef } from "./navigationRef";
 
@@ -95,7 +97,7 @@ function TabNavigator() {
               {([
                 { emoji: "💡", label: "INSIGHT", screen: "Insights" },
                 { emoji: "📈", label: "TRENDS", screen: "Trends" },
-                { emoji: "🔍", label: "SEARCH", screen: "History" },
+                { emoji: "🔍", label: "SEARCH", screen: "GlobalSearch" },
                 { emoji: "⚙️", label: "SETTINGS", screen: "Settings" },
               ] as const).map((btn, i) => (
                 <React.Fragment key={btn.label}>
@@ -201,6 +203,8 @@ export function RootTabs() {
         <Stack.Screen name="Insights" component={InsightsScreen} options={{ title: "Insights" }} />
         <Stack.Screen name="Mindfulness" component={MindfulnessScreen} options={{ title: "Mindfulness" }} />
         <Stack.Screen name="CustomizeDashboard" component={CustomizeDashboardScreen} options={{ title: "Customize Dashboard" }} />
+        <Stack.Screen name="GlobalSearch" component={GlobalSearchScreen} options={{ title: "Search" }} />
+        <Stack.Screen name="Help" component={HelpScreen} options={{ title: "Help & FAQ" }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

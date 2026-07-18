@@ -27,6 +27,8 @@ import { ThemePickerModal } from "./ThemePickerModal";
 import { PALETTES } from "../theme/palettes";
 import { api } from "../api/client";
 import { logout, getUserId } from "../lib/auth";
+import { getMuteUntil, muteFor, clearMute, untilTomorrow7am, MUTE_PRESETS } from "../lib/muteNotifications";
+import { isBiometricLockEnabled, setBiometricLockEnabled, authenticateWithBiometrics } from "../lib/biometricLock";
 
 import { GOOGLE_CLIENT_ID } from "../api/client";
 import { requestHealthPermissions, syncHealthData } from "../lib/healthConnect";
@@ -112,6 +114,8 @@ export function SettingsScreen() {
   const [loadingBackups, setLoadingBackups] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [journey, setJourney] = useState<{ total_meals: number; total_mood_checkins: number; total_active_days: number; member_since: string | null } | null>(null);
+  const [muteUntilMs, setMuteUntilMs] = useState<number | null>(null);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
 
   const loadDriveStatus = useCallback(async function () {
     try {
@@ -135,6 +139,8 @@ export function SettingsScreen() {
     }
     loadDriveStatus();
     api.journey().then(setJourney).catch(() => {});
+    getMuteUntil().then(setMuteUntilMs).catch(() => {});
+    isBiometricLockEnabled().then(setBiometricEnabled).catch(() => {});
   }, [loadDriveStatus]);
 
   useEffect(function () { load(); }, [load]);
@@ -747,7 +753,72 @@ export function SettingsScreen() {
         </Pressable>
       </View>
 
+      <Text style={[styles.groupLabel, { color: theme.textSoft }]}>SECURITY</Text>
+
+      {/* Biometric App Lock */}
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+        <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>App Lock</Text>
+        <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
+          Require biometric auth (fingerprint / face) when opening Ripple after 5 minutes in the background.
+        </Text>
+        <ToggleRow
+          label="Require biometric unlock"
+          value={biometricEnabled}
+          onChange={async (v) => {
+            if (v) {
+              const result = await authenticateWithBiometrics();
+              if (result === "unavailable") {
+                Alert.alert("Not available", "No biometric hardware or enrollments found on this device.");
+                return;
+              }
+              if (result === "failed") return;
+              await setBiometricLockEnabled(true);
+              setBiometricEnabled(true);
+            } else {
+              await setBiometricLockEnabled(false);
+              setBiometricEnabled(false);
+            }
+          }}
+          theme={theme}
+        />
+      </View>
+
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>NOTIFICATIONS</Text>
+
+      {/* Silence All Notifications */}
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+        <Text style={[styles.sectionTitle, { color: theme.textStrong }]}>Silence All Notifications</Text>
+        {muteUntilMs ? (
+          <View style={{ gap: 8 }}>
+            <Text style={{ color: theme.textSoft, fontSize: 12 }}>
+              Muted until {new Date(muteUntilMs).toLocaleString()}
+            </Text>
+            <Pressable
+              onPress={async () => { await clearMute(); setMuteUntilMs(null); }}
+              style={[styles.saveButton, { backgroundColor: theme.coral.bg, borderColor: theme.coral.sub, marginTop: 0 }]}
+            >
+              <Text style={{ color: theme.coral.fg, fontWeight: "500" }}>Clear mute</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+            {MUTE_PRESETS.map((preset) => (
+              <Pressable
+                key={preset.label}
+                onPress={async () => {
+                  const until = preset.ms === -1 ? untilTomorrow7am() : Date.now() + preset.ms;
+                  const durationMs = until - Date.now();
+                  await muteFor(durationMs);
+                  setMuteUntilMs(until);
+                }}
+                style={[styles.dayChip, { borderColor: theme.ink, backgroundColor: theme.page }]}
+              >
+                <Text style={{ color: theme.textStrong, fontSize: 12 }}>{preset.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+      </View>
 
       {/* Smart notifications */}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
@@ -1165,6 +1236,18 @@ export function SettingsScreen() {
           style={[styles.saveButton, { backgroundColor: theme.teal.tint, borderColor: theme.teal.solid, marginTop: 8 }]}
         >
           <Text style={{ color: theme.teal.fg, fontWeight: "700" }}>Open customizer →</Text>
+        </Pressable>
+      </View>
+
+      <Text style={[styles.groupLabel, { color: theme.textSoft }]}>HELP</Text>
+
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+        <Pressable
+          onPress={() => navigation.navigate("Help")}
+          style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 4 }}
+        >
+          <Text style={{ color: theme.textStrong, fontSize: 14, fontWeight: "600" }}>Help & FAQ</Text>
+          <Text style={{ color: theme.textSoft, fontSize: 22, lineHeight: 26 }}>›</Text>
         </Pressable>
       </View>
 
