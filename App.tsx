@@ -1,7 +1,21 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Linking, Platform, ToastAndroid, Alert, View, StyleSheet, Text, Pressable, AppState as RNAppState } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import notifee, { EventType } from "@notifee/react-native";
+// Notifee is a native module — stub it so the app doesn't crash if the module
+// isn't linked (e.g. development builds without native rebuild).
+let notifee: any;
+let EventType: any;
+try {
+  const mod = require("@notifee/react-native");
+  notifee = mod.default;
+  EventType = mod.EventType;
+} catch {
+  notifee = {
+    getInitialNotification: () => Promise.resolve(null),
+    onForegroundEvent: () => () => {},
+  };
+  EventType = { PRESS: "press", ACTION_PRESS: "action_press" };
+}
 import { CommonActions } from "@react-navigation/native";
 import { ThemeProvider } from "./src/theme/ThemeContext";
 import { OfflineBanner } from "./src/components/OfflineBanner";
@@ -21,12 +35,6 @@ import {
   authenticateWithBiometrics,
   setBiometricLockEnabled,
 } from "./src/lib/biometricLock";
-
-// ── Diagnostic flags (toggle to isolate grey-screen suspects) ───────────────
-// Set DISABLE_RIPPLE_TRANSITION=true to rule out the RippleLoader overlay
-// Set DISABLE_BIOMETRIC_LOCK=true to rule out the biometric lock overlay
-const DISABLE_RIPPLE_TRANSITION = false;
-const DISABLE_BIOMETRIC_LOCK    = false;
 
 type AppState = "loading" | "login" | "signup" | "onboarding" | "app";
 
@@ -124,7 +132,6 @@ export default function App() {
   const rippleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleNavigationStateChange = useCallback(() => {
-    if (DISABLE_RIPPLE_TRANSITION) return;
     if (rippleTimer.current) clearTimeout(rippleTimer.current);
     setShowRippleTransition(true);
     rippleTimer.current = setTimeout(() => setShowRippleTransition(false), 480);
@@ -135,13 +142,9 @@ export default function App() {
 
   useEffect(() => {
     const appStateSub = RNAppState.addEventListener("change", async (nextState) => {
-      console.log("[Diag] RNAppState →", nextState);
       if (nextState === "active") {
         const enabled = await isBiometricLockEnabled().catch(() => false);
-        const unlocked = isCurrentlyUnlocked();
-        console.log("[Diag] biometricEnabled:", enabled, "isCurrentlyUnlocked:", unlocked, "DISABLE_FLAG:", DISABLE_BIOMETRIC_LOCK);
-        if (!DISABLE_BIOMETRIC_LOCK && enabled && !unlocked) {
-          console.log("[Diag] → setting biometricLocked=true");
+        if (enabled && !isCurrentlyUnlocked()) {
           setBiometricLocked(true);
         }
       }
@@ -186,9 +189,7 @@ export default function App() {
   }, []);
 
   async function initAuth() {
-    console.log("[Diag] initAuth: start");
     const token = await getToken();
-    console.log("[Diag] initAuth: token present:", !!token);
     if (!token) {
       setAppState("login");
       return;
@@ -196,7 +197,6 @@ export default function App() {
     try {
       const user = await api.me();
       if (!user) throw new Error("no user");
-      console.log("[Diag] initAuth: user ok, onboarding_completed:", user.onboarding_completed);
       markUnlocked();
       setBiometricLocked(false);
       setAppState(user.onboarding_completed ? "app" : "onboarding");
@@ -204,7 +204,6 @@ export default function App() {
       // Only clear the token on actual auth rejection (401/403). Network errors or
       // server hiccups should not log the user out — just trust the stored token.
       const msg: string = err?.message ?? "";
-      console.log("[Diag] initAuth: error:", msg);
       if (msg.includes("API error 401") || msg.includes("API error 403")) {
         await clearToken();
         setAppState("login");
@@ -217,15 +216,12 @@ export default function App() {
   }
 
   async function handleLoginSuccess() {
-    console.log("[Diag] handleLoginSuccess: start");
     try {
       const user = await api.me();
-      console.log("[Diag] handleLoginSuccess: onboarding_completed:", user?.onboarding_completed);
       markUnlocked();
       setBiometricLocked(false);
       setAppState(user?.onboarding_completed ? "app" : "onboarding");
-    } catch (e) {
-      console.log("[Diag] handleLoginSuccess: error fallback", String(e));
+    } catch {
       markUnlocked();
       setBiometricLocked(false);
       setAppState("app");
@@ -233,18 +229,12 @@ export default function App() {
   }
 
   async function handleOnboardingComplete() {
-    console.log("[Diag] handleOnboardingComplete: start");
     try {
       await api.markOnboardingComplete();
-      console.log("[Diag] handleOnboardingComplete: API call done");
-    } catch (e) {
-      console.log("[Diag] handleOnboardingComplete: API call failed (ignored):", String(e));
-    }
+    } catch (_) {}
     markUnlocked();
     setBiometricLocked(false);
-    console.log("[Diag] handleOnboardingComplete: calling setAppState(app)");
     setAppState("app");
-    console.log("[Diag] handleOnboardingComplete: done");
   }
 
   if (appState === "loading") {
@@ -296,12 +286,12 @@ export default function App() {
         <StatusBar style="dark" />
         <RootTabs onNavigationStateChange={handleNavigationStateChange} />
         <OfflineBanner />
-        {!DISABLE_RIPPLE_TRANSITION && showRippleTransition && (
+        {showRippleTransition && (
           <View pointerEvents="none" style={transitionStyles.overlay}>
             <RippleLoader size="large" />
           </View>
         )}
-        {!DISABLE_BIOMETRIC_LOCK && biometricLocked && (
+        {biometricLocked && (
           <View style={lockStyles.overlay}>
             <Text style={lockStyles.appName}>Ripple</Text>
             <Text style={lockStyles.subtitle}>Your data is private</Text>
