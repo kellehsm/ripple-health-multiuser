@@ -35,7 +35,7 @@ const RING_GAP  = 130;   // stagger between rings
 const HB_DRAW   = 600;   // heartbeat draw duration
 const HB_PAUSE  = 250;   // pause before reset (fits within LOOP_MS)
 
-export type RippleLoaderSize = "small" | "large";
+export type RippleLoaderSize = "small" | "large" | "splash";
 
 interface Props {
   size?: RippleLoaderSize;
@@ -44,11 +44,16 @@ interface Props {
 
 export function RippleLoader({ size = "large", style }: Props) {
   const isSmall = size === "small";
-  const dim = isSmall ? 22 : 52;
+  const isSplash = size === "splash";
+  const dim = isSmall ? 22 : isSplash ? 120 : 52;
 
-  // Container size for the ring animation (rings expand to 2.4× the droplet)
-  const containerDim = isSmall ? 22 : Math.round(dim * 2.4);
+  // Container size: rings only for "large"
+  const containerDim = (isSmall || isSplash) ? dim : Math.round(dim * 2.4);
   const ringSize = dim;
+
+  // Stroke widths in viewBox coords — splash renders at 5× scale so needs proportionally thinner lines
+  const hbStrokeWidth = isSplash ? 0.5 : 1.2;
+  const outlineStrokeWidth = isSplash ? 0.45 : 1.0;
 
   const uid = useRef(Math.random().toString(36).slice(2, 6)).current;
   const clipId = `rl-${uid}`;
@@ -69,25 +74,27 @@ export function RippleLoader({ size = "large", style }: Props) {
   }));
 
   useEffect(() => {
-    // Breathing scale: expands with ring 1, contracts, returns to 1
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(scale, {
-          toValue: 1.07, duration: 280, useNativeDriver: true,
-          easing: Easing.inOut(Easing.ease),
-        }),
-        Animated.timing(scale, {
-          toValue: 0.94, duration: 260, useNativeDriver: true,
-          easing: Easing.inOut(Easing.ease),
-        }),
-        Animated.timing(scale, {
-          toValue: 1, duration: 180, useNativeDriver: true,
-        }),
-        Animated.delay(LOOP_MS - 280 - 260 - 180),
-      ])
-    ).start();
+    // Breathing scale: active for small and large; splash is static (line is the animation)
+    if (!isSplash) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(scale, {
+            toValue: 1.07, duration: 280, useNativeDriver: true,
+            easing: Easing.inOut(Easing.ease),
+          }),
+          Animated.timing(scale, {
+            toValue: 0.94, duration: 260, useNativeDriver: true,
+            easing: Easing.inOut(Easing.ease),
+          }),
+          Animated.timing(scale, {
+            toValue: 1, duration: 180, useNativeDriver: true,
+          }),
+          Animated.delay(LOOP_MS - 280 - 260 - 180),
+        ])
+      ).start();
+    }
 
-    if (!isSmall) {
+    if (!isSmall && !isSplash) {
       // Ring helper: animate a ring from scale 1→2.4, opacity 0.5→0, with stagger
       const ringAnim = (anim: Animated.Value, delayMs: number) => {
         Animated.loop(
@@ -120,14 +127,14 @@ export function RippleLoader({ size = "large", style }: Props) {
 
     return () => {
       scale.stopAnimation();
-      if (!isSmall) {
+      if (!isSmall && !isSplash) {
         ring1.stopAnimation();
         ring2.stopAnimation();
         ring3.stopAnimation();
       }
       cancelAnimation(dashOffset);
     };
-  }, [isSmall]);
+  }, [isSmall, isSplash]);
 
   // Interpolated ring styles
   function ringView(anim: Animated.Value, color: string) {
@@ -168,7 +175,7 @@ export function RippleLoader({ size = "large", style }: Props) {
           <AnimatedPolyline
             points={HB_POINTS}
             stroke="#111111"
-            strokeWidth={1.2}
+            strokeWidth={hbStrokeWidth}
             strokeLinecap="round"
             strokeLinejoin="round"
             fill="none"
@@ -177,12 +184,12 @@ export function RippleLoader({ size = "large", style }: Props) {
           />
         </G>
         {/* Black outline on top */}
-        <Path d={DROP_PATH} fill="none" stroke="#111111" strokeWidth={1} />
+        <Path d={DROP_PATH} fill="none" stroke="#111111" strokeWidth={outlineStrokeWidth} />
       </Svg>
     </Animated.View>
   );
 
-  if (isSmall) {
+  if (isSmall || isSplash) {
     return (
       <View
         style={[{ width: dim, height: dim, alignItems: "center", justifyContent: "center" }, style]}

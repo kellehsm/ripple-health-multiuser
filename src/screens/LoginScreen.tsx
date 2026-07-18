@@ -10,9 +10,9 @@ import {
   Platform,
   Animated,
   Easing,
-  Image
 } from "react-native";
 import { LoadingIndicator } from "../components/LoadingIndicator";
+import { RippleLoader } from "../components/RippleLoader";
 import { api } from "../api/client";
 import { setToken } from "../lib/auth";
 import { useTheme } from "../theme/ThemeContext";
@@ -38,10 +38,6 @@ export function LoginScreen({ onLoginSuccess, onShowSignup }: Props) {
   const blob3Y = useRef(new Animated.Value(0)).current;
   const blob4X = useRef(new Animated.Value(0)).current;
   const blob4Y = useRef(new Animated.Value(0)).current;
-
-  // ── Logo / heartbeat animations ────────────────────────────────────────────
-  const logoScale = useRef(new Animated.Value(1)).current;
-  const heartbeatReveal = useRef(new Animated.Value(-88)).current;
 
   // ── Entrance animations ────────────────────────────────────────────────────
   const ELEM = 6;
@@ -72,25 +68,6 @@ export function LoginScreen({ onLoginSuccess, onShowSignup }: Props) {
         ])
       ).start();
     });
-
-    // Logo pulse
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(logoScale, { toValue: 1.04, duration: 1800, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        Animated.timing(logoScale, { toValue: 0.97, duration: 1600, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        Animated.timing(logoScale, { toValue: 1, duration: 1200, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-      ])
-    ).start();
-
-    // Heartbeat draw loop
-    const runHeartbeat = () => {
-      heartbeatReveal.setValue(-88);
-      Animated.sequence([
-        Animated.timing(heartbeatReveal, { toValue: 0, duration: 1800, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
-        Animated.delay(900),
-      ]).start(() => runHeartbeat());
-    };
-    runHeartbeat();
 
     // Staggered entrance
     Animated.stagger(
@@ -129,37 +106,6 @@ export function LoginScreen({ onLoginSuccess, onShowSignup }: Props) {
     }
   }
 
-  // ── HeartbeatLine ─────────────────────────────────────────────────────────
-  // Rendered as an absolute overlay crossing the droplet at its vertical midpoint.
-  // Color matches the app icon's black (#111111) outline; baseline sits at top:10
-  // within a 22px container, so the container is positioned at top:34 of the 88px
-  // icon (44 - 10 = 34) to align the baseline with the droplet's center.
-  function HeartbeatLine() {
-    const ink = "#111111";
-    return (
-      <View style={{ width: 88, height: 22, overflow: "hidden" }}>
-        <Animated.View style={{ transform: [{ translateX: heartbeatReveal }] }}>
-          <View style={{ width: 88, height: 22, position: "relative" }}>
-            {/* baseline left */}
-            <View style={{ position: "absolute", left: 0, width: 30, height: 2, top: 10, backgroundColor: ink }} />
-            {/* small up */}
-            <View style={{ position: "absolute", left: 30, width: 2, height: 8, top: 4, backgroundColor: ink }} />
-            {/* down to base */}
-            <View style={{ position: "absolute", left: 32, width: 2, height: 8, top: 10, backgroundColor: ink }} />
-            {/* baseline mid */}
-            <View style={{ position: "absolute", left: 34, width: 6, height: 2, top: 10, backgroundColor: ink }} />
-            {/* main up spike */}
-            <View style={{ position: "absolute", left: 40, width: 2, height: 20, top: 0, backgroundColor: ink }} />
-            {/* main down spike */}
-            <View style={{ position: "absolute", left: 42, width: 2, height: 20, top: 2, backgroundColor: ink }} />
-            {/* baseline right */}
-            <View style={{ position: "absolute", left: 44, right: 0, height: 2, top: 10, backgroundColor: ink }} />
-          </View>
-        </Animated.View>
-      </View>
-    );
-  }
-
   return (
     <View style={{ flex: 1, backgroundColor: theme.page ?? "#F5F1E8" }}>
       {/* Background blobs */}
@@ -194,22 +140,11 @@ export function LoginScreen({ onLoginSuccess, onShowSignup }: Props) {
           contentContainerStyle={{ flexGrow: 1, justifyContent: "center", paddingHorizontal: 28, paddingVertical: 48 }}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Logo block — pulse line overlaid at droplet's vertical midpoint */}
+          {/* Logo — SVG droplet with animated pulse line, no background */}
           <Animated.View
             style={{ alignItems: "center", marginBottom: 32, opacity: fadeAnims[0], transform: [{ translateY: slideAnims[0] }] }}
           >
-            <Animated.View style={{ transform: [{ scale: logoScale }] }}>
-              <View style={{ width: 88, height: 88 }}>
-                <Image
-                  source={require("../../assets/images/icon.png")}
-                  style={{ width: 88, height: 88 }}
-                />
-                {/* Pulse line at y=44 (icon vertical midpoint): container top = 44 - 10 = 34 */}
-                <View style={{ position: "absolute", top: 34, left: 0, right: 0 }}>
-                  <HeartbeatLine />
-                </View>
-              </View>
-            </Animated.View>
+            <RippleLoader size="splash" />
           </Animated.View>
 
           {/* Title */}
