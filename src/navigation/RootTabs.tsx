@@ -182,11 +182,15 @@ function TabNavigator() {
   );
 }
 
-export function RootTabs() {
+interface RootTabsProps {
+  onNavigationStateChange?: () => void;
+}
+
+export function RootTabs({ onNavigationStateChange }: RootTabsProps) {
   const { theme } = useTheme();
 
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer ref={navigationRef} onStateChange={onNavigationStateChange}>
       <Stack.Navigator
         screenOptions={{
           headerStyle: { backgroundColor: theme.page },

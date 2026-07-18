@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Linking, Platform, ToastAndroid, Alert, View, StyleSheet, Text, Pressable, AppState as RNAppState } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import notifee, { EventType } from "@notifee/react-native";
@@ -6,6 +6,7 @@ import { CommonActions } from "@react-navigation/native";
 import { ThemeProvider } from "./src/theme/ThemeContext";
 import { OfflineBanner } from "./src/components/OfflineBanner";
 import { RootTabs } from "./src/navigation/RootTabs";
+import { RippleLoader } from "./src/components/RippleLoader";
 import { OnboardingFlow } from "./src/screens/OnboardingFlow";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { SignupScreen } from "./src/screens/SignupScreen";
@@ -112,6 +113,14 @@ function shouldGoToMeals(data: any, actionId?: string): boolean {
 export default function App() {
   const [appState, setAppState] = useState<AppState>("loading");
   const [biometricLocked, setBiometricLocked] = useState(false);
+  const [showRippleTransition, setShowRippleTransition] = useState(false);
+  const rippleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleNavigationStateChange = useCallback(() => {
+    if (rippleTimer.current) clearTimeout(rippleTimer.current);
+    setShowRippleTransition(true);
+    rippleTimer.current = setTimeout(() => setShowRippleTransition(false), 480);
+  }, []);
 
   // Register logout handler so Settings can sign the user out
   registerLogoutHandler(() => setAppState("login"));
@@ -246,8 +255,13 @@ export default function App() {
   return (
     <ThemeProvider>
       <StatusBar style="dark" />
-      <RootTabs />
+      <RootTabs onNavigationStateChange={handleNavigationStateChange} />
       <OfflineBanner />
+      {showRippleTransition && (
+        <View pointerEvents="none" style={transitionStyles.overlay}>
+          <RippleLoader size="large" />
+        </View>
+      )}
       {biometricLocked && (
         <View style={lockStyles.overlay}>
           <Text style={lockStyles.appName}>Ripple</Text>
@@ -260,6 +274,15 @@ export default function App() {
     </ThemeProvider>
   );
 }
+
+const transitionStyles = StyleSheet.create({
+  overlay: {
+    ...StyleSheet.absoluteFill,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 9997,
+  },
+});
 
 const lockStyles = StyleSheet.create({
   overlay: {
