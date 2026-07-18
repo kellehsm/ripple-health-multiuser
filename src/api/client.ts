@@ -82,7 +82,7 @@ export const api = {
     });
   },
   me: function () {
-    return request("/auth/me", { method: "POST" });
+    return request("/auth/me", { method: "POST", body: JSON.stringify({}) });
   },
   changePassword: function (current_password: string, new_password: string) {
     return request("/auth/change-password", { method: "POST", body: JSON.stringify({ current_password, new_password }) });
