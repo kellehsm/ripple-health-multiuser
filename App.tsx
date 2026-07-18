@@ -17,6 +17,7 @@ try {
   EventType = { PRESS: "press", ACTION_PRESS: "action_press" };
 }
 import { CommonActions } from "@react-navigation/native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ThemeProvider } from "./src/theme/ThemeContext";
 import { OfflineBanner } from "./src/components/OfflineBanner";
 import { RootTabs } from "./src/navigation/RootTabs";
@@ -238,70 +239,82 @@ export default function App() {
   }
 
   if (appState === "loading") {
-    return <View style={{ flex: 1, backgroundColor: "#F5F1E8" }} />;
+    return (
+      <SafeAreaProvider>
+        <View style={{ flex: 1, backgroundColor: "#F5F1E8" }} />
+      </SafeAreaProvider>
+    );
   }
 
   if (appState === "login") {
     return (
-      <AppErrorBoundary>
-        <ThemeProvider>
-          <StatusBar style="dark" />
-          <LoginScreen
-            onLoginSuccess={handleLoginSuccess}
-            onShowSignup={() => setAppState("signup")}
-          />
-        </ThemeProvider>
-      </AppErrorBoundary>
+      <SafeAreaProvider>
+        <AppErrorBoundary>
+          <ThemeProvider>
+            <StatusBar style="dark" />
+            <LoginScreen
+              onLoginSuccess={handleLoginSuccess}
+              onShowSignup={() => setAppState("signup")}
+            />
+          </ThemeProvider>
+        </AppErrorBoundary>
+      </SafeAreaProvider>
     );
   }
 
   if (appState === "signup") {
     return (
-      <AppErrorBoundary>
-        <ThemeProvider>
-          <StatusBar style="dark" />
-          <SignupScreen
-            onSignupSuccess={() => { markUnlocked(); setBiometricLocked(false); setAppState("onboarding"); }}
-            onBackToLogin={() => setAppState("login")}
-          />
-        </ThemeProvider>
-      </AppErrorBoundary>
+      <SafeAreaProvider>
+        <AppErrorBoundary>
+          <ThemeProvider>
+            <StatusBar style="dark" />
+            <SignupScreen
+              onSignupSuccess={() => { markUnlocked(); setBiometricLocked(false); setAppState("onboarding"); }}
+              onBackToLogin={() => setAppState("login")}
+            />
+          </ThemeProvider>
+        </AppErrorBoundary>
+      </SafeAreaProvider>
     );
   }
 
   if (appState === "onboarding") {
     return (
-      <AppErrorBoundary>
-        <ThemeProvider>
-          <StatusBar style="dark" />
-          <OnboardingFlow onComplete={handleOnboardingComplete} />
-        </ThemeProvider>
-      </AppErrorBoundary>
+      <SafeAreaProvider>
+        <AppErrorBoundary>
+          <ThemeProvider>
+            <StatusBar style="dark" />
+            <OnboardingFlow onComplete={handleOnboardingComplete} />
+          </ThemeProvider>
+        </AppErrorBoundary>
+      </SafeAreaProvider>
     );
   }
 
   return (
-    <AppErrorBoundary>
-      <ThemeProvider>
-        <StatusBar style="dark" />
-        <RootTabs onNavigationStateChange={handleNavigationStateChange} />
-        <OfflineBanner />
-        {showRippleTransition && (
-          <View pointerEvents="none" style={transitionStyles.overlay}>
-            <RippleLoader size="large" />
-          </View>
-        )}
-        {biometricLocked && (
-          <View style={lockStyles.overlay}>
-            <Text style={lockStyles.appName}>Ripple</Text>
-            <Text style={lockStyles.subtitle}>Your data is private</Text>
-            <Pressable onPress={handleBiometricUnlock} style={lockStyles.unlockBtn}>
-              <Text style={lockStyles.unlockBtnText}>Unlock with Biometrics</Text>
-            </Pressable>
-          </View>
-        )}
-      </ThemeProvider>
-    </AppErrorBoundary>
+    <SafeAreaProvider>
+      <AppErrorBoundary>
+        <ThemeProvider>
+          <StatusBar style="dark" />
+          <RootTabs onNavigationStateChange={handleNavigationStateChange} />
+          <OfflineBanner />
+          {showRippleTransition && (
+            <View pointerEvents="none" style={transitionStyles.overlay}>
+              <RippleLoader size="large" />
+            </View>
+          )}
+          {biometricLocked && (
+            <View style={lockStyles.overlay}>
+              <Text style={lockStyles.appName}>Ripple</Text>
+              <Text style={lockStyles.subtitle}>Your data is private</Text>
+              <Pressable onPress={handleBiometricUnlock} style={lockStyles.unlockBtn}>
+                <Text style={lockStyles.unlockBtnText}>Unlock with Biometrics</Text>
+              </Pressable>
+            </View>
+          )}
+        </ThemeProvider>
+      </AppErrorBoundary>
+    </SafeAreaProvider>
   );
 }
 

@@ -12,7 +12,7 @@ import {
   Easing,
 } from "react-native";
 import { LoadingIndicator } from "../components/LoadingIndicator";
-import { RippleLoader } from "../components/RippleLoader";
+import { LoginLogo } from "../components/LoginLogo";
 import { api } from "../api/client";
 import { setToken } from "../lib/auth";
 import { useTheme } from "../theme/ThemeContext";
@@ -144,7 +144,7 @@ export function LoginScreen({ onLoginSuccess, onShowSignup }: Props) {
           <Animated.View
             style={{ alignItems: "center", marginBottom: 32, opacity: fadeAnims[0], transform: [{ translateY: slideAnims[0] }] }}
           >
-            <RippleLoader size="splash" />
+            <LoginLogo />
           </Animated.View>
 
           {/* Title */}
