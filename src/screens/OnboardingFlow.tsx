@@ -31,39 +31,39 @@ const WALK_PAGES: Array<{
   accentKey: AccentKey;
 }> = [
   {
-    emoji: "💧",
-    label: "WELLNESS",
-    desc: "Glucose, steps, sleep, heart rate, and water — your daily health baseline in one place.",
+    emoji: "🏠",
+    label: "HOME",
+    desc: "Your daily command centre — mood check-ins, live glucose, steps, and water at a glance with a personalised AI summary of your day.",
     accentKey: "berry",
   },
   {
-    emoji: "😊",
-    label: "MOOD",
-    desc: "Check in a few times a day with a quick slider and emotion label. See how your mood connects to sleep, meals, and activity.",
-    accentKey: "violet",
+    emoji: "❤️",
+    label: "HEALTH",
+    desc: "Live glucose from your Dexcom CGM, steps, sleep, and resting heart rate — synced automatically from Android Health Connect.",
+    accentKey: "teal",
   },
   {
     emoji: "🍜",
     label: "MEALS",
-    desc: "Log food, caffeine, and alcohol — scan a barcode or search by name.",
+    desc: "Log meals in seconds — scan a barcode, search by name, or pick from your history. Track macros, caffeine, and alcohol alongside your glucose.",
     accentKey: "coral",
   },
   {
-    emoji: "🧘",
-    label: "MINDFULNESS",
-    desc: "A dedicated space for reflection and intentional rest. Log mindfulness sessions, journaling, and breathing exercises.",
-    accentKey: "teal",
-  },
-  {
-    emoji: "📊",
-    label: "TRENDS",
-    desc: "Spot patterns across all your data — mood, glucose, sleep, meals, and more — with automated insights.",
-    accentKey: "teal",
-  },
-  {
     emoji: "📖",
-    label: "LIFE & FINANCE",
-    desc: "Books, hobbies, and spending — the fuller picture of your days and how they connect.",
+    label: "HOBBIES",
+    desc: "Track books you're reading and hobbies you love. Log sessions, build streaks, and see how your activities connect to mood and energy.",
+    accentKey: "blue",
+  },
+  {
+    emoji: "✨",
+    label: "INSIGHTS",
+    desc: "Ripple spots patterns across all your data — how meals shift glucose, when your mood dips, what drives your best weeks. Updated daily.",
+    accentKey: "violet",
+  },
+  {
+    emoji: "💰",
+    label: "FINANCE",
+    desc: "Track spending against a monthly budget, categorise expenses, and see how your financial stress connects to the rest of your wellbeing.",
     accentKey: "purple",
   },
 ];
@@ -197,23 +197,40 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
     finally { setLoading(false); advance(); }
   }
 
-  // ── Walkthrough previews (themed) ────────────────────────────────────────────
+  // ── Walkthrough previews ──────────────────────────────────────────────────────
 
-  function WellnessPreview() {
-    const chips = [
-      { label: "Glucose", value: "142", unit: "mg/dL", sub: "stable ↗", color: theme.berry.solid },
-      { label: "Steps", value: "6,234", unit: "steps", sub: "today", color: theme.teal.solid },
-      { label: "Sleep", value: "7h 12m", unit: "", sub: "last night", color: theme.amber?.solid ?? "#F59E0B" },
-      { label: "Water", value: "5", unit: "/ 8 glasses", sub: "today", color: theme.blue?.solid ?? "#3B82F6" },
-    ];
+  function HomePreview() {
     return (
       <View style={styles.preview}>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-          {chips.map((c) => (
-            <View key={c.label} style={[styles.statChip, { backgroundColor: theme.card, borderColor: c.color }]}>
-              <View style={[styles.statChipDot, { backgroundColor: c.color }]} />
-              <Text style={[styles.statChipValue, { color: ink }]}>{c.value}<Text style={styles.statChipUnit}> {c.unit}</Text></Text>
-              <Text style={[styles.statChipSub, { color: theme.textSoft }]}>{c.sub}</Text>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          {[
+            { label: "Mood", value: "🙂", sub: "Calm" },
+            { label: "Glucose", value: "118", sub: "mg/dL stable" },
+            { label: "Steps", value: "7,421", sub: "today" },
+          ].map((item) => (
+            <View key={item.label} style={[styles.glanceChip, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+              <Text style={{ fontSize: 20, textAlign: "center" }}>{item.value}</Text>
+              <Text style={[styles.statChipLabel, { color: ink }]}>{item.label}</Text>
+              <Text style={[styles.statChipSub, { color: theme.textSoft, textAlign: "center" }]}>{item.sub}</Text>
+            </View>
+          ))}
+        </View>
+        <View style={[styles.insightCard, { backgroundColor: theme.berry.bg, borderColor: theme.berry.sub }]}>
+          <Text style={{ fontSize: 18 }}>✨</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.insightTitle, { color: theme.berry.sub }]}>Today's summary</Text>
+            <Text style={[styles.insightText, { color: ink }]}>Glucose stable after lunch. Steps on track for your weekly goal.</Text>
+          </View>
+        </View>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          {[
+            { label: "Water", value: "5 / 8", color: theme.blue?.solid ?? "#3B82F6" },
+            { label: "Sleep", value: "7h 30m", color: theme.amber?.solid ?? "#F59E0B" },
+          ].map((chip) => (
+            <View key={chip.label} style={[styles.miniChip, { backgroundColor: theme.card, borderColor: chip.color }]}>
+              <View style={[styles.miniChipDot, { backgroundColor: chip.color }]} />
+              <Text style={[styles.miniChipValue, { color: ink }]}>{chip.value}</Text>
+              <Text style={[styles.statChipSub, { color: theme.textSoft }]}>{chip.label}</Text>
             </View>
           ))}
         </View>
@@ -221,38 +238,23 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
     );
   }
 
-  function MoodPreview() {
-    const entries = [
-      { period: "Morning", label: "Calm", score: 4 },
-      { period: "Afternoon", label: "Focused", score: 4 },
+  function HealthPreview() {
+    const chips = [
+      { label: "Glucose", value: "118", unit: "mg/dL", sub: "stable", color: theme.berry.solid },
+      { label: "Steps", value: "7,421", unit: "steps", sub: "today", color: theme.teal.solid },
+      { label: "Sleep", value: "7h 30m", unit: "", sub: "last night", color: theme.amber?.solid ?? "#F59E0B" },
+      { label: "Heart Rate", value: "62", unit: "BPM", sub: "resting", color: theme.coral.solid },
     ];
-    const EMOJIS: Record<number, string> = { 5: "😃", 4: "🙂", 3: "😐", 2: "😕", 1: "😣" };
     return (
       <View style={styles.preview}>
-        {entries.map((e) => (
-          <View key={e.period} style={[styles.mealRow, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
-            <Text style={{ fontSize: 24 }}>{EMOJIS[e.score]}</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.mealName, { color: ink }]}>{e.period}</Text>
-              <Text style={[styles.mealMeta, { color: theme.textSoft }]}>{e.label}</Text>
-            </View>
-          </View>
-        ))}
-        <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
-          {[1, 2, 3, 4, 5].map((n) => (
-            <View
-              key={n}
-              style={[
-                styles.statChip,
-                {
-                  flex: 1,
-                  borderColor: n === 4 ? theme.violet?.solid ?? "#8B5CF6" : theme.cardBorder,
-                  backgroundColor: n === 4 ? theme.violet?.bg ?? "#F5F3FF" : theme.card,
-                  padding: 6,
-                },
-              ]}
-            >
-              <Text style={{ textAlign: "center", fontSize: 16 }}>{EMOJIS[n]}</Text>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+          {chips.map((c) => (
+            <View key={c.label} style={[styles.statChip, { backgroundColor: theme.card, borderColor: c.color }]}>
+              <View style={[styles.statChipDot, { backgroundColor: c.color }]} />
+              <Text style={[styles.statChipValue, { color: ink }]}>
+                {c.value}<Text style={styles.statChipUnit}> {c.unit}</Text>
+              </Text>
+              <Text style={[styles.statChipSub, { color: theme.textSoft }]}>{c.sub}</Text>
             </View>
           ))}
         </View>
@@ -276,9 +278,112 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
             </View>
           </View>
         ))}
-        <View style={[styles.substanceBadge, { backgroundColor: theme.coral.bg, borderColor: theme.coral.sub }]}>
-          <Text style={[styles.substanceBadgeText, { color: theme.coral.sub }]}>☕  95 mg caffeine</Text>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          {[
+            { label: "Carbs", g: "82g", color: theme.coral.solid },
+            { label: "Protein", g: "48g", color: theme.teal.solid },
+            { label: "Fat", g: "24g", color: theme.amber?.solid ?? "#F59E0B" },
+          ].map((m) => (
+            <View key={m.label} style={[styles.macroChip, { borderColor: m.color, backgroundColor: theme.card }]}>
+              <Text style={{ fontSize: 14, fontWeight: "800", color: ink }}>{m.g}</Text>
+              <Text style={{ fontSize: 11, color: theme.textSoft }}>{m.label}</Text>
+            </View>
+          ))}
         </View>
+        <View style={[styles.substanceBadge, { backgroundColor: theme.coral.bg, borderColor: theme.coral.sub }]}>
+          <Text style={[styles.substanceBadgeText, { color: theme.coral.sub }]}>☕ 95 mg caffeine · 🍺 1 drink</Text>
+        </View>
+      </View>
+    );
+  }
+
+  function HobbiesPreview() {
+    return (
+      <View style={styles.preview}>
+        <View style={[styles.bookCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.bookTitle, { color: ink }]} numberOfLines={1}>Atomic Habits</Text>
+              <Text style={[styles.bookAuthor, { color: theme.textSoft }]}>James Clear</Text>
+            </View>
+            <Text style={{ fontSize: 22 }}>📖</Text>
+          </View>
+          <View style={[styles.progressTrack, { backgroundColor: theme.cardBorder }]}>
+            <View style={[styles.progressFill, { backgroundColor: theme.blue?.solid ?? "#3B82F6", width: "62%" }]} />
+          </View>
+          <Text style={[styles.progressLabel, { color: theme.textSoft }]}>62% complete · 124 pages left</Text>
+        </View>
+        <View style={[styles.hobbyRow, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <View style={[styles.hobbyIcon, { backgroundColor: theme.blue?.bg ?? "#EFF6FF" }]}>
+            <Text style={{ fontSize: 20 }}>🎸</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.hobbyName, { color: ink }]}>Guitar</Text>
+            <Text style={[styles.hobbyMeta, { color: theme.textSoft }]}>45 min today · 6 day streak 🔥</Text>
+          </View>
+        </View>
+        <View style={[styles.hobbyRow, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <View style={[styles.hobbyIcon, { backgroundColor: theme.teal.bg }]}>
+            <Text style={{ fontSize: 20 }}>🏃</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.hobbyName, { color: ink }]}>Running</Text>
+            <Text style={[styles.hobbyMeta, { color: theme.textSoft }]}>Rest day · 3 day streak</Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  function InsightsPreview() {
+    const cards = [
+      { icon: "📈", title: "Glucose spikes after pasta", sub: "3 of last 4 meals with pasta", color: theme.berry },
+      { icon: "💤", title: "Better sleep → better mood", sub: "clear pattern across 2 weeks", color: theme.violet ?? theme.blue! },
+    ];
+    return (
+      <View style={styles.preview}>
+        {cards.map((ins, i) => (
+          <View key={i} style={[styles.insightCard, { backgroundColor: ins.color.bg, borderColor: ins.color.sub }]}>
+            <Text style={{ fontSize: 22 }}>{ins.icon}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.insightTitle, { color: ins.color.sub }]}>{ins.title}</Text>
+              <Text style={[styles.insightText, { color: theme.textSoft }]}>{ins.sub}</Text>
+            </View>
+          </View>
+        ))}
+        <View style={[styles.weekBadge, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <Text style={{ fontSize: 16 }}>📊</Text>
+          <Text style={[styles.weekBadgeText, { color: ink }]}>Weekly recap ready — tap to review your trends</Text>
+        </View>
+      </View>
+    );
+  }
+
+  function FinancePreview() {
+    return (
+      <View style={styles.preview}>
+        <View style={[styles.bookCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text style={[styles.bookTitle, { color: ink }]}>Monthly Budget</Text>
+            <Text style={[styles.bookAuthor, { color: theme.textSoft }]}>$1,340 / $2,000</Text>
+          </View>
+          <View style={[styles.progressTrack, { backgroundColor: theme.cardBorder, marginTop: 10 }]}>
+            <View style={[styles.progressFill, { backgroundColor: theme.purple?.solid ?? "#7B3FBF", width: "67%" }]} />
+          </View>
+          <Text style={[styles.progressLabel, { color: theme.textSoft }]}>67% used · $660 remaining — on track</Text>
+        </View>
+        {[
+          { cat: "Groceries", amt: "$420", pct: "31%", color: theme.teal.solid },
+          { cat: "Dining Out", amt: "$210", pct: "16%", color: theme.coral.solid },
+          { cat: "Subscriptions", amt: "$85", pct: "6%", color: theme.purple?.solid ?? "#7B3FBF" },
+        ].map((row) => (
+          <View key={row.cat} style={[styles.mealRow, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+            <View style={[styles.categoryDot, { backgroundColor: row.color }]} />
+            <Text style={[styles.mealName, { color: ink, flex: 1 }]}>{row.cat}</Text>
+            <Text style={[styles.mealMeta, { color: theme.textSoft }]}>{row.pct}</Text>
+            <Text style={[styles.mealName, { color: ink, marginLeft: 8 }]}>{row.amt}</Text>
+          </View>
+        ))}
       </View>
     );
   }
@@ -287,12 +392,12 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
 
   if (step === "walkthrough") {
     const previews: React.ReactNode[] = [
-      <WellnessPreview key="w" />,
-      <MoodPreview key="mo" />,
-      <MealsPreview key="m" />,
-      null, // Mindfulness
-      null, // Trends
-      null, // Life & Finance
+      <HomePreview key="home" />,
+      <HealthPreview key="health" />,
+      <MealsPreview key="meals" />,
+      <HobbiesPreview key="hobbies" />,
+      <InsightsPreview key="insights" />,
+      <FinancePreview key="finance" />,
     ];
 
     return (
@@ -509,7 +614,7 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
     },
     health: {
       emoji: "🏃",
-      accentKey: "berry",
+      accentKey: "teal",
       title: "Connect Health Connect",
       body: (
         <>
@@ -517,9 +622,13 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
             Automatically sync steps, sleep, and heart rate from Android's Health Connect.
           </Text>
           <View style={{ marginTop: 14, gap: 10 }}>
-            {["Steps — daily totals and week-over-week trends", "Sleep — duration and schedule", "Heart rate — resting BPM and daily patterns"].map((item, i) => (
+            {[
+              "Steps — daily totals and week-over-week trends",
+              "Sleep — duration and schedule",
+              "Heart rate — resting BPM and daily patterns",
+            ].map((item, i) => (
               <View key={i} style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}>
-                <View style={[styles.bulletDot, { backgroundColor: theme.berry.solid }]} />
+                <View style={[styles.bulletDot, { backgroundColor: theme.teal.solid }]} />
                 <Text style={[styles.bulletText, { color: theme.textStrong }]}>{item}</Text>
               </View>
             ))}
@@ -541,7 +650,7 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
           <Text style={[styles.stepDesc, { color: theme.textStrong }]}>Notifications are used for:</Text>
           <View style={{ marginTop: 12, gap: 8 }}>
             {[
-              "Smart mood check-ins — a nudge in the afternoon and evening if you haven't checked in yet",
+              "Smart mood check-ins — a nudge in the afternoon and evening if you haven't logged yet",
               "Meal, water, and streak reminders — data-aware nudges, never more than once per window",
               "An optional persistent notification showing live glucose and step count",
             ].map((item, i) => (
@@ -620,21 +729,35 @@ function makeStyles(ink: string, card: string, cardBorder: string, _width: numbe
     bigEmojiBlock: { width: 110, height: 110, borderRadius: 28, borderWidth: 3, alignItems: "center", justifyContent: "center", marginBottom: 24, ...shadow },
     bigEmoji: { fontSize: 50 },
     pageLabel: { fontSize: 11, fontWeight: "800", letterSpacing: 1.4, marginBottom: 8 },
-    pageDesc: { fontSize: 17, fontWeight: "500", textAlign: "center", lineHeight: 26, marginBottom: 20 },
+    pageDesc: { fontSize: 16, fontWeight: "500", textAlign: "center", lineHeight: 25, marginBottom: 20 },
 
-    // ── Preview components ──
+    // ── Preview: shared ──
     preview: { width: "100%", gap: 10 },
+
+    // ── Preview: Home glance chips ──
+    glanceChip: { flex: 1, borderRadius: 12, borderWidth: 1.5, padding: 10, alignItems: "center", gap: 3 },
+    miniChip: { flex: 1, flexDirection: "row", alignItems: "center", borderRadius: 10, borderWidth: 1.5, padding: 10, gap: 8 },
+    miniChipDot: { width: 8, height: 8, borderRadius: 4 },
+    miniChipValue: { fontSize: 14, fontWeight: "800", flex: 1 },
+
+    // ── Preview: Health stat chips ──
     statChip: { flex: 1, minWidth: "45%", borderRadius: 12, borderWidth: 2, padding: 12, gap: 2 },
     statChipDot: { width: 8, height: 8, borderRadius: 4, marginBottom: 4 },
+    statChipLabel: { fontSize: 12, fontWeight: "700" },
     statChipValue: { fontSize: 18, fontWeight: "800" },
     statChipUnit: { fontSize: 12, fontWeight: "500" },
     statChipSub: { fontSize: 11 },
+
+    // ── Preview: Meal rows ──
     mealRow: { flexDirection: "row", alignItems: "center", borderRadius: 10, borderWidth: 1, padding: 12, gap: 12 },
     mealDot: { width: 10, height: 10, borderRadius: 5, flexShrink: 0 },
     mealName: { fontSize: 14, fontWeight: "700" },
     mealMeta: { fontSize: 12, marginTop: 2 },
+    macroChip: { flex: 1, borderRadius: 8, borderWidth: 1.5, padding: 8, alignItems: "center", gap: 2 },
     substanceBadge: { alignSelf: "flex-start", borderRadius: 20, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 6 },
     substanceBadgeText: { fontSize: 13, fontWeight: "700" },
+
+    // ── Preview: Hobbies / Books ──
     bookCard: { borderRadius: 12, borderWidth: 1, padding: 14, gap: 4 },
     bookTitle: { fontSize: 14, fontWeight: "800" },
     bookAuthor: { fontSize: 12, marginBottom: 8 },
@@ -645,6 +768,16 @@ function makeStyles(ink: string, card: string, cardBorder: string, _width: numbe
     hobbyIcon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
     hobbyName: { fontSize: 14, fontWeight: "700" },
     hobbyMeta: { fontSize: 12, marginTop: 2 },
+
+    // ── Preview: Insights ──
+    insightCard: { flexDirection: "row", alignItems: "flex-start", borderRadius: 12, borderWidth: 1.5, padding: 12, gap: 10 },
+    insightTitle: { fontSize: 13, fontWeight: "800", marginBottom: 2 },
+    insightText: { fontSize: 12, lineHeight: 18 },
+    weekBadge: { flexDirection: "row", alignItems: "center", borderRadius: 10, borderWidth: 1, padding: 10, gap: 10 },
+    weekBadgeText: { fontSize: 12, fontWeight: "600", flex: 1 },
+
+    // ── Preview: Finance ──
+    categoryDot: { width: 12, height: 12, borderRadius: 6, flexShrink: 0 },
 
     // ── Theme picker ──
     themeHeader: { paddingHorizontal: 24, paddingBottom: 16 },
@@ -678,7 +811,6 @@ function makeStyles(ink: string, card: string, cardBorder: string, _width: numbe
     regionToggle: { flexDirection: "row", gap: 10, marginTop: 14 },
     regionBtn: { flex: 1, borderRadius: 10, borderWidth: 2, paddingVertical: 10, alignItems: "center" },
     regionBtnText: { fontWeight: "700", fontSize: 14 },
-    helpLink: { fontSize: 13, fontWeight: "600", marginTop: 12, textDecorationLine: "underline" },
 
     // ── Disclosure box ──
     disclosureBox: { marginTop: 16, borderRadius: 12, borderWidth: 2, padding: 14, gap: 4 },
