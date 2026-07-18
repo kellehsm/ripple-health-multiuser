@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { ScrollView, View, Text, Pressable, StyleSheet, Dimensions, Platform, Alert, RefreshControl } from "react-native";
+import { ScrollView, View, Text, Pressable, TextInput, StyleSheet, Dimensions, Platform, Alert, RefreshControl } from "react-native";
 import { LoadingIndicator } from "../components/LoadingIndicator";
 import { useNavigation } from "@react-navigation/native";
 import { useFocusEffect } from "@react-navigation/core";
@@ -13,6 +13,7 @@ import { useTheme } from "../theme/ThemeContext";
 import { onSolid } from "../theme/colorUtils";
 import { Ionicons } from "@expo/vector-icons";
 import { MetricCard } from "../components/MetricCard";
+import { DefinedTerm } from "../components/DefinedTerm";
 import { api } from "../api/client";
 
 import { requestHealthPermissions, syncHealthData } from "../lib/healthConnect";
@@ -130,6 +131,14 @@ export function HealthScreen() {
   const [liveTracking, setLiveTracking] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [staleBannerMessage, setStaleBannerMessage] = useState<string | null>(null);
+
+  // Annotations
+  type Annotation = { id: string; annotated_at: string; label: string };
+  const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const [annotationModalVisible, setAnnotationModalVisible] = useState(false);
+  const [annotationLabel, setAnnotationLabel] = useState("");
+  const [annotationSaving, setAnnotationSaving] = useState(false);
+  const [activeAnnotation, setActiveAnnotation] = useState<Annotation | null>(null);
 
   // Glucose chart scrubbing
   const [scrubInfo, setScrubInfo] = useState<{
@@ -441,6 +450,12 @@ export function HealthScreen() {
     };
   }, [load, rangeHours]);
 
+  useEffect(function () {
+    const start = new Date(Date.now() - rangeHours * 60 * 60 * 1000).toISOString();
+    const end = new Date().toISOString();
+    api.getAnnotations(start, end).then(setAnnotations).catch(function () {});
+  }, [rangeHours]);
+
   useEffect(function () { loadWater(); }, [loadWater]);
   useEffect(function () { loadStepsAndSleep(); }, [loadStepsAndSleep]);
   useEffect(function () {
@@ -474,6 +489,18 @@ export function HealthScreen() {
 
   const peak = todayReadings.length > 0
     ? Math.max.apply(null, todayReadings.map(function (r) { return Number(r.mg_dl); }))
+    : null;
+
+  // Time in range: readings in window between 70–180 mg/dL
+  const windowReadings = todayReadings.filter(function (r) {
+    const t = new Date(r.recorded_at).getTime();
+    return t >= windowStart && t <= now;
+  });
+  const tirPct = windowReadings.length >= 3
+    ? Math.round((windowReadings.filter(function (r) {
+        const v = Number(r.mg_dl);
+        return v >= 70 && v <= 180;
+      }).length / windowReadings.length) * 100)
     : null;
 
   return (
@@ -579,11 +606,30 @@ export function HealthScreen() {
       <View style={[styles.card, { backgroundColor: theme.card }]}>
         <View style={styles.cardHeaderRow}>
           <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Glucose</Text>
-          {peak !== null ? (
-            <View style={styles.peakBadge}>
-              <Text style={styles.peakBadgeText}>{peak} PEAK</Text>
-            </View>
-          ) : null}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1, justifyContent: "flex-end", flexWrap: "wrap" }}>
+            {tirPct !== null ? (
+              <DefinedTerm term="time_in_range">
+                <View style={[styles.tirBadge, { backgroundColor: tirPct >= 70 ? theme.teal.bg : theme.amber.bg, borderColor: tirPct >= 70 ? theme.teal.sub : theme.amber.sub }]}>
+                  <Text style={[styles.tirBadgeText, { color: tirPct >= 70 ? theme.teal.sub : theme.amber.sub }]}>
+                    {tirPct}% IN RANGE
+                  </Text>
+                </View>
+              </DefinedTerm>
+            ) : null}
+            {peak !== null ? (
+              <View style={styles.peakBadge}>
+                <Text style={styles.peakBadgeText}>{peak} PEAK</Text>
+              </View>
+            ) : null}
+            <Pressable
+              onPress={() => setAnnotationModalVisible(true)}
+              style={[styles.addAnnotationBtn, { borderColor: ink }]}
+              accessibilityLabel="Add chart annotation"
+              hitSlop={6}
+            >
+              <Ionicons name="flag-outline" size={14} color={ink} />
+            </Pressable>
+          </View>
         </View>
 
         {/* Range selector buttons */}
@@ -694,6 +740,21 @@ export function HealthScreen() {
                   );
                 })}
 
+                {/* Annotation vertical lines */}
+                {annotations.map(function (ann) {
+                  const t = new Date(ann.annotated_at).getTime();
+                  if (t < windowStart || t > now) return null;
+                  const ax = PAD_LEFT + ((t - windowStart) / (now - windowStart)) * (CHART_WIDTH - PAD_LEFT);
+                  return (
+                    <React.Fragment key={ann.id}>
+                      <Line x1={ax} x2={ax} y1={PAD_TOP} y2={CHART_HEIGHT - PAD_BOTTOM}
+                        stroke={theme.amber?.solid ?? "#F59E0B"} strokeWidth={1.5} strokeDasharray="3,3" opacity={0.8} />
+                      <Circle cx={ax} cy={PAD_TOP + 4} r={4}
+                        fill={theme.amber?.solid ?? "#F59E0B"} stroke={ink} strokeWidth={1} />
+                    </React.Fragment>
+                  );
+                })}
+
                 {/* Scrub indicator: vertical line + hit dots */}
                 {scrubInfo ? (
                   <>
@@ -761,7 +822,93 @@ export function HealthScreen() {
             <View style={[styles.legendDot, { backgroundColor: theme.textSoft, opacity: 0.4 }]} />
             <Text style={{ color: theme.textSoft, fontSize: 11 }}>Yesterday</Text>
           </View>
+          {annotations.filter(function (a) {
+            const t = new Date(a.annotated_at).getTime();
+            return t >= windowStart && t <= now;
+          }).length > 0 ? (
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: theme.amber?.solid ?? "#F59E0B" }]} />
+              <Text style={{ color: theme.textSoft, fontSize: 11 }}>Annotations</Text>
+            </View>
+          ) : null}
         </View>
+
+        {/* Annotation chips for this window */}
+        {annotations.filter(function (a) {
+          const t = new Date(a.annotated_at).getTime();
+          return t >= windowStart && t <= now;
+        }).map(function (ann) {
+          const d = new Date(ann.annotated_at);
+          const timeLabel = d.getHours() % 12 || 12
+            + ":" + String(d.getMinutes()).padStart(2, "0")
+            + (d.getHours() >= 12 ? "pm" : "am");
+          return (
+            <Pressable
+              key={ann.id}
+              onPress={function () { setActiveAnnotation(activeAnnotation?.id === ann.id ? null : ann); }}
+              style={[styles.annotationChip, { backgroundColor: theme.amber?.bg ?? "#FFF7ED", borderColor: theme.amber?.sub ?? "#D97706" }]}
+              accessibilityLabel={"Annotation: " + ann.label}
+            >
+              <Text style={{ fontSize: 12 }}>🚩</Text>
+              <Text style={[styles.annotationChipLabel, { color: theme.textStrong }]} numberOfLines={1}>{ann.label}</Text>
+              <Text style={[styles.annotationChipTime, { color: theme.textSoft }]}>{timeLabel}</Text>
+              <Pressable
+                onPress={function () {
+                  api.deleteAnnotation(ann.id).then(function () {
+                    setAnnotations(function (prev) { return prev.filter(function (a) { return a.id !== ann.id; }); });
+                    if (activeAnnotation?.id === ann.id) setActiveAnnotation(null);
+                  }).catch(function () {});
+                }}
+                hitSlop={8}
+              >
+                <Ionicons name="close-circle" size={14} color={theme.textSoft} />
+              </Pressable>
+            </Pressable>
+          );
+        })}
+
+        {/* Add annotation modal */}
+        {annotationModalVisible ? (
+          <View style={[styles.annotationModalCard, { backgroundColor: theme.card, borderColor: ink }]}>
+            <Text style={[styles.annotationModalTitle, { color: theme.textStrong }]}>Add marker</Text>
+            <TextInput
+              style={[styles.annotationInput, { backgroundColor: theme.page, borderColor: ink, color: theme.textStrong }]}
+              placeholder="e.g. Started new medication"
+              placeholderTextColor={theme.textSoft}
+              value={annotationLabel}
+              onChangeText={setAnnotationLabel}
+              maxLength={80}
+              autoFocus
+            />
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 10 }}>
+              <Pressable
+                style={[styles.annotationBtn, { backgroundColor: ink, flex: 1 }]}
+                onPress={async function () {
+                  if (!annotationLabel.trim()) return;
+                  setAnnotationSaving(true);
+                  try {
+                    const ann = await api.createAnnotation(new Date().toISOString(), annotationLabel.trim());
+                    setAnnotations(function (prev) { return [...prev, ann]; });
+                    setAnnotationLabel("");
+                    setAnnotationModalVisible(false);
+                  } catch { }
+                  finally { setAnnotationSaving(false); }
+                }}
+                disabled={annotationSaving || !annotationLabel.trim()}
+              >
+                {annotationSaving
+                  ? <LoadingIndicator color="#fff" />
+                  : <Text style={styles.annotationBtnText}>Save</Text>}
+              </Pressable>
+              <Pressable
+                style={[styles.annotationBtn, { backgroundColor: theme.card, borderWidth: 2, borderColor: ink, flex: 1 }]}
+                onPress={function () { setAnnotationModalVisible(false); setAnnotationLabel(""); }}
+              >
+                <Text style={[styles.annotationBtnText, { color: ink }]}>Cancel</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
 
         {status && status.isStale ? (
           <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 8 }}>
@@ -993,5 +1140,31 @@ function makeStyles(ink: string, card: string) {
     elevation: 2,
   },
   hcBtnText: { fontSize: 11, fontWeight: "800", letterSpacing: 0.5 },
+  tirBadge: { borderRadius: 8, borderWidth: 1.5, paddingHorizontal: 8, paddingVertical: 3 },
+  tirBadgeText: { fontSize: 10, fontWeight: "800", letterSpacing: 0.4 },
+  addAnnotationBtn: {
+    width: 26, height: 26, borderRadius: 8, borderWidth: 1.5,
+    alignItems: "center", justifyContent: "center",
+  },
+  annotationChip: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 10, paddingVertical: 7,
+    marginTop: 6,
+  },
+  annotationChipLabel: { flex: 1, fontSize: 12, fontWeight: "700" },
+  annotationChipTime: { fontSize: 11 },
+  annotationModalCard: {
+    borderRadius: 12, borderWidth: 2, padding: 14, marginTop: 10,
+    shadowColor: ink, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4,
+  },
+  annotationModalTitle: { fontSize: 14, fontWeight: "800", marginBottom: 10 },
+  annotationInput: {
+    borderWidth: 2, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10,
+    fontSize: 14,
+  },
+  annotationBtn: {
+    borderRadius: 8, paddingVertical: 10, alignItems: "center",
+  },
+  annotationBtnText: { color: "#fff", fontWeight: "800", fontSize: 13 },
   });
 }

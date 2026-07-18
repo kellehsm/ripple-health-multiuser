@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ScrollView, View, Text, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../theme/ThemeContext";
 
 type FaqItem = { q: string; a: string };
@@ -113,6 +114,7 @@ const FAQ: FaqSection[] = [
 
 export function HelpScreen() {
   const { theme } = useTheme();
+  const navigation = useNavigation<any>();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   function toggle(key: string) {
@@ -121,6 +123,23 @@ export function HelpScreen() {
 
   return (
     <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content}>
+      {/* App tour replay */}
+      <Pressable
+        style={[styles.tourCard, { backgroundColor: theme.card, borderColor: theme.ink }]}
+        onPress={() => navigation.navigate("OnboardingReplay")}
+        accessibilityRole="button"
+        accessibilityLabel="Replay the app tour"
+      >
+        <Text style={{ fontSize: 24 }}>🗺️</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.tourTitle, { color: theme.textStrong }]}>Replay app tour</Text>
+          <Text style={[styles.tourSub, { color: theme.textSoft }]}>
+            Walk through each section of Ripple again
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={theme.textSoft} />
+      </Pressable>
+
       <Text style={[styles.intro, { color: theme.textSoft }]}>
         Find answers to common questions about Ripple Wellness.
       </Text>
@@ -153,6 +172,22 @@ export function HelpScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: 16 },
+  tourCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    borderRadius: 14,
+    borderWidth: 2,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: "#111",
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
+  },
+  tourTitle: { fontSize: 15, fontWeight: "800" },
+  tourSub: { fontSize: 12, marginTop: 2 },
   intro: { fontSize: 13, marginBottom: 16, lineHeight: 18 },
   sectionLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.2, marginBottom: 6 },
   card: { borderRadius: 14, borderWidth: 2 },

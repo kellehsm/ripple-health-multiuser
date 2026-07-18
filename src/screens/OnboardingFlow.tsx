@@ -70,7 +70,7 @@ const WALK_PAGES: Array<{
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
+export function OnboardingFlow({ onComplete, replayMode }: { onComplete: () => void; replayMode?: boolean }) {
   const { theme, paletteId, setPalette } = useTheme();
   const ink = theme.ink;
   const { width } = useWindowDimensions();
@@ -104,6 +104,8 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
       scrollRef.current?.scrollTo({ x: next * width, animated: true });
       setPage(next);
     } else {
+      // In replay mode, walkthrough ends here — no setup steps
+      if (replayMode) { onComplete(); return; }
       setStep("theme");
     }
   }
@@ -403,8 +405,14 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
     return (
       <View style={[styles.screen, { backgroundColor: theme.page }]}>
         <View style={styles.topBar}>
-          <Pressable onPress={() => setStep("theme")} hitSlop={12} style={styles.skipTouchable}>
-            <Text style={[styles.skipText, { color: theme.textSoft }]}>Skip tour</Text>
+          <Pressable
+            onPress={() => replayMode ? onComplete() : setStep("theme")}
+            hitSlop={12}
+            style={styles.skipTouchable}
+          >
+            <Text style={[styles.skipText, { color: theme.textSoft }]}>
+              {replayMode ? "Close" : "Skip tour"}
+            </Text>
           </Pressable>
         </View>
 

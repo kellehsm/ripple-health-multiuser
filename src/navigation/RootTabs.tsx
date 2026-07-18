@@ -20,6 +20,7 @@ import { MindfulnessScreen } from "../screens/MindfulnessScreen";
 import { CustomizeDashboardScreen } from "../screens/CustomizeDashboardScreen";
 import { GlobalSearchScreen } from "../screens/GlobalSearchScreen";
 import { HelpScreen } from "../screens/HelpScreen";
+import { OnboardingFlow } from "../screens/OnboardingFlow";
 import { useTheme } from "../theme/ThemeContext";
 import { navigationRef } from "./navigationRef";
 
@@ -205,6 +206,14 @@ export function RootTabs() {
         <Stack.Screen name="CustomizeDashboard" component={CustomizeDashboardScreen} options={{ title: "Customize Dashboard" }} />
         <Stack.Screen name="GlobalSearch" component={GlobalSearchScreen} options={{ title: "Search" }} />
         <Stack.Screen name="Help" component={HelpScreen} options={{ title: "Help & FAQ" }} />
+        <Stack.Screen
+          name="OnboardingReplay"
+          options={{ headerShown: false, presentation: "fullScreenModal" }}
+        >
+          {({ navigation }) => (
+            <OnboardingFlow replayMode onComplete={() => navigation.goBack()} />
+          )}
+        </Stack.Screen>
       </Stack.Navigator>
     </NavigationContainer>
   );
