@@ -430,6 +430,14 @@ export const api = {
     return request("/settings/sync-status");
   },
 
+  // ── Tab preferences ───────────────────────────────────────────────────────────
+  getTabPreferences: function () {
+    return request('/user/tab-preferences');
+  },
+  putTabPreferences: function (prefs: object) {
+    return request('/user/tab-preferences', { method: 'PUT', body: JSON.stringify(prefs) });
+  },
+
   // ── Chart annotations ─────────────────────────────────────────────────────────
   getAnnotations: function (start: string, end: string) {
     return request("/annotations?start=" + encodeURIComponent(start) + "&end=" + encodeURIComponent(end));

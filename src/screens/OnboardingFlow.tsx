@@ -16,11 +16,12 @@ import { GOOGLE_CLIENT_ID, api } from "../api/client";
 import { getUserId } from "../lib/auth";
 import { requestHealthPermissions } from "../lib/healthConnect";
 import { PALETTES, PALETTE_GROUPS } from "../theme/palettes";
+import { TabPreferencesScreen } from "./TabPreferencesScreen";
 WebBrowser.maybeCompleteAuthSession();
 
 type AccentKey = "teal" | "coral" | "blue" | "amber" | "purple" | "berry" | "violet" | "red";
 
-type Step = "walkthrough" | "theme" | "health" | "drive" | "dexcom" | "notifications";
+type Step = "walkthrough" | "theme" | "tabs" | "health" | "drive" | "dexcom" | "notifications";
 
 // ── Walkthrough page definitions ──────────────────────────────────────────────
 
@@ -91,7 +92,8 @@ export function OnboardingFlow({ onComplete, replayMode }: { onComplete: () => v
 
   function advance() {
     if (step === "walkthrough") setStep("theme");
-    else if (step === "theme") setStep("health");
+    else if (step === "theme") setStep("tabs");
+    else if (step === "tabs") setStep("health");
     else if (step === "health") setStep("drive");
     else if (step === "drive") { setDriveError(null); setStep("dexcom"); }
     else if (step === "dexcom") { setDexcomError(null); setStep("notifications"); }
@@ -511,6 +513,16 @@ export function OnboardingFlow({ onComplete, replayMode }: { onComplete: () => v
     );
   }
 
+  // ── Tabs picker step ──────────────────────────────────────────────────────────
+
+  if (step === "tabs") {
+    return (
+      <View style={[styles.screen, { backgroundColor: theme.page }]}>
+        <TabPreferencesScreen mode="onboarding" onDone={advance} />
+      </View>
+    );
+  }
+
   // ── Integration step configs ──────────────────────────────────────────────────
 
   type StepCfg = {
@@ -523,7 +535,7 @@ export function OnboardingFlow({ onComplete, replayMode }: { onComplete: () => v
     skipLabel?: string;
   };
 
-  const stepCfg: Record<Exclude<Step, "walkthrough" | "theme">, StepCfg> = {
+  const stepCfg: Record<Exclude<Step, "walkthrough" | "theme" | "tabs">, StepCfg> = {
     drive: {
       emoji: "🗂️",
       accentKey: "teal",
@@ -678,7 +690,7 @@ export function OnboardingFlow({ onComplete, replayMode }: { onComplete: () => v
     },
   };
 
-  const cfg = stepCfg[step as Exclude<Step, "walkthrough" | "theme">];
+  const cfg = stepCfg[step as Exclude<Step, "walkthrough" | "theme" | "tabs">];
   const accent = theme[cfg.accentKey] as any;
 
   return (
