@@ -71,10 +71,10 @@
       "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
-    "owner": "kellehjs",
+    "owner": "kellyjas-team",
     "extra": {
       "eas": {
-        "projectId": "6a8534d7-4d01-4882-b591-397d26c93713"
+        "projectId": "e9f6c0bb-24a1-412f-8947-c886d73b8918"
       }
     }
   }
