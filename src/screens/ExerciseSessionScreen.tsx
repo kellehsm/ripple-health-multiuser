@@ -58,12 +58,20 @@ export function ExerciseSessionScreen() {
   const [finishing, setFinishing] = useState(false);
   const [elapsed, setElapsed] = useState('00:00');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Prevents the interval from being created more than once per mount,
+  // even if useFocusEffect fires multiple times (re-navigation, tab switch).
+  const timerStartedRef = useRef(false);
+  // Prevents setStartedAt from being called again on re-focus — the absolute
+  // started_at value never changes, so resetting it would re-trigger useEffect
+  // and create a duplicate interval.
+  const sessionLoadedRef = useRef(false);
 
-  // Load session details
-  const loadSession = useCallback(async () => {
+  // Load session details — on first focus, capture startedAt to seed the timer.
+  // On subsequent focuses (navigate away → back), only refresh entries.
+  const loadSession = useCallback(async (firstLoad = false) => {
     try {
       const s = await api.getExerciseSession(sessionId);
-      setStartedAt(s.started_at);
+      if (firstLoad) setStartedAt(s.started_at);
       setEntries(s.entries ?? []);
     } catch {
       Alert.alert('Error', 'Could not load session.');
@@ -73,15 +81,24 @@ export function ExerciseSessionScreen() {
   }, [sessionId]);
 
   useFocusEffect(useCallback(() => {
-    loadSession();
+    if (!sessionLoadedRef.current) {
+      sessionLoadedRef.current = true;
+      loadSession(true);   // first focus: fetch startedAt + entries
+    } else {
+      loadSession(false);  // re-focus: refresh entries only, timer keeps running
+    }
   }, [loadSession]));
 
-  // Timer
+  // Timer — starts once when startedAt is first set, never restarts on re-focus.
   useEffect(() => {
-    if (!startedAt) return;
+    if (!startedAt || timerStartedRef.current) return;
+    timerStartedRef.current = true;
     setElapsed(formatElapsed(startedAt));
     timerRef.current = setInterval(() => setElapsed(formatElapsed(startedAt)), 1000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    return () => {
+      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+      timerStartedRef.current = false;
+    };
   }, [startedAt]);
 
   async function handleAdd(exercise: any, form: { sets?: number; reps?: number; duration_seconds?: number }) {
