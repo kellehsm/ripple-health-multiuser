@@ -452,7 +452,16 @@ export const api = {
   finishExerciseSession: function (id: string) {
     return request('/exercise/sessions/' + id, { method: 'PATCH', body: JSON.stringify({ ended_at: new Date().toISOString() }) });
   },
-  addExerciseEntry: function (sessionId: string, payload: { exercise_id: string; sets?: number; reps?: number; duration_seconds?: number }) {
+  addExerciseEntry: function (sessionId: string, payload: {
+    exercise_id: string;
+    sets?: number;
+    reps?: number;
+    duration_seconds?: number;
+    weight_used?: number;
+    target_rep_range_min?: number;
+    target_rep_range_max?: number;
+    actual_reps_per_set?: number[];
+  }) {
     return request('/exercise/sessions/' + sessionId + '/entries', { method: 'POST', body: JSON.stringify(payload) });
   },
   deleteExerciseEntry: function (entryId: string) {

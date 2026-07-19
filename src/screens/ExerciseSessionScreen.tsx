@@ -15,6 +15,11 @@ interface LogEntry {
   duration_seconds: number | null;
   logged_at: string;
   sort_order: number;
+  weight_used: number | null;
+  target_rep_range_min: number | null;
+  target_rep_range_max: number | null;
+  actual_reps_per_set: number[] | null;
+  all_sets_maxed: boolean | null;
   exercise: {
     id: string;
     name: string;
@@ -34,8 +39,15 @@ function formatElapsed(startedAt: string): string {
 }
 
 function entryLabel(entry: LogEntry): string {
-  if (entry.sets && entry.reps) return `${entry.sets} × ${entry.reps} reps`;
-  if (entry.sets) return `${entry.sets} set${entry.sets > 1 ? 's' : ''}`;
+  const wt = entry.weight_used ? ` @ ${entry.weight_used} lbs` : '';
+  if (entry.actual_reps_per_set && entry.actual_reps_per_set.length > 0) {
+    const arr = entry.actual_reps_per_set;
+    const allSame = arr.every((r) => r === arr[0]);
+    if (allSame) return `${arr.length} × ${arr[0]} reps${wt}`;
+    return `${arr.join('/')} reps${wt}`;
+  }
+  if (entry.sets && entry.reps) return `${entry.sets} × ${entry.reps} reps${wt}`;
+  if (entry.sets) return `${entry.sets} set${entry.sets > 1 ? 's' : ''}${wt}`;
   if (entry.duration_seconds) {
     const m = Math.floor(entry.duration_seconds / 60);
     const s = entry.duration_seconds % 60;
@@ -101,7 +113,11 @@ export function ExerciseSessionScreen() {
     };
   }, [startedAt]);
 
-  async function handleAdd(exercise: any, form: { sets?: number; reps?: number; duration_seconds?: number }) {
+  async function handleAdd(exercise: any, form: {
+    sets?: number; reps?: number; duration_seconds?: number;
+    weight_used?: number; target_rep_range_min?: number; target_rep_range_max?: number;
+    actual_reps_per_set?: number[];
+  }) {
     try {
       const entry = await api.addExerciseEntry(sessionId, {
         exercise_id: exercise.id,
