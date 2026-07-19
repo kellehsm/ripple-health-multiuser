@@ -22,18 +22,25 @@ interface HRSummary {
   sample_count: number;
 }
 
+interface SessionEntry {
+  id: string;
+  sets: number | null;
+  reps: number | null;
+  duration_seconds: number | null;
+  weight_used: number | null;
+  target_rep_range_min: number | null;
+  target_rep_range_max: number | null;
+  actual_reps_per_set: number[] | null;
+  all_sets_maxed: boolean | null;
+  exercise: { id: string; name: string; category: string; primary_muscles: string[] };
+}
+
 interface SessionDetail {
   id: string;
   started_at: string;
   ended_at: string;
   duration_seconds: number;
-  entries: Array<{
-    id: string;
-    sets: number | null;
-    reps: number | null;
-    duration_seconds: number | null;
-    exercise: { id: string; name: string; category: string; primary_muscles: string[] };
-  }>;
+  entries: SessionEntry[];
   hr_summary: HRSummary | null;
   hr_samples: Array<{ recorded_at: string; bpm: number }>;
 }
@@ -45,9 +52,16 @@ function formatDuration(seconds: number): string {
   return `${m} min`;
 }
 
-function entryLabel(entry: SessionDetail['entries'][0]): string {
-  if (entry.sets && entry.reps) return `${entry.sets} × ${entry.reps} reps`;
-  if (entry.sets) return `${entry.sets} set${entry.sets > 1 ? 's' : ''}`;
+function entryLabel(entry: SessionEntry): string {
+  const wt = entry.weight_used ? ` @ ${entry.weight_used} lbs` : '';
+  if (entry.actual_reps_per_set && entry.actual_reps_per_set.length > 0) {
+    const arr = entry.actual_reps_per_set;
+    const allSame = arr.every((r) => r === arr[0]);
+    if (allSame) return `${arr.length} × ${arr[0]} reps${wt}`;
+    return `${arr.join('/')} reps${wt}`;
+  }
+  if (entry.sets && entry.reps) return `${entry.sets} × ${entry.reps} reps${wt}`;
+  if (entry.sets) return `${entry.sets} set${entry.sets > 1 ? 's' : ''}${wt}`;
   if (entry.duration_seconds) {
     const m = Math.floor(entry.duration_seconds / 60);
     const s = entry.duration_seconds % 60;
@@ -239,6 +253,13 @@ export function ExerciseDetailScreen() {
                       {entry.exercise.primary_muscles.slice(0, 2).join(', ')}
                     </Text>
                   )}
+                  {entry.all_sets_maxed === true && entry.weight_used != null && (
+                    <View style={[styles.progressionBadge, { backgroundColor: theme.teal.tint, borderColor: theme.teal.solid }]}>
+                      <Text style={[styles.progressionText, { color: theme.teal.sub }]}>
+                        All sets maxed — add weight next time
+                      </Text>
+                    </View>
+                  )}
                 </View>
                 <Text style={[styles.exerciseDetail, { color: theme.teal.fg }]}>{entryLabel(entry)}</Text>
               </View>
@@ -282,7 +303,16 @@ const styles = StyleSheet.create({
   zoneSwatch: { width: 10, height: 10, borderRadius: 5 },
   zoneLegendText: { fontSize: 11 },
   noZoneHint: { fontSize: 11, lineHeight: 17 },
-  exerciseRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
+  exerciseRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 6 },
+  progressionBadge: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  progressionText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
   exerciseName: { fontSize: 14, fontWeight: '700' },
   exerciseMuscles: { fontSize: 11, textTransform: 'capitalize', marginTop: 2 },
   exerciseDetail: { fontSize: 13, fontWeight: '700' },

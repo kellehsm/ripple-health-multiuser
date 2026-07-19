@@ -36,9 +36,18 @@ export function MedicationImportScreen() {
   async function pickFile() {
     setLoading(true);
     try {
-      const result = await DocumentPicker.getDocumentAsync({ type: 'text/csv' });
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['text/csv', 'text/plain', 'text/comma-separated-values',
+               'application/csv', 'application/vnd.ms-excel', '*/*'],
+        copyToCacheDirectory: true,
+      });
       if (result.canceled || !result.assets || result.assets.length === 0) return;
-      const uri = result.assets[0].uri;
+      const asset = result.assets[0];
+      if (!asset.name?.toLowerCase().endsWith('.csv')) {
+        Alert.alert('Wrong file type', 'Please select a .csv file.');
+        return;
+      }
+      const uri = asset.uri;
       const fileContent = await FileSystem.readAsStringAsync(uri);
       const res = await api.previewMedicationImport(fileContent);
       const parsed: ParsedMedRow[] = res?.rows ?? [];
