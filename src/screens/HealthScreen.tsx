@@ -85,7 +85,7 @@ function getTimeTicks(windowStart: number, windowEnd: number, rangeHours: number
   return ticks;
 }
 
-const WATER_GOAL = 8;
+const DEFAULT_WATER_GOAL = 8;
 
 function formatSleepDuration(start: string, end: string): string {
   const totalMins = Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000);
@@ -131,6 +131,7 @@ export function HealthScreen() {
   const [liveTracking, setLiveTracking] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [staleBannerMessage, setStaleBannerMessage] = useState<string | null>(null);
+  const [waterGoal, setWaterGoal] = useState(DEFAULT_WATER_GOAL);
 
   // Annotations
   type Annotation = { id: string; annotated_at: string; label: string };
@@ -456,6 +457,12 @@ export function HealthScreen() {
     api.getAnnotations(start, end).then(setAnnotations).catch(function () {});
   }, [rangeHours]);
 
+  useEffect(function () {
+    api.getSettings().then(function (s: any) {
+      const goal = s?.smart_notifications?.water_reminder?.goal;
+      if (typeof goal === 'number' && goal > 0) setWaterGoal(goal);
+    }).catch(function () {});
+  }, []);
   useEffect(function () { loadWater(); }, [loadWater]);
   useEffect(function () { loadStepsAndSleep(); }, [loadStepsAndSleep]);
   useEffect(function () {
@@ -567,7 +574,7 @@ export function HealthScreen() {
         <View style={styles.halfCell}>
           <MetricCard
             label="Water"
-            value={waterCount !== null ? waterCount + " / " + WATER_GOAL : "-- / " + WATER_GOAL}
+            value={waterCount !== null ? waterCount + " / " + waterGoal : "-- / " + waterGoal}
             icon="water"
             colorKey="blue"
             variant="tint"
@@ -678,6 +685,14 @@ export function HealthScreen() {
 
         {loading ? (
           <LoadingIndicator style={{ marginVertical: 30 }} />
+        ) : todayReadings.length === 0 && !status?.hasData ? (
+          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink, marginTop: 12 }]}>
+            <Text style={{ color: theme.textStrong, fontWeight: '700', marginBottom: 4 }}>No glucose data</Text>
+            <Text style={{ color: theme.textSoft, fontSize: 13 }}>Connect Dexcom to see your glucose readings here.</Text>
+            <Pressable onPress={() => navigation.navigate('SettingsDexcom')} style={{ marginTop: 10 }}>
+              <Text style={{ color: theme.teal.solid, fontWeight: '700' }}>Connect Dexcom →</Text>
+            </Pressable>
+          </View>
         ) : todayReadings.length === 0 ? (
           <Text style={{ color: theme.textSoft, fontSize: 12, marginTop: 10 }}>
             No glucose readings in this window yet.
