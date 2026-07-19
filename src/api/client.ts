@@ -1,7 +1,8 @@
 import { getToken } from "../lib/auth";
 import { setNetworkOnline } from "../utils/networkState";
+import Constants from "expo-constants";
 
-const BASE_URL = __DEV__ ? "http://129.121.125.214:4002" : "https://app.kels.gg/api";
+const BASE_URL: string = (Constants.expoConfig?.extra as any)?.apiBaseUrl ?? "http://129.121.125.214:4002";
 
 async function request(path: string, options: RequestInit = {}): Promise<any> {
   const token = await getToken();
@@ -602,8 +603,16 @@ export const api = {
   triggerMedicationRxNorm: function (id: string) {
     return request('/medications/' + id + '/rxnorm', { method: 'POST', body: JSON.stringify({}) });
   },
+  getMedicationRxNormByName: function (name: string) {
+    return request('/medications/rxnorm-by-name?name=' + encodeURIComponent(name));
+  },
   getMedicationLabel: function (id: string) {
     return request('/medications/' + id + '/label');
+  },
+
+  // ── Mindfulness ───────────────────────────────────────────────────────────────
+  logMindfulness: function (payload: { type: string; duration_seconds?: number }) {
+    return request('/mindfulness/log', { method: 'POST', body: JSON.stringify(payload) });
   },
 
   // ── Tab preferences ───────────────────────────────────────────────────────────
