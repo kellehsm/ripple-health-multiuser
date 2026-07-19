@@ -21,11 +21,11 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   { id: 'finance',  label: 'Finance',  emoji: '💳' },
 ];
 
-export const HOME_MODULE: ModuleDefinition = {
-  id: 'home' as unknown as ModuleId,
+export const HOME_MODULE = {
+  id: 'home' as const,
   label: 'Home',
   emoji: '🏠',
-};
+} as const;
 
 export interface HealthSubPreferences {
   medication: boolean;

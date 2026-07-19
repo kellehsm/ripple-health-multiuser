@@ -10,11 +10,11 @@ import { LoadingIndicator } from '../components/LoadingIndicator';
 const IMAGE_BASE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
 
 const ZONES = [
-  { name: 'very_light', label: 'Very light', color: '#9FE1CB' },
-  { name: 'light',      label: 'Light',      color: '#5DCAA5' },
-  { name: 'moderate',   label: 'Moderate',   color: '#1D9E75' },
-  { name: 'hard',       label: 'Hard',       color: '#F0997B' },
-  { name: 'maximum',    label: 'Maximum',    color: '#D85A30' },
+  { name: 'very_light', label: 'Very light', color: '#8ED4D8' }, // teal
+  { name: 'light',      label: 'Light',      color: '#B092D9' }, // purple
+  { name: 'moderate',   label: 'Moderate',   color: '#F2A28C' }, // coral
+  { name: 'hard',       label: 'Hard',       color: '#CE7A92' }, // berry
+  { name: 'maximum',    label: 'Maximum',    color: '#A62A50' }, // deep berry
 ] as const;
 
 interface HRSummary {
