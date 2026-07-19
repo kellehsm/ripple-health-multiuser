@@ -25,6 +25,20 @@ const SUGGESTION_ICON: Record<string, string> = {
   generic: '💪',
 };
 
+interface ActiveProgram {
+  id: string;
+  name: string;
+  days_per_week: number;
+  preferred_minutes: number;
+  is_active: boolean;
+  days: Array<{
+    id: string;
+    day_number: number;
+    focus: string;
+    exercises: Array<{ exercise_id: string; name: string; sets: number; rep_range_min: number; rep_range_max: number }>;
+  }>;
+}
+
 interface ExerciseSession {
   id: string;
   started_at: string;
@@ -50,6 +64,11 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+const FOCUS_LABEL: Record<string, string> = {
+  push: 'Push', pull: 'Pull', legs: 'Legs',
+  upper: 'Upper Body', lower: 'Lower Body', full_body: 'Full Body',
+};
+
 export function ExerciseScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<any>();
@@ -59,6 +78,7 @@ export function ExerciseScreen() {
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [suggestion, setSuggestion] = useState<WorkoutSuggestion | null>(null);
+  const [activeProgram, setActiveProgram] = useState<ActiveProgram | null>(null);
 
   // Wizard gate — null = loading, false = show wizard, true = show main screen
   const [wizardDone, setWizardDone] = useState<boolean | null>(null);
@@ -69,10 +89,12 @@ export function ExerciseScreen() {
       api.getWorkoutWizardStatus().catch(() => ({ complete: true })),
       api.listExerciseSessions(20, 0).catch(() => []),
       api.getExerciseSuggestion().catch(() => null),
-    ]).then(([status, sessionList, sug]) => {
+      api.listWorkoutPrograms().catch(() => []),
+    ]).then(([status, sessionList, sug, progs]) => {
       setWizardDone(status.complete === true);
       setSessions(sessionList ?? []);
       setSuggestion(sug ?? null);
+      setActiveProgram((progs as any[]).find((p: any) => p.is_active) ?? null);
     }).finally(() => setLoading(false));
   }, []));
 
@@ -99,7 +121,16 @@ export function ExerciseScreen() {
 
   // Wizard not yet completed — show setup wizard
   if (!wizardDone) {
-    return <WorkoutSetupWizard onComplete={() => setWizardDone(true)} />;
+    return (
+      <WorkoutSetupWizard
+        onComplete={() => {
+          setWizardDone(true);
+          api.listWorkoutPrograms()
+            .then((progs: any[]) => setActiveProgram((progs ?? []).find((p: any) => p.is_active) ?? null))
+            .catch(() => {});
+        }}
+      />
+    );
   }
 
   // Check if there's an open (unfinished) session
@@ -138,6 +169,37 @@ export function ExerciseScreen() {
               : <Text style={[styles.startBtnText, { color: theme.page }]}>🏃 Start workout session</Text>
             }
           </Pressable>
+        )}
+
+        {/* Active workout program */}
+        {activeProgram && (
+          <>
+            <Text style={[styles.sectionLabel, { color: theme.textSoft }]}>YOUR PLAN</Text>
+            <View style={[styles.programCard, { backgroundColor: theme.card, borderColor: ink, shadowColor: ink }]}>
+              <Text style={[styles.programName, { color: theme.textStrong }]}>{activeProgram.name}</Text>
+              <Text style={{ color: theme.textSoft, fontSize: 12, marginBottom: 8 }}>
+                {activeProgram.preferred_minutes} min · {activeProgram.days_per_week} day{activeProgram.days_per_week !== 1 ? 's' : ''}/week
+              </Text>
+              {(activeProgram.days ?? []).map((day, i) => (
+                <View
+                  key={day.id}
+                  style={[styles.programDay, { borderTopColor: theme.cardBorder ?? '#E5E7EB', borderTopWidth: i === 0 ? 0 : 1 }]}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                    <View style={[styles.dayBadge, { backgroundColor: theme.teal?.solid ?? ink }]}>
+                      <Text style={{ color: '#fff', fontWeight: '800', fontSize: 11 }}>D{day.day_number}</Text>
+                    </View>
+                    <Text style={{ color: theme.textStrong, fontWeight: '700', fontSize: 13 }}>
+                      {FOCUS_LABEL[day.focus] ?? day.focus}
+                    </Text>
+                  </View>
+                  <Text style={{ color: theme.textSoft, fontSize: 12, lineHeight: 17 }} numberOfLines={2}>
+                    {(day.exercises ?? []).map((e) => e.name).join(' · ')}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </>
         )}
 
         {/* Suggestion card */}
@@ -271,4 +333,16 @@ const styles = StyleSheet.create({
   sessionDuration: { fontSize: 13 },
   sessionExercises: { fontSize: 13 },
   sessionCount: { fontSize: 12, fontWeight: '700' },
+  programCard: {
+    borderRadius: 14,
+    borderWidth: 2,
+    padding: 14,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
+  },
+  programName: { fontSize: 15, fontWeight: '900', marginBottom: 2 },
+  programDay: { paddingTop: 8, marginTop: 6 },
+  dayBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
 });
