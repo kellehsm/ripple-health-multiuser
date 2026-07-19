@@ -430,6 +430,43 @@ export const api = {
     return request("/settings/sync-status");
   },
 
+  // ── Exercise ──────────────────────────────────────────────────────────────────
+  searchExerciseLibrary: function (params: { search?: string; muscle?: string; equipment?: string; limit?: number } = {}) {
+    const qs = new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)]))
+    );
+    return request('/exercise/library?' + qs.toString());
+  },
+  getExerciseDetail: function (id: string) {
+    return request('/exercise/library/' + id);
+  },
+  startExerciseSession: function () {
+    return request('/exercise/sessions', { method: 'POST', body: '{}' });
+  },
+  listExerciseSessions: function (limit = 20, offset = 0) {
+    return request(`/exercise/sessions?limit=${limit}&offset=${offset}`);
+  },
+  getExerciseSession: function (id: string) {
+    return request('/exercise/sessions/' + id);
+  },
+  finishExerciseSession: function (id: string) {
+    return request('/exercise/sessions/' + id, { method: 'PATCH', body: JSON.stringify({ ended_at: new Date().toISOString() }) });
+  },
+  addExerciseEntry: function (sessionId: string, payload: { exercise_id: string; sets?: number; reps?: number; duration_seconds?: number }) {
+    return request('/exercise/sessions/' + sessionId + '/entries', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  deleteExerciseEntry: function (entryId: string) {
+    return request('/exercise/log-entries/' + entryId, { method: 'DELETE' });
+  },
+
+  // ── Tab preferences ───────────────────────────────────────────────────────────
+  getTabPreferences: function () {
+    return request('/user/tab-preferences');
+  },
+  putTabPreferences: function (prefs: object) {
+    return request('/user/tab-preferences', { method: 'PUT', body: JSON.stringify(prefs) });
+  },
+
   // ── Chart annotations ─────────────────────────────────────────────────────────
   getAnnotations: function (start: string, end: string) {
     return request("/annotations?start=" + encodeURIComponent(start) + "&end=" + encodeURIComponent(end));

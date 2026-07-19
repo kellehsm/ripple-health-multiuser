@@ -717,9 +717,9 @@ export function HealthScreen() {
                   strokeDasharray="5,5"
                 />
 
-                {/* Yesterday — dotted, low opacity reference line */}
+                {/* Yesterday — dotted reference line */}
                 {yesterdayPoints.length > 0 ? (
-                  <Polyline points={yesterdayPoints} fill="none" stroke={theme.textSoft} strokeWidth={1.5} strokeDasharray="4,4" opacity={0.3} />
+                  <Polyline points={yesterdayPoints} fill="none" stroke={theme.textSoft} strokeWidth={2} strokeDasharray="4,4" opacity={0.65} />
                 ) : null}
 
                 {/* Today — double stroke: ink outline below, color on top */}
@@ -983,46 +983,6 @@ export function HealthScreen() {
         );
       })()}
 
-      {/* Health Connect card (Android only) */}
-      {Platform.OS === "android" ? (
-        <View style={[styles.card, { backgroundColor: theme.card }]}>
-          <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Health Connect</Text>
-          <Pressable
-            onPress={handleHealthConnectSync}
-            disabled={hcSyncing}
-            style={[styles.hcBtn, { backgroundColor: theme.teal.tint }]}
-          >
-            {hcSyncing
-              ? <LoadingIndicator size="small" color={theme.teal.fg} />
-              : <Text style={[styles.hcBtnText, { color: theme.teal.fg }]}>SYNC FROM HEALTH CONNECT</Text>
-            }
-          </Pressable>
-          {hcResult ? (
-            <Text style={{ color: theme.textSoft, fontSize: 12, marginTop: 8 }}>{hcResult}</Text>
-          ) : null}
-
-          <Pressable
-            onPress={handleToggleLiveTracking}
-            style={[styles.hcBtn, {
-              backgroundColor: liveTracking ? theme.coral.tint : theme.blue.tint,
-              marginTop: 10,
-            }]}
-          >
-            <Text style={[styles.hcBtnText, { color: liveTracking ? theme.coral.fg : theme.blue.fg }]}>
-              {liveTracking ? "STOP LIVE TRACKING" : "START LIVE TRACKING"}
-            </Text>
-          </Pressable>
-
-          {liveTracking ? (
-            <Pressable
-              onPress={handleBatteryOptimization}
-              style={[styles.hcBtn, { backgroundColor: theme.card, marginTop: 8 }]}
-            >
-              <Text style={[styles.hcBtnText, { color: theme.textSoft }]}>BATTERY EXEMPTION</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      ) : null}
 
     </ScrollView>
     {staleBannerMessage ? (
