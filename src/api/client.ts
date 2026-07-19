@@ -470,6 +470,9 @@ export const api = {
   getExercisePreferences: function () {
     return request('/exercise/preferences');
   },
+  getExerciseSuggestion: function () {
+    return request('/exercise/suggestion');
+  },
 
   // ── Workout wizard & programs ─────────────────────────────────────────────────
   getWorkoutWizardStatus: function () {

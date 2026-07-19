@@ -6,6 +6,25 @@ import { api } from '../api/client';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { WorkoutSetupWizard } from './WorkoutSetupWizard';
 
+interface WorkoutSuggestion {
+  type: string;
+  title: string;
+  body: string;
+  cta: string | null;
+  data: Record<string, any> | null;
+}
+
+const SUGGESTION_ICON: Record<string, string> = {
+  rest_day: '😴',
+  neglected_muscle: '🎯',
+  program_gap: '📋',
+  preferred_day: '📅',
+  consistency_streak: '🔥',
+  low_completion: '⏱️',
+  no_history: '🏋️',
+  generic: '💪',
+};
+
 interface ExerciseSession {
   id: string;
   started_at: string;
@@ -39,19 +58,21 @@ export function ExerciseScreen() {
   const [sessions, setSessions] = useState<ExerciseSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
+  const [suggestion, setSuggestion] = useState<WorkoutSuggestion | null>(null);
 
   // Wizard gate — null = loading, false = show wizard, true = show main screen
   const [wizardDone, setWizardDone] = useState<boolean | null>(null);
 
   useFocusEffect(useCallback(() => {
     setLoading(true);
-    // Check wizard status + load sessions in parallel
     Promise.all([
       api.getWorkoutWizardStatus().catch(() => ({ complete: true })),
       api.listExerciseSessions(20, 0).catch(() => []),
-    ]).then(([status, sessionList]) => {
+      api.getExerciseSuggestion().catch(() => null),
+    ]).then(([status, sessionList, sug]) => {
       setWizardDone(status.complete === true);
       setSessions(sessionList ?? []);
+      setSuggestion(sug ?? null);
     }).finally(() => setLoading(false));
   }, []));
 
@@ -117,6 +138,26 @@ export function ExerciseScreen() {
               : <Text style={[styles.startBtnText, { color: theme.page }]}>🏃 Start workout session</Text>
             }
           </Pressable>
+        )}
+
+        {/* Suggestion card */}
+        {suggestion && (
+          <View style={[styles.suggestionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+            <View style={styles.suggestionHeader}>
+              <Text style={styles.suggestionIcon}>{SUGGESTION_ICON[suggestion.type] ?? '💪'}</Text>
+              <Text style={[styles.suggestionTitle, { color: theme.textStrong }]}>{suggestion.title}</Text>
+            </View>
+            <Text style={[styles.suggestionBody, { color: theme.textSoft }]}>{suggestion.body}</Text>
+            {suggestion.cta && (
+              <Pressable
+                onPress={handleStart}
+                disabled={starting}
+                style={[styles.suggestionCta, { borderColor: ink }]}
+              >
+                <Text style={[styles.suggestionCtaText, { color: ink }]}>{suggestion.cta}</Text>
+              </Pressable>
+            )}
+          </View>
         )}
 
         {/* Sessions history */}
@@ -196,6 +237,25 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 18, fontWeight: '800' },
   emptySub: { fontSize: 14, textAlign: 'center' },
   sectionLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2, marginTop: 4 },
+  suggestionCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+    gap: 8,
+  },
+  suggestionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  suggestionIcon: { fontSize: 20 },
+  suggestionTitle: { fontSize: 14, fontWeight: '800', flex: 1 },
+  suggestionBody: { fontSize: 13, lineHeight: 19 },
+  suggestionCta: {
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginTop: 2,
+  },
+  suggestionCtaText: { fontSize: 13, fontWeight: '700' },
   sessionCard: {
     borderRadius: 14,
     borderWidth: 2,
