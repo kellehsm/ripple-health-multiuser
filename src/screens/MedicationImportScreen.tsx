@@ -1,12 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
+  View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator, Modal, FlatList,
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
@@ -14,48 +8,70 @@ import { useTheme } from '../theme/ThemeContext';
 import { api } from '../api/client';
 import { useNavigation } from '@react-navigation/native';
 
-interface ParsedMedRow {
-  name: string;
-  dosage: string;
-  time_of_day: string;
-  specific_time: string;
-  notes: string;
-  errors: string[];
-}
+const APP_FIELDS: Array<{ key: string; label: string }> = [
+  { key: 'name',       label: 'Medication name' },
+  { key: 'dosage',     label: 'Dosage / strength' },
+  { key: 'schedule',   label: 'Schedule / frequency' },
+  { key: 'prescriber', label: 'Prescriber / doctor' },
+  { key: 'pharmacy',   label: 'Pharmacy' },
+  { key: 'notes',      label: 'Notes' },
+];
+
+type Step = 'pick' | 'mapping' | 'done';
 
 export function MedicationImportScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<any>();
-  const [rows, setRows] = useState<ParsedMedRow[]>([]);
-  const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
+  const ink = theme.ink;
+
+  const [step, setStep] = useState<Step>('pick');
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [step, setStep] = useState<'pick' | 'preview' | 'done'>('pick');
   const [importedCount, setImportedCount] = useState(0);
+
+  // File data returned by preview
+  const [fileHeaders, setFileHeaders] = useState<string[]>([]);
+  const [fileRows, setFileRows] = useState<Record<string, string>[]>([]);
+  const [mapping, setMapping] = useState<Record<string, string | null>>({});
+
+  // Picker state
+  const [pickerField, setPickerField] = useState<string | null>(null);
 
   async function pickFile() {
     setLoading(true);
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['text/csv', 'text/plain', 'text/comma-separated-values',
-               'application/csv', 'application/vnd.ms-excel', '*/*'],
+        type: [
+          'text/csv', 'text/comma-separated-values', 'application/csv', 'text/plain',
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          '*/*',
+        ],
         copyToCacheDirectory: true,
       });
-      if (result.canceled || !result.assets || result.assets.length === 0) return;
+
+      if (result.canceled || !result.assets?.length) return;
       const asset = result.assets[0];
-      if (!asset.name?.toLowerCase().endsWith('.csv')) {
-        Alert.alert('Wrong file type', 'Please select a .csv file.');
+      const ext = asset.name?.toLowerCase().split('.').pop() ?? '';
+      if (!['csv', 'xls', 'xlsx'].includes(ext)) {
+        Alert.alert('Wrong file type', 'Please select a .csv, .xls, or .xlsx file.');
         return;
       }
-      const uri = asset.uri;
-      const fileContent = await FileSystem.readAsStringAsync(uri);
-      const res = await api.previewMedicationImport(fileContent);
-      const parsed: ParsedMedRow[] = res?.rows ?? [];
-      setRows(parsed);
-      const checked = new Set<number>();
-      parsed.forEach((r, i) => { if (r.errors.length === 0) checked.add(i); });
-      setCheckedRows(checked);
-      setStep('preview');
+
+      const fileBase64 = await FileSystem.readAsStringAsync(asset.uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      const res = await api.previewMedicationImport(fileBase64, asset.name ?? 'import.csv');
+      if (!res?.headers?.length || !res.rows?.length) {
+        Alert.alert('Empty file', 'No data rows found in the selected file.');
+        return;
+      }
+
+      setFileHeaders(res.headers);
+      setFileRows(res.rows);
+      setMapping(res.suggestedMapping ?? {});
+      setStep('mapping');
     } catch (err: any) {
       Alert.alert('Error', err?.message ?? 'Failed to read file');
     } finally {
@@ -63,25 +79,15 @@ export function MedicationImportScreen() {
     }
   }
 
-  function toggleRow(index: number) {
-    setCheckedRows((prev) => {
-      const next = new Set(prev);
-      if (next.has(index)) next.delete(index);
-      else next.add(index);
-      return next;
-    });
-  }
-
   async function commitImport() {
-    const selectedRows = rows.filter((_, i) => checkedRows.has(i) && rows[i].errors.length === 0);
-    if (selectedRows.length === 0) {
-      Alert.alert('Nothing to import', 'Select at least one valid row.');
+    if (!mapping.name) {
+      Alert.alert('Required', 'You must map the "Medication name" column before importing.');
       return;
     }
     setImporting(true);
     try {
-      const res = await api.commitMedicationImport(selectedRows);
-      setImportedCount(res?.imported ?? selectedRows.length);
+      const res = await api.commitMedicationImport(fileRows, mapping);
+      setImportedCount(res?.imported ?? 0);
       setStep('done');
     } catch (err: any) {
       Alert.alert('Error', err?.message ?? 'Import failed');
@@ -90,104 +96,103 @@ export function MedicationImportScreen() {
     }
   }
 
-  const validCheckedCount = rows.filter((r, i) => checkedRows.has(i) && r.errors.length === 0).length;
+  function reset() {
+    setStep('pick');
+    setFileHeaders([]);
+    setFileRows([]);
+    setMapping({});
+  }
+
+  // Column picker options — "None" + all file headers
+  const pickerOptions = ['(None)', ...fileHeaders];
 
   return (
     <View style={[styles.container, { backgroundColor: theme.page }]}>
+
+      {/* ── Pick file ── */}
       {step === 'pick' && (
         <View style={styles.centered}>
           <Text style={[styles.title, { color: theme.textStrong }]}>Import Medications</Text>
           <Text style={[styles.subtitle, { color: theme.textSoft }]}>
-            Upload a CSV file with columns: name, dosage, time_of_day, specific_time, notes
+            Supports CSV, XLS, and XLSX files. Column names are detected automatically.
           </Text>
           <Pressable
-            style={[styles.primaryBtn, { backgroundColor: theme.teal.solid, borderColor: theme.ink, shadowColor: theme.ink }]}
+            style={[styles.primaryBtn, { backgroundColor: theme.teal.solid, borderColor: ink, shadowColor: ink }]}
             onPress={pickFile}
             disabled={loading}
           >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.primaryBtnText}>Pick CSV file</Text>
-            )}
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>Choose file…</Text>}
           </Pressable>
         </View>
       )}
 
-      {step === 'preview' && (
+      {/* ── Column mapping ── */}
+      {step === 'mapping' && (
         <View style={{ flex: 1 }}>
-          <View style={[styles.previewHeader, { borderBottomColor: theme.cardBorder }]}>
-            <Text style={[styles.previewTitle, { color: theme.textStrong }]}>
-              {rows.length} row{rows.length !== 1 ? 's' : ''} found
-            </Text>
-            <Text style={[styles.previewSub, { color: theme.textSoft }]}>
-              {rows.filter((r) => r.errors.length === 0).length} valid · {rows.filter((r) => r.errors.length > 0).length} with errors
+          <View style={[styles.mappingHeader, { borderBottomColor: theme.cardBorder }]}>
+            <Text style={[styles.mappingTitle, { color: theme.textStrong }]}>Map columns</Text>
+            <Text style={[styles.mappingSubtitle, { color: theme.textSoft }]}>
+              {fileRows.length} row{fileRows.length !== 1 ? 's' : ''} · tap any row to change mapping
             </Text>
           </View>
-          <ScrollView contentContainerStyle={{ padding: 16, gap: 10 }}>
-            {rows.map((row, i) => {
-              const hasErrors = row.errors.length > 0;
-              const isChecked = checkedRows.has(i);
+          <ScrollView contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 100 }}>
+            {APP_FIELDS.map((field) => {
+              const mapped = mapping[field.key];
+              const isRequired = field.key === 'name';
               return (
                 <Pressable
-                  key={i}
-                  style={[
-                    styles.rowCard,
-                    {
-                      backgroundColor: theme.card,
-                      borderColor: hasErrors ? theme.danger : theme.ink,
-                      shadowColor: theme.ink,
-                      opacity: hasErrors ? 0.6 : 1,
-                    },
-                  ]}
-                  onPress={() => { if (!hasErrors) toggleRow(i); }}
-                  disabled={hasErrors}
+                  key={field.key}
+                  onPress={() => setPickerField(field.key)}
+                  style={[styles.mappingRow, { backgroundColor: theme.card, borderColor: mapped ? ink : theme.cardBorder }]}
                 >
-                  <View style={styles.rowLeft}>
-                    {!hasErrors && (
-                      <View style={[styles.checkbox, { borderColor: theme.ink, backgroundColor: isChecked ? theme.teal.solid : 'transparent' }]}>
-                        {isChecked && <Text style={{ color: '#fff', fontSize: 11 }}>✓</Text>}
-                      </View>
-                    )}
-                    {hasErrors && (
-                      <Text style={{ fontSize: 16 }}>⚠️</Text>
-                    )}
-                  </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.rowName, { color: hasErrors ? theme.danger : theme.textStrong, textDecorationLine: hasErrors ? 'line-through' : 'none' }]}>
-                      {row.name || '(no name)'}
+                    <Text style={[styles.fieldLabel, { color: theme.textStrong }]}>
+                      {field.label}{isRequired ? ' *' : ''}
                     </Text>
-                    {row.dosage ? <Text style={{ color: theme.textSoft, fontSize: 12 }}>{row.dosage}</Text> : null}
-                    {row.time_of_day ? <Text style={{ color: theme.textSoft, fontSize: 12 }}>{row.time_of_day}</Text> : null}
-                    {hasErrors && (
-                      <Text style={{ color: theme.danger, fontSize: 11, marginTop: 2 }}>
-                        {row.errors.join(', ')}
-                      </Text>
-                    )}
+                    <Text style={[styles.mappedCol, { color: mapped ? theme.teal.fg : theme.textSoft }]}>
+                      {mapped ?? '— not mapped'}
+                    </Text>
                   </View>
+                  <Text style={{ color: theme.textSoft, fontSize: 14 }}>▾</Text>
                 </Pressable>
               );
             })}
+
+            {/* Preview of first 3 rows */}
+            <Text style={[styles.previewLabel, { color: theme.textSoft }]}>PREVIEW (first 3 rows)</Text>
+            {fileRows.slice(0, 3).map((row, i) => {
+              const name = row[mapping.name ?? ''] ?? '—';
+              const dosage = row[mapping.dosage ?? ''] ?? '';
+              const schedule = row[mapping.schedule ?? ''] ?? '';
+              return (
+                <View key={i} style={[styles.previewRow, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+                  <Text style={[styles.previewName, { color: theme.textStrong }]}>{name}</Text>
+                  {dosage ? <Text style={{ color: theme.textSoft, fontSize: 12 }}>{dosage}</Text> : null}
+                  {schedule ? <Text style={{ color: theme.textSoft, fontSize: 12 }}>{schedule}</Text> : null}
+                </View>
+              );
+            })}
           </ScrollView>
+
           <View style={[styles.footer, { borderTopColor: theme.cardBorder, backgroundColor: theme.page }]}>
-            <Pressable style={[styles.secondaryBtn, { borderColor: theme.ink }]} onPress={() => setStep('pick')}>
+            <Pressable style={[styles.secondaryBtn, { borderColor: ink }]} onPress={reset}>
               <Text style={{ color: theme.textStrong, fontWeight: '700' }}>Back</Text>
             </Pressable>
             <Pressable
-              style={[styles.primaryBtn, { flex: 1, backgroundColor: theme.teal.solid, borderColor: theme.ink, shadowColor: theme.ink }]}
+              style={[styles.primaryBtn, { flex: 1, backgroundColor: theme.teal.solid, borderColor: ink, shadowColor: ink }]}
               onPress={commitImport}
-              disabled={importing || validCheckedCount === 0}
+              disabled={importing || !mapping.name}
             >
-              {importing ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.primaryBtnText}>Import {validCheckedCount} medication{validCheckedCount !== 1 ? 's' : ''}</Text>
-              )}
+              {importing
+                ? <ActivityIndicator color="#fff" />
+                : <Text style={styles.primaryBtnText}>Import {fileRows.length} medication{fileRows.length !== 1 ? 's' : ''}</Text>
+              }
             </Pressable>
           </View>
         </View>
       )}
 
+      {/* ── Done ── */}
       {step === 'done' && (
         <View style={styles.centered}>
           <Text style={{ fontSize: 48, marginBottom: 16 }}>✅</Text>
@@ -196,13 +201,47 @@ export function MedicationImportScreen() {
             {importedCount} medication{importedCount !== 1 ? 's' : ''} added to your schedule.
           </Text>
           <Pressable
-            style={[styles.primaryBtn, { backgroundColor: theme.teal.solid, borderColor: theme.ink, shadowColor: theme.ink }]}
+            style={[styles.primaryBtn, { backgroundColor: theme.teal.solid, borderColor: ink, shadowColor: ink }]}
             onPress={() => navigation.goBack()}
           >
             <Text style={styles.primaryBtnText}>Done</Text>
           </Pressable>
         </View>
       )}
+
+      {/* ── Column picker modal ── */}
+      <Modal visible={pickerField !== null} transparent animationType="slide" onRequestClose={() => setPickerField(null)}>
+        <View style={styles.pickerOverlay}>
+          <View style={[styles.pickerSheet, { backgroundColor: theme.card, borderColor: ink }]}>
+            <Text style={[styles.pickerTitle, { color: theme.textStrong }]}>
+              {APP_FIELDS.find((f) => f.key === pickerField)?.label ?? 'Select column'}
+            </Text>
+            <FlatList
+              data={pickerOptions}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => {
+                    setMapping((m) => ({ ...m, [pickerField!]: item === '(None)' ? null : item }));
+                    setPickerField(null);
+                  }}
+                  style={[styles.pickerRow, { borderBottomColor: theme.cardBorder }]}
+                >
+                  <Text style={{ color: item === '(None)' ? theme.textSoft : theme.textStrong, fontSize: 15 }}>
+                    {item}
+                  </Text>
+                  {mapping[pickerField ?? ''] === (item === '(None)' ? null : item) && (
+                    <Text style={{ color: theme.teal.solid, fontWeight: '700' }}>✓</Text>
+                  )}
+                </Pressable>
+              )}
+            />
+            <Pressable onPress={() => setPickerField(null)} style={[styles.pickerCancel, { borderTopColor: theme.cardBorder }]}>
+              <Text style={{ color: theme.textSoft, fontWeight: '700' }}>Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -232,30 +271,48 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     alignItems: 'center',
   },
-  previewHeader: { padding: 16, borderBottomWidth: 1 },
-  previewTitle: { fontSize: 16, fontWeight: '800' },
-  previewSub: { fontSize: 12, marginTop: 2 },
-  rowCard: {
-    borderRadius: 12,
-    borderWidth: 2,
-    padding: 14,
+  mappingHeader: { padding: 16, borderBottomWidth: 1 },
+  mappingTitle: { fontSize: 18, fontWeight: '800' },
+  mappingSubtitle: { fontSize: 12, marginTop: 2 },
+  mappingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 3,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    gap: 10,
   },
-  rowLeft: { width: 26, alignItems: 'center', justifyContent: 'center' },
-  rowName: { fontSize: 15, fontWeight: '600' },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
+  fieldLabel: { fontSize: 14, fontWeight: '700' },
+  mappedCol: { fontSize: 12, marginTop: 2 },
+  previewLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2, marginTop: 4 },
+  previewRow: {
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 2,
   },
+  previewName: { fontSize: 14, fontWeight: '600' },
   footer: { flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: 1 },
+  pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  pickerSheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderWidth: 2,
+    borderBottomWidth: 0,
+    maxHeight: '60%',
+  },
+  pickerTitle: { fontSize: 16, fontWeight: '800', padding: 16, paddingBottom: 8 },
+  pickerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+  },
+  pickerCancel: {
+    padding: 16,
+    alignItems: 'center',
+    borderTopWidth: 1,
+  },
 });

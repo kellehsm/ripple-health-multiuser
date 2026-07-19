@@ -34,6 +34,7 @@ import { ExportBackupSettingsScreen } from "../screens/settings/ExportBackupSett
 import { ExerciseSessionScreen } from "../screens/ExerciseSessionScreen";
 import { ExerciseDetailScreen } from "../screens/ExerciseDetailScreen";
 import { MedicationImportScreen } from "../screens/MedicationImportScreen";
+import { MedicationHistoryScreen } from "../screens/MedicationHistoryScreen";
 import { OnboardingFlow } from "../screens/OnboardingFlow";
 import { BottomNav } from "../components/BottomNav";
 import { useTabPreferences } from "../hooks/useTabPreferences";
@@ -193,6 +194,7 @@ export function RootTabs({ onNavigationStateChange }: RootTabsProps) {
         <Stack.Screen name="ExerciseSession" component={ExerciseSessionScreen} options={{ title: "Workout Session" }} />
         <Stack.Screen name="ExerciseDetail" component={ExerciseDetailScreen} options={{ title: "Session Details" }} />
         <Stack.Screen name="MedicationImport" component={MedicationImportScreen} options={{ title: "Import Medications" }} />
+        <Stack.Screen name="MedicationHistory" component={MedicationHistoryScreen} options={({ route }: any) => ({ title: route.params?.medicationName ?? "Medication History" })} />
         <Stack.Screen name="SettingsCustomizeTabs" options={{ title: "Customize Tabs" }}>
           {({ navigation }) => (
             <TabPreferencesScreen

@@ -510,11 +510,35 @@ export const api = {
   deleteMedication: function (id: string) {
     return request('/medications/' + id, { method: 'DELETE' });
   },
-  previewMedicationImport: function (csv: string) {
-    return request('/medications/import/preview', { method: 'POST', body: JSON.stringify({ csv }) });
+  previewMedicationImport: function (fileBase64: string, filename: string) {
+    return request('/medications/import/preview', { method: 'POST', body: JSON.stringify({ fileBase64, filename }) });
   },
-  commitMedicationImport: function (rows: object[]) {
-    return request('/medications/import/commit', { method: 'POST', body: JSON.stringify({ rows }) });
+  commitMedicationImport: function (rows: object[], mapping: Record<string, string | null>) {
+    return request('/medications/import/commit', { method: 'POST', body: JSON.stringify({ rows, mapping }) });
+  },
+  getMedicationHistory: function (medicationId: string) {
+    return request('/medications/' + medicationId + '/history');
+  },
+  getMedicationCategories: function () {
+    return request('/medications/categories');
+  },
+  addMedicationCategory: function (payload: { label: string; color_hex: string }) {
+    return request('/medications/categories', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  updateMedicationCategory: function (id: string, payload: object) {
+    return request('/medications/categories/' + id, { method: 'PATCH', body: JSON.stringify(payload) });
+  },
+  deleteMedicationCategory: function (id: string) {
+    return request('/medications/categories/' + id, { method: 'DELETE' });
+  },
+  getMedicationPrescribers: function () {
+    return request('/medications/prescribers');
+  },
+  addMedicationPrescriber: function (payload: { name: string; specialty?: string; phone?: string }) {
+    return request('/medications/prescribers', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  updateMedicationPrescriber: function (id: string, payload: object) {
+    return request('/medications/prescribers/' + id, { method: 'PATCH', body: JSON.stringify(payload) });
   },
   markSlotTaken: function (time_of_day: string, date?: string) {
     return request('/medication-doses/mark-slot', { method: 'POST', body: JSON.stringify({ time_of_day, date }) });
