@@ -1,11 +1,13 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable, Image } from 'react-native';
 import Svg, { Polyline, Line, Text as SvgText, Rect } from 'react-native-svg';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRoute } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
 import { api } from '../api/client';
 import { LoadingIndicator } from '../components/LoadingIndicator';
+
+const IMAGE_BASE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
 
 const ZONES = [
   { name: 'very_light', label: 'Very light', color: '#9FE1CB' },
@@ -32,7 +34,7 @@ interface SessionEntry {
   target_rep_range_max: number | null;
   actual_reps_per_set: number[] | null;
   all_sets_maxed: boolean | null;
-  exercise: { id: string; name: string; category: string; primary_muscles: string[] };
+  exercise: { id: string; name: string; category: string; primary_muscles: string[]; images: string[] };
 }
 
 interface SessionDetail {
@@ -246,6 +248,15 @@ export function ExerciseDetailScreen() {
             <View key={entry.id}>
               {i > 0 && <View style={[styles.divider, { backgroundColor: theme.cardBorder }]} />}
               <View style={styles.exerciseRow}>
+                {entry.exercise.images?.length > 0 ? (
+                  <Image
+                    source={{ uri: IMAGE_BASE + entry.exercise.images[0] }}
+                    style={styles.exerciseThumb}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={[styles.exerciseThumb, styles.exerciseThumbPlaceholder, { backgroundColor: theme.teal.tint }]} />
+                )}
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.exerciseName, { color: theme.textStrong }]}>{entry.exercise.name}</Text>
                   {entry.exercise.primary_muscles.length > 0 && (
@@ -304,6 +315,8 @@ const styles = StyleSheet.create({
   zoneLegendText: { fontSize: 11 },
   noZoneHint: { fontSize: 11, lineHeight: 17 },
   exerciseRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 6 },
+  exerciseThumb: { width: 52, height: 52, borderRadius: 8, marginTop: 2 },
+  exerciseThumbPlaceholder: { opacity: 0.3 },
   progressionBadge: {
     alignSelf: 'flex-start',
     marginTop: 4,
