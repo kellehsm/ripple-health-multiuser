@@ -125,11 +125,19 @@ export function registerForegroundServiceHandler() {
     const sleep = (ms: number) =>
       new Promise<void>((r) => setTimeout(r, ms));
     const INTERVAL = 5 * 60 * 1000;
+    const MAX_RUNTIME_MS = 5.5 * 60 * 60 * 1000; // stop before Android's 6-hour kill
+    const serviceStartTime = Date.now();
 
     return new Promise(async () => {
       await syncAndUpdateNotification(notification.id!);
       while (true) {
         await sleep(INTERVAL);
+        if (Date.now() - serviceStartTime >= MAX_RUNTIME_MS) {
+          // Gracefully restart before Android 15 force-kills it
+          await notifee.stopForegroundService();
+          await startForegroundService(); // triggers a fresh handler call
+          break;
+        }
         await syncAndUpdateNotification(notification.id!);
       }
     });
