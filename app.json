@@ -33,7 +33,8 @@
         "android.permission.health.READ_HEART_RATE",
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_HEALTH"
-      ]
+      ],
+      "versionCode": 2
     },
     "plugins": [
       "expo-health-connect",
