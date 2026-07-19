@@ -9,6 +9,7 @@ import {
   Animated
 } from "react-native";
 import { LoadingIndicator } from "../components/LoadingIndicator";
+import { RippleLoader } from "../components/RippleLoader";
 import * as Haptics from "expo-haptics";
 import { useFocusEffect } from "@react-navigation/native";
 import { useTheme } from "../theme/ThemeContext";
@@ -73,23 +74,27 @@ const GRATITUDE_PROMPTS = [
 const DURATIONS = [5, 10, 15, 20, 30];
 
 // ─── Shared: calm grace period countdown ─────────────────────────────────────
+// count === null means the delay hasn't started yet — show "Get ready..."
+// without a number so the first tick isn't jarring.
 
 function GraceCountdown({ count, accentColor, theme, ink }: {
-  count: number; accentColor: string; theme: any; ink: string;
+  count: number | null; accentColor: string; theme: any; ink: string;
 }) {
   return (
     <View style={{ alignItems: "center", gap: 18, paddingVertical: 32 }}>
       <Text style={{ color: theme.textSoft, fontSize: 15, letterSpacing: 0.5 }}>Get ready...</Text>
-      <View style={{
-        width: 104, height: 104, borderRadius: 52,
-        backgroundColor: theme.card,
-        borderWidth: 2, borderColor: accentColor,
-        alignItems: "center", justifyContent: "center",
-        shadowColor: ink, shadowOffset: { width: 3, height: 3 },
-        shadowOpacity: 1, shadowRadius: 0, elevation: 3,
-      }}>
-        <Text style={{ color: accentColor, fontSize: 48, fontWeight: "900" }}>{count}</Text>
-      </View>
+      {count !== null && (
+        <View style={{
+          width: 104, height: 104, borderRadius: 52,
+          backgroundColor: theme.card,
+          borderWidth: 2, borderColor: accentColor,
+          alignItems: "center", justifyContent: "center",
+          shadowColor: ink, shadowOffset: { width: 3, height: 3 },
+          shadowOpacity: 1, shadowRadius: 0, elevation: 3,
+        }}>
+          <Text style={{ color: accentColor, fontSize: 48, fontWeight: "900" }}>{count}</Text>
+        </View>
+      )}
       <Text style={{ color: theme.textSoft, fontSize: 13, textAlign: "center" }}>
         Find a comfortable position
       </Text>
@@ -105,7 +110,10 @@ export function MindfulnessScreen() {
 
   const [activeSection, setActiveSection] = useState<Section | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [sectionLoading, setSectionLoading] = useState(false);
+  const [screenLoading, setScreenLoading] = useState(true);
   const contentFade = useRef(new Animated.Value(1)).current;
+  const screenLoadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -115,13 +123,22 @@ export function MindfulnessScreen() {
           markTooltipSeen("mindfulness");
         }
       });
+      setScreenLoading(true);
+      screenLoadTimerRef.current = setTimeout(() => setScreenLoading(false), 750);
+      return () => {
+        if (screenLoadTimerRef.current) clearTimeout(screenLoadTimerRef.current);
+      };
     }, [])
   );
 
   function fadeTransition(onChange: () => void) {
     Animated.timing(contentFade, { toValue: 0, duration: 140, useNativeDriver: true }).start(() => {
-      onChange();
-      Animated.timing(contentFade, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+      setSectionLoading(true);
+      setTimeout(() => {
+        onChange();
+        setSectionLoading(false);
+        Animated.timing(contentFade, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+      }, 800);
     });
   }
 
@@ -140,19 +157,25 @@ export function MindfulnessScreen() {
       contentContainerStyle={{ padding: 16 }}
       keyboardShouldPersistTaps="handled"
     >
-      <Animated.View style={{ opacity: contentFade, gap: 14 }}>
-        {showTooltip && activeSection === null && (
-          <TooltipBubble
-            message="Your mindfulness hub — breathing exercises, grounding techniques, guided meditation, and gratitude prompts. Each section guides you step by step."
-            onDismiss={() => setShowTooltip(false)}
-          />
-        )}
-        {activeSection === null && <TileGrid theme={theme} ink={ink} onSelect={navigateTo} />}
-        {activeSection === "breathing"  && <BreathingSection  theme={theme} ink={ink} onBack={goBack} />}
-        {activeSection === "grounding"  && <GroundingSection  theme={theme} ink={ink} onBack={goBack} />}
-        {activeSection === "meditation" && <MeditationSection theme={theme} ink={ink} onBack={goBack} />}
-        {activeSection === "gratitude"  && <GratitudeSection  theme={theme} ink={ink} onBack={goBack} />}
-      </Animated.View>
+      {(screenLoading || sectionLoading) ? (
+        <View style={{ alignItems: "center", paddingVertical: 80 }}>
+          <RippleLoader size="large" />
+        </View>
+      ) : (
+        <Animated.View style={{ opacity: contentFade, gap: 14 }}>
+          {showTooltip && activeSection === null && (
+            <TooltipBubble
+              message="Your mindfulness hub — breathing exercises, grounding techniques, guided meditation, and gratitude prompts. Each section guides you step by step."
+              onDismiss={() => setShowTooltip(false)}
+            />
+          )}
+          {activeSection === null && <TileGrid theme={theme} ink={ink} onSelect={navigateTo} />}
+          {activeSection === "breathing"  && <BreathingSection  theme={theme} ink={ink} onBack={goBack} />}
+          {activeSection === "grounding"  && <GroundingSection  theme={theme} ink={ink} onBack={goBack} />}
+          {activeSection === "meditation" && <MeditationSection theme={theme} ink={ink} onBack={goBack} />}
+          {activeSection === "gratitude"  && <GratitudeSection  theme={theme} ink={ink} onBack={goBack} />}
+        </Animated.View>
+      )}
     </ScrollView>
   );
 }
@@ -236,6 +259,7 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const runningRef = useRef(false);
   const graceRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const graceDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function clearTimers() {
     timersRef.current.forEach(clearTimeout);
@@ -244,6 +268,10 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
 
   function clearGraceInterval() {
     if (graceRef.current) { clearInterval(graceRef.current); graceRef.current = null; }
+  }
+
+  function clearGraceDelay() {
+    if (graceDelayRef.current) { clearTimeout(graceDelayRef.current); graceDelayRef.current = null; }
   }
 
   const runCycle = useCallback(function (phases: [number, number, number, number]) {
@@ -286,17 +314,22 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
 
   function startGrace(key: BreathPattern) {
     clearGraceInterval();
+    clearGraceDelay();
     setGracePending(key);
-    setGraceCount(3);
-    graceRef.current = setInterval(() => {
-      setGraceCount((c) => {
-        if (c === null || c <= 1) {
-          clearGraceInterval();
-          return 0;
-        }
-        return c - 1;
-      });
-    }, 1000);
+    setGraceCount(null);
+    graceDelayRef.current = setTimeout(() => {
+      graceDelayRef.current = null;
+      setGraceCount(3);
+      graceRef.current = setInterval(() => {
+        setGraceCount((c) => {
+          if (c === null || c <= 1) {
+            clearGraceInterval();
+            return 0;
+          }
+          return c - 1;
+        });
+      }, 1000);
+    }, 1500);
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -320,6 +353,7 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
   }
 
   function fullStop() {
+    clearGraceDelay();
     clearGraceInterval();
     setGraceCount(null);
     setGracePending(null);
@@ -335,13 +369,14 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
   useEffect(() => () => {
     runningRef.current = false;
     clearTimers();
+    clearGraceDelay();
     clearGraceInterval();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const scaleInterp = breathAnim.interpolate({ inputRange: [0.5, 1], outputRange: [0.5, 1] });
   const tealSolid = (theme.teal as any)?.solid ?? ink;
-  const inGrace = graceCount !== null;
+  const inGrace = gracePending !== null;
 
   return (
     <>
@@ -349,7 +384,7 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
       <Text style={{ color: theme.textStrong, fontSize: 20, fontWeight: "900", marginBottom: 2 }}>Breathing</Text>
 
       {inGrace ? (
-        <GraceCountdown count={graceCount!} accentColor={tealSolid} theme={theme} ink={ink} />
+        <GraceCountdown count={graceCount} accentColor={tealSolid} theme={theme} ink={ink} />
       ) : !running ? (
         <>
           <Text style={{ color: theme.textSoft, fontSize: 13, marginBottom: 10 }}>Choose a pattern to begin.</Text>
@@ -428,8 +463,10 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
   const [pmrPhase, setPmrPhase] = useState<"tense" | "release">("tense");
   const [countdown, setCountdown] = useState(PMR_DURATION);
   const [pmrGraceCount, setPmrGraceCount] = useState<number | null>(null);
+  const [pmrGracePending, setPmrGracePending] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pmrGraceRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pmrGraceDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const coralSolid = (theme.coral as any)?.solid ?? ink;
 
@@ -439,6 +476,10 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
 
   function clearPmrGraceInterval() {
     if (pmrGraceRef.current) { clearInterval(pmrGraceRef.current); pmrGraceRef.current = null; }
+  }
+
+  function clearPmrGraceDelay() {
+    if (pmrGraceDelayRef.current) { clearTimeout(pmrGraceDelayRef.current); pmrGraceDelayRef.current = null; }
   }
 
   function startPmrStep(s: number, phase: "tense" | "release") {
@@ -467,22 +508,29 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
 
   function startPmrGrace() {
     clearPmrGraceInterval();
-    setPmrGraceCount(3);
-    pmrGraceRef.current = setInterval(() => {
-      setPmrGraceCount((c) => {
-        if (c === null || c <= 1) {
-          clearPmrGraceInterval();
-          return 0;
-        }
-        return c - 1;
-      });
-    }, 1000);
+    clearPmrGraceDelay();
+    setPmrGracePending(true);
+    setPmrGraceCount(null);
+    pmrGraceDelayRef.current = setTimeout(() => {
+      pmrGraceDelayRef.current = null;
+      setPmrGraceCount(3);
+      pmrGraceRef.current = setInterval(() => {
+        setPmrGraceCount((c) => {
+          if (c === null || c <= 1) {
+            clearPmrGraceInterval();
+            return 0;
+          }
+          return c - 1;
+        });
+      }, 1000);
+    }, 1500);
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (pmrGraceCount === 0) {
       setPmrGraceCount(null);
+      setPmrGracePending(false);
       startPmrStep(0, "tense");
     }
   }, [pmrGraceCount]);
@@ -496,6 +544,7 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
 
   function handlePmrRestart() {
     stopTimer();
+    clearPmrGraceDelay();
     setStep(0);
     setPmrPhase("tense");
     setCountdown(PMR_DURATION);
@@ -504,19 +553,22 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
 
   function handleBack() {
     stopTimer();
+    clearPmrGraceDelay();
     clearPmrGraceInterval();
     setPmrGraceCount(null);
+    setPmrGracePending(false);
     setTechnique(null);
     onBack();
   }
 
   useEffect(() => () => {
     stopTimer();
+    clearPmrGraceDelay();
     clearPmrGraceInterval();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const inPmrGrace = pmrGraceCount !== null;
+  const inPmrGrace = pmrGracePending;
 
   return (
     <>
@@ -598,7 +650,7 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
       ) : technique === "pmr" ? (
         <View style={{ gap: 14 }}>
           {inPmrGrace ? (
-            <GraceCountdown count={pmrGraceCount!} accentColor={coralSolid} theme={theme} ink={ink} />
+            <GraceCountdown count={pmrGraceCount} accentColor={coralSolid} theme={theme} ink={ink} />
           ) : (
             <>
               <Text style={{ color: theme.textSoft, fontSize: 13 }}>
@@ -700,6 +752,7 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
   const [gracePendingDuration, setGracePendingDuration] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const graceRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const graceDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const purpleSolid = (theme.purple as any)?.solid ?? ink;
 
@@ -709,6 +762,10 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
 
   function clearGraceInterval() {
     if (graceRef.current) { clearInterval(graceRef.current); graceRef.current = null; }
+  }
+
+  function clearGraceDelay() {
+    if (graceDelayRef.current) { clearTimeout(graceDelayRef.current); graceDelayRef.current = null; }
   }
 
   function beginMeditation(mins: number) {
@@ -732,17 +789,22 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
 
   function startGrace(mins: number) {
     clearGraceInterval();
+    clearGraceDelay();
     setGracePendingDuration(mins);
-    setGraceCount(3);
-    graceRef.current = setInterval(() => {
-      setGraceCount((c) => {
-        if (c === null || c <= 1) {
-          clearGraceInterval();
-          return 0;
-        }
-        return c - 1;
-      });
-    }, 1000);
+    setGraceCount(null);
+    graceDelayRef.current = setTimeout(() => {
+      graceDelayRef.current = null;
+      setGraceCount(3);
+      graceRef.current = setInterval(() => {
+        setGraceCount((c) => {
+          if (c === null || c <= 1) {
+            clearGraceInterval();
+            return 0;
+          }
+          return c - 1;
+        });
+      }, 1000);
+    }, 1500);
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -773,6 +835,7 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
   }
 
   function fullStop() {
+    clearGraceDelay();
     clearGraceInterval();
     setGraceCount(null);
     setGracePendingDuration(null);
@@ -781,6 +844,7 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
 
   useEffect(() => () => {
     stopTimer();
+    clearGraceDelay();
     clearGraceInterval();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -789,7 +853,7 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
   const secs = remaining % 60;
   const fmtTime = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   const done = duration !== null && remaining === 0 && !running;
-  const inGrace = graceCount !== null;
+  const inGrace = gracePendingDuration !== null;
 
   return (
     <>
@@ -797,7 +861,7 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
       <Text style={{ color: theme.textStrong, fontSize: 20, fontWeight: "900", marginBottom: 2 }}>Meditation</Text>
 
       {inGrace ? (
-        <GraceCountdown count={graceCount!} accentColor={purpleSolid} theme={theme} ink={ink} />
+        <GraceCountdown count={graceCount} accentColor={purpleSolid} theme={theme} ink={ink} />
       ) : !running && !done ? (
         <>
           <Text style={{ color: theme.textSoft, fontSize: 13, marginBottom: 10 }}>Choose a duration.</Text>
