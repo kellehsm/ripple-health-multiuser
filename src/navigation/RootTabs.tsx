@@ -31,6 +31,8 @@ import { TrackingSettingsScreen } from "../screens/settings/TrackingSettingsScre
 import { SecuritySettingsScreen } from "../screens/settings/SecuritySettingsScreen";
 import { PreferencesSettingsScreen } from "../screens/settings/PreferencesSettingsScreen";
 import { ExportBackupSettingsScreen } from "../screens/settings/ExportBackupSettingsScreen";
+import { ExerciseSessionScreen } from "../screens/ExerciseSessionScreen";
+import { ExerciseDetailScreen } from "../screens/ExerciseDetailScreen";
 import { OnboardingFlow } from "../screens/OnboardingFlow";
 import { BottomNav } from "../components/BottomNav";
 import { useTabPreferences } from "../hooks/useTabPreferences";
@@ -187,6 +189,8 @@ export function RootTabs({ onNavigationStateChange }: RootTabsProps) {
         <Stack.Screen name="SettingsSecurity" component={SecuritySettingsScreen} options={{ title: "App Lock" }} />
         <Stack.Screen name="SettingsPreferences" component={PreferencesSettingsScreen} options={{ title: "Preferences" }} />
         <Stack.Screen name="SettingsExportBackup" component={ExportBackupSettingsScreen} options={{ title: "Export & Backup" }} />
+        <Stack.Screen name="ExerciseSession" component={ExerciseSessionScreen} options={{ title: "Workout Session" }} />
+        <Stack.Screen name="ExerciseDetail" component={ExerciseDetailScreen} options={{ title: "Session Details" }} />
         <Stack.Screen name="SettingsCustomizeTabs" options={{ title: "Customize Tabs" }}>
           {({ navigation }) => (
             <TabPreferencesScreen
