@@ -459,6 +459,23 @@ export const api = {
     return request('/exercise/log-entries/' + entryId, { method: 'DELETE' });
   },
 
+  // ── Workout wizard & programs ─────────────────────────────────────────────────
+  getWorkoutWizardStatus: function () {
+    return request('/exercise/wizard/status');
+  },
+  generateWorkoutPlan: function (answers: object) {
+    return request('/exercise/wizard/generate', { method: 'POST', body: JSON.stringify(answers) });
+  },
+  acceptWorkoutPlan: function (payload: { answers: object; days: object[] }) {
+    return request('/exercise/wizard/accept', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  skipWorkoutWizard: function () {
+    return request('/exercise/wizard/skip', { method: 'POST', body: '{}' });
+  },
+  listWorkoutPrograms: function () {
+    return request('/exercise/programs');
+  },
+
   // ── Medications ───────────────────────────────────────────────────────────────
   getMedications: function () {
     return request('/medications');

@@ -4,6 +4,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
 import { api } from '../api/client';
 import { LoadingIndicator } from '../components/LoadingIndicator';
+import { WorkoutSetupWizard } from './WorkoutSetupWizard';
 
 interface ExerciseSession {
   id: string;
@@ -39,12 +40,19 @@ export function ExerciseScreen() {
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
 
+  // Wizard gate — null = loading, false = show wizard, true = show main screen
+  const [wizardDone, setWizardDone] = useState<boolean | null>(null);
+
   useFocusEffect(useCallback(() => {
     setLoading(true);
-    api.listExerciseSessions(20, 0)
-      .then(setSessions)
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    // Check wizard status + load sessions in parallel
+    Promise.all([
+      api.getWorkoutWizardStatus().catch(() => ({ complete: true })),
+      api.listExerciseSessions(20, 0).catch(() => []),
+    ]).then(([status, sessionList]) => {
+      setWizardDone(status.complete === true);
+      setSessions(sessionList ?? []);
+    }).finally(() => setLoading(false));
   }, []));
 
   async function handleStart() {
@@ -57,6 +65,20 @@ export function ExerciseScreen() {
     } finally {
       setStarting(false);
     }
+  }
+
+  // Loading state — show spinner while checking wizard status
+  if (loading || wizardDone === null) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.page, alignItems: 'center', justifyContent: 'center' }]}>
+        <LoadingIndicator />
+      </View>
+    );
+  }
+
+  // Wizard not yet completed — show setup wizard
+  if (!wizardDone) {
+    return <WorkoutSetupWizard onComplete={() => setWizardDone(true)} />;
   }
 
   // Check if there's an open (unfinished) session
