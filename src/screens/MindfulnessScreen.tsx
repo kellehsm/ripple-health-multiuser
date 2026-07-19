@@ -15,6 +15,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { toast } from "../lib/toast";
+import { trackMindfulnessCompletion } from "../lib/mindfulnessTracker";
 import { TooltipBubble } from "../components/TooltipBubble";
 import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
 
@@ -329,7 +330,7 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
           return c - 1;
         });
       }, 1000);
-    }, 1500);
+    }, 2000);
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -358,6 +359,11 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
     setGraceCount(null);
     setGracePending(null);
     stopBreathing();
+  }
+
+  function handleEndSession() {
+    if (cycles > 0) trackMindfulnessCompletion("breathing");
+    fullStop();
   }
 
   function handleRestart() {
@@ -442,7 +448,7 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
               <Text style={{ color: ink, fontSize: 13, fontWeight: "800", letterSpacing: 0.5 }}>↺ RESTART</Text>
             </Pressable>
             <Pressable
-              onPress={fullStop}
+              onPress={handleEndSession}
               style={[styles.endBtn, { borderColor: ink, backgroundColor: theme.card, flex: 1 }]}
               accessibilityRole="button"
             >
@@ -497,6 +503,7 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
             startPmrStep(s + 1, "tense");
           } else {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            trackMindfulnessCompletion("grounding");
             setTechnique(null);
           }
           return PMR_DURATION;
@@ -523,7 +530,7 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
           return c - 1;
         });
       }, 1000);
-    }, 1500);
+    }, 2000);
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -624,7 +631,7 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
                   <>
                     <Text style={{ color: (theme.coral as any)?.fg, fontSize: 15, lineHeight: 21, marginBottom: 14 }}>{item.prompt}</Text>
                     <Pressable
-                      onPress={() => { Haptics.selectionAsync(); if (step + 1 < GROUNDING_54321.length) { setStep(step + 1); } else { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); setTechnique(null); } }}
+                      onPress={() => { Haptics.selectionAsync(); if (step + 1 < GROUNDING_54321.length) { setStep(step + 1); } else { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); trackMindfulnessCompletion("grounding"); setTechnique(null); } }}
                       style={[styles.nextBtn, { backgroundColor: (theme.coral as any)?.solid, borderColor: ink }]}
                       accessibilityRole="button"
                     >
@@ -716,7 +723,7 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
                 </View>
                 {current && (
                   <Pressable
-                    onPress={() => { Haptics.selectionAsync(); if (step + 1 < STOP_STEPS.length) { setStep(step + 1); } else { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); setTechnique(null); } }}
+                    onPress={() => { Haptics.selectionAsync(); if (step + 1 < STOP_STEPS.length) { setStep(step + 1); } else { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); trackMindfulnessCompletion("grounding"); setTechnique(null); } }}
                     style={[styles.nextBtn, { backgroundColor: (theme.coral as any)?.solid, borderColor: ink, marginTop: 12 }]}
                   >
                     <Text style={{ color: "#fff", fontSize: 13, fontWeight: "800" }}>
@@ -780,6 +787,7 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
           stopTimer();
           setRunning(false);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          trackMindfulnessCompletion("meditation");
           return 0;
         }
         return r - 1;
@@ -804,7 +812,7 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
           return c - 1;
         });
       }, 1000);
-    }, 1500);
+    }, 2000);
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -945,6 +953,7 @@ function GratitudeSection({ theme, ink, onBack }: { theme: any; ink: string; onB
       await api.logMoodMoment(5, "Grateful", text.trim());
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       toast("Saved to your journal.");
+      trackMindfulnessCompletion("gratitude");
       setSaved(true);
       setText("");
     } catch {
