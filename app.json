@@ -76,7 +76,8 @@
     "extra": {
       "eas": {
         "projectId": "e9f6c0bb-24a1-412f-8947-c886d73b8918"
-      }
+      },
+      "apiBaseUrl": "https://app.kels.gg/api"
     }
   }
 }
