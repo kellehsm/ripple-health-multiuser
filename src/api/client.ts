@@ -582,6 +582,30 @@ export const api = {
     return request('/cycle/overview-insight');
   },
 
+  // Cycle instruction card
+  getCycleInstructionCardStatus: function () {
+    return request('/cycle/instruction-card');
+  },
+  dismissCycleInstructionCard: function () {
+    return request('/cycle/instruction-card/dismiss', { method: 'POST', body: JSON.stringify({}) });
+  },
+
+  // Feature hints
+  getHintStatus: function (hintKey: string) {
+    return request('/hints/' + hintKey);
+  },
+  dismissHint: function (hintKey: string) {
+    return request('/hints/' + hintKey + '/dismiss', { method: 'POST', body: JSON.stringify({}) });
+  },
+
+  // Medication RxNorm + openFDA
+  triggerMedicationRxNorm: function (id: string) {
+    return request('/medications/' + id + '/rxnorm', { method: 'POST', body: JSON.stringify({}) });
+  },
+  getMedicationLabel: function (id: string) {
+    return request('/medications/' + id + '/label');
+  },
+
   // ── Tab preferences ───────────────────────────────────────────────────────────
   getTabPreferences: function () {
     return request('/user/tab-preferences');

@@ -14,6 +14,9 @@ const TYPE_GROUPS: { label: string; types: string[]; emoji: string }[] = [
   { label: "Wellness", types: ["glucose", "sleep", "activity", "water"], emoji: "❤️" },
   { label: "Mind", types: ["mood", "books", "hobbies"], emoji: "🧠" },
   { label: "Habits", types: ["spending", "streak"], emoji: "🔥" },
+  { label: "Medication", types: ["medication"], emoji: "💊" },
+  { label: "Exercise", types: ["exercise"], emoji: "🏋️" },
+  { label: "Combined", types: ["combined"], emoji: "🔗" },
 ];
 
 export function InsightsScreen() {

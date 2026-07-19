@@ -9,14 +9,18 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
-  FlatList,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '../theme/ThemeContext';
 import { useTabPreferences } from '../hooks/useTabPreferences';
 import { useNavigation } from '@react-navigation/native';
 import { api } from '../api/client';
 
-type SubTab = 'overview' | 'medication' | 'cycle';
+// ─── Sub-tab type ────────────────────────────────────────────────────────────
+
+type SubTab = 'medication' | 'cycle';
+
+// ─── Interfaces ──────────────────────────────────────────────────────────────
 
 interface MedSlot {
   id: string;
@@ -40,6 +44,8 @@ interface MedPrescriber {
 interface Medication {
   id: string;
   name: string;
+  brand_name?: string | null;
+  generic_name?: string | null;
   dosage: string | null;
   active: boolean;
   notes: string | null;
@@ -53,6 +59,28 @@ interface Medication {
 
 type MedStatus = 'active' | 'new' | 'expiring' | 'refill_needed';
 
+interface CycleLog {
+  id: string;
+  log_date: string;
+  flow_intensity: string | null;
+  symptoms: string[] | null;
+  mood_label: string | null;
+  notes: string | null;
+  energy_level?: number | null;
+}
+
+interface Prediction {
+  predictedNextStart: string | null;
+  avgCycleLength: number | null;
+  avgPeriodLength?: number | null;
+  cycleLengthsUsed: number;
+  confidence: string;
+  lastPeriodStart?: string;
+  currentCycleDay?: number;
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
 function computeMedStatus(med: Medication): MedStatus {
   const daysSinceAdded = (Date.now() - new Date(med.created_at).getTime()) / 86400000;
   if (daysSinceAdded < 7) return 'new';
@@ -65,10 +93,10 @@ function computeMedStatus(med: Medication): MedStatus {
 }
 
 const STATUS_BADGE: Record<MedStatus, { label: string; bg: string; fg: string }> = {
-  active:        { label: 'Active',          bg: 'transparent',  fg: 'transparent' },
-  new:           { label: 'New',             bg: '#DCFCE7',      fg: '#166534' },
-  expiring:      { label: 'Refill soon',     bg: '#FEF9C3',      fg: '#854D0E' },
-  refill_needed: { label: 'Refill needed',   bg: '#FEE2E2',      fg: '#991B1B' },
+  active:        { label: 'Active',        bg: 'transparent', fg: 'transparent' },
+  new:           { label: 'New',           bg: '#DCFCE7',     fg: '#166534' },
+  expiring:      { label: 'Refill soon',   bg: '#FEF9C3',     fg: '#854D0E' },
+  refill_needed: { label: 'Refill needed', bg: '#FEE2E2',     fg: '#991B1B' },
 };
 
 const TOD_HOUR: Record<string, number> = { morning: 8, midday: 12, evening: 20 };
@@ -102,33 +130,23 @@ function nextDoseCallout(medications: Medication[]): string | null {
   return m > 0 ? `${earliest.name} in ${h}h ${m}m` : `${earliest.name} in ${h}h`;
 }
 
-interface CycleLog {
-  id: string;
-  log_date: string;
-  flow_intensity: string | null;
-  symptoms: string[] | null;
-  mood_label: string | null;
-  notes: string | null;
-}
+const FLOW_OPTIONS = ['none', 'spotting', 'light', 'medium', 'heavy'];
 
-interface Prediction {
-  predictedNextStart: string | null;
-  avgCycleLength: number | null;
-  cycleLengthsUsed: number;
-  confidence: string;
-  lastPeriodStart?: string;
-  currentCycleDay?: number;
-}
-
+// Wellness-palette flow colors (no red/pink)
 const FLOW_COLORS: Record<string, string> = {
-  none: 'transparent',
-  spotting: '#FDE8ED',
-  light: '#F9B8C5',
-  medium: '#E87A96',
-  heavy: '#C43060',
+  none:     'transparent',
+  spotting: '#EDD5C8',
+  light:    '#F5C4B3',
+  medium:   '#E8A89A',
+  heavy:    '#C48070',
 };
 
-const FLOW_OPTIONS = ['none', 'spotting', 'light', 'medium', 'heavy'];
+// Calendar indicator colors
+const PERIOD_PEACH      = '#F5C4B3';
+const PREDICTED_LAVENDER = '#D8CDEF';
+const TODAY_PURPLE      = '#B092D9';
+const SYMPTOM_TEAL      = '#A8DAD9';
+const MOOD_PINK         = '#F2D4DC';
 
 function addDays(dateStr: string, n: number): string {
   const d = new Date(dateStr);
@@ -146,119 +164,133 @@ function getPhaseLabel(cycleDay: number): string {
   return 'Luteal';
 }
 
-function ChipRow({ active, onChange, theme }: { active: SubTab; onChange: (t: SubTab) => void; theme: any }) {
-  return (
-    <View style={[chipStyles.row, { borderBottomColor: theme.cardBorder }]}>
-      {(['overview', 'medication', 'cycle'] as SubTab[]).map((tab) => (
-        <Pressable
-          key={tab}
-          style={[
-            chipStyles.chip,
-            {
-              backgroundColor: active === tab ? theme.teal.solid : theme.card,
-              borderColor: theme.ink,
-              shadowColor: theme.ink,
-            },
-          ]}
-          onPress={() => onChange(tab)}
-        >
-          <Text style={[chipStyles.chipText, { color: active === tab ? '#fff' : theme.textSoft, fontWeight: active === tab ? '700' : '400' }]}>
-            {tab === 'overview' ? 'Overview' : tab === 'medication' ? 'Medication' : 'Cycle'}
-          </Text>
-        </Pressable>
-      ))}
-    </View>
-  );
+function getWeekStart(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - d.getDay());
+  return d.toISOString().slice(0, 10);
 }
 
-const chipStyles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 8, padding: 12, borderBottomWidth: 1 },
-  chip: {
-    paddingVertical: 7,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    borderWidth: 2,
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 2,
-  },
-  chipText: { fontSize: 13 },
-});
+// ─── OverviewBlocks ──────────────────────────────────────────────────────────
 
-function HealthOverview({ onNavigate, theme }: { onNavigate: (t: SubTab) => void; theme: any }) {
+function OverviewBlocks({
+  onNavigate,
+  theme,
+}: {
+  onNavigate: (t: SubTab) => void;
+  theme: any;
+}) {
   const [medications, setMedications] = useState<Medication[]>([]);
   const [prediction, setPrediction] = useState<Prediction | null>(null);
+  const [weekSymptomCount, setWeekSymptomCount] = useState(0);
   const [insight, setInsight] = useState<{ id: string; text: string; confidence: string } | null>(null);
-  const [cycleLogModalDate, setCycleLogModalDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const weekStart = getWeekStart();
+    const today = new Date().toISOString().slice(0, 10);
     Promise.all([
-      api.getMedications().catch(() => []),
+      api.getMedications().catch(() => [] as Medication[]),
       api.getCyclePrediction().catch(() => null),
+      api.getCycleLogs(weekStart, today).catch(() => []),
       api.getHealthOverviewInsight().catch(() => null),
-    ]).then(([meds, pred, ins]) => {
-      setMedications(meds ?? []);
+    ]).then(([meds, pred, weekLogs, ins]) => {
+      setMedications((meds as Medication[]) ?? []);
       setPrediction(pred);
+      // count unique symptoms across all logs this week
+      const symptomSet = new Set<string>();
+      for (const log of (weekLogs as CycleLog[])) {
+        for (const s of (log.symptoms ?? [])) symptomSet.add(s);
+      }
+      setWeekSymptomCount(symptomSet.size);
       setInsight(ins);
     }).finally(() => setLoading(false));
   }, []);
 
   const totalSlots = medications.reduce((acc, m) => acc + m.slots.length, 0);
   const takenSlots = medications.reduce((acc, m) => acc + m.slots.filter((s) => s.dose_log !== null).length, 0);
-  const todayStr = new Date().toISOString().slice(0, 10);
+
+  const medSummaryLine = totalSlots === 0
+    ? 'No schedule'
+    : `${takenSlots} of ${totalSlots} taken`;
+
+  const cycleDayLine = prediction && prediction.confidence !== 'none' && prediction.currentCycleDay
+    ? `Day ${prediction.currentCycleDay}`
+    : 'Log to start';
+  const cyclePhase = prediction && prediction.confidence !== 'none' && prediction.currentCycleDay
+    ? getPhaseLabel(prediction.currentCycleDay)
+    : '';
+
+  const symptomLine = weekSymptomCount > 0
+    ? `${weekSymptomCount} this wk`
+    : 'None logged';
+
+  if (loading) {
+    return (
+      <View style={[obStyles.row, { backgroundColor: theme.card, borderColor: theme.ink, shadowColor: theme.ink }]}>
+        <ActivityIndicator color={theme.teal.solid} style={{ flex: 1, paddingVertical: 24 }} />
+      </View>
+    );
+  }
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, gap: 14 }}>
-      {loading && <ActivityIndicator color={theme.teal.solid} style={{ marginTop: 40 }} />}
-
-      <View style={[overviewStyles.card, { backgroundColor: theme.card, borderColor: theme.ink, shadowColor: theme.ink }]}>
-        <Text style={[overviewStyles.cardTitle, { color: theme.textStrong }]}>Today's Medications</Text>
-        {totalSlots === 0 ? (
-          <Text style={{ color: theme.textSoft, fontSize: 13 }}>No medications scheduled.</Text>
-        ) : (
-          <Text style={{ color: theme.textStrong, fontSize: 22, fontWeight: '800' }}>
-            {takenSlots} <Text style={{ fontSize: 14, fontWeight: '400', color: theme.textSoft }}>of {totalSlots} taken today</Text>
-          </Text>
-        )}
+    <View style={{ gap: 10 }}>
+      <View style={[obStyles.row, { backgroundColor: theme.card, borderColor: theme.ink, shadowColor: theme.ink }]}>
+        {/* Medication block */}
         <Pressable
-          style={[overviewStyles.btn, { borderColor: theme.ink, backgroundColor: theme.teal.tint, shadowColor: theme.ink }]}
+          style={({ pressed }) => [obStyles.block, { backgroundColor: theme.teal.tint, opacity: pressed ? 0.75 : 1 }]}
           onPress={() => onNavigate('medication')}
+          onLongPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            Alert.alert('Medications', 'What would you like to do?', [
+              {
+                text: 'Mark all morning taken',
+                onPress: async () => {
+                  try { await api.markSlotTaken('morning'); } catch {}
+                },
+              },
+              { text: 'Cancel', style: 'cancel' },
+            ]);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Medication overview"
         >
-          <Text style={{ color: theme.teal.fg, fontWeight: '700', fontSize: 13 }}>View schedule</Text>
+          <Text style={obStyles.icon}>💊</Text>
+          <Text style={[obStyles.blockLabel, { color: theme.textStrong }]}>Medication</Text>
+          <Text style={[obStyles.blockValue, { color: theme.teal.fg }]}>{medSummaryLine}</Text>
         </Pressable>
-      </View>
 
-      <View style={[overviewStyles.card, { backgroundColor: theme.card, borderColor: theme.ink, shadowColor: theme.ink }]}>
-        <Text style={[overviewStyles.cardTitle, { color: theme.textStrong }]}>Cycle Tracker</Text>
-        {!prediction || prediction.confidence === 'none' ? (
-          <Text style={{ color: theme.textSoft, fontSize: 13 }}>Log 3+ periods to see predictions.</Text>
-        ) : (
-          <>
-            <Text style={{ color: theme.textStrong, fontSize: 22, fontWeight: '800' }}>
-              Day {prediction.currentCycleDay ?? '—'}
-            </Text>
-            <Text style={{ color: theme.textSoft, fontSize: 13, marginTop: 2 }}>
-              {getPhaseLabel(prediction.currentCycleDay ?? 1)} phase
-            </Text>
-            {prediction.predictedNextStart && (
-              <Text style={{ color: theme.textSoft, fontSize: 12, marginTop: 4 }}>
-                Period expected ~{formatDate(addDays(prediction.predictedNextStart, -2))} – {formatDate(addDays(prediction.predictedNextStart, 2))}
-              </Text>
-            )}
-          </>
-        )}
+        <View style={[obStyles.divider, { backgroundColor: theme.ink }]} />
+
+        {/* Cycle block */}
         <Pressable
-          style={[overviewStyles.btn, { borderColor: theme.ink, backgroundColor: '#FDE8ED', shadowColor: theme.ink }]}
-          onPress={() => setCycleLogModalDate(todayStr)}
+          style={({ pressed }) => [obStyles.block, { opacity: pressed ? 0.75 : 1 }]}
+          onPress={() => onNavigate('cycle')}
+          accessibilityRole="button"
+          accessibilityLabel="Cycle overview"
         >
-          <Text style={{ color: '#C43060', fontWeight: '700', fontSize: 13 }}>Log today</Text>
+          <Text style={obStyles.icon}>🌸</Text>
+          <Text style={[obStyles.blockLabel, { color: theme.textStrong }]}>Cycle</Text>
+          <Text style={[obStyles.blockValue, { color: theme.purple?.fg ?? '#5B21B6' }]}>{cycleDayLine}</Text>
+          {cyclePhase ? <Text style={[obStyles.blockSub, { color: theme.textSoft }]}>{cyclePhase}</Text> : null}
+        </Pressable>
+
+        <View style={[obStyles.divider, { backgroundColor: theme.ink }]} />
+
+        {/* Symptoms block */}
+        <Pressable
+          style={({ pressed }) => [obStyles.block, { opacity: pressed ? 0.75 : 1 }]}
+          onPress={() => onNavigate('cycle')}
+          accessibilityRole="button"
+          accessibilityLabel="Symptoms overview"
+        >
+          <Text style={obStyles.icon}>📝</Text>
+          <Text style={[obStyles.blockLabel, { color: theme.textStrong }]}>Symptoms</Text>
+          <Text style={[obStyles.blockValue, { color: theme.textSoft }]}>{symptomLine}</Text>
         </Pressable>
       </View>
 
       {insight && (
-        <View style={[overviewStyles.insightBanner, { backgroundColor: theme.purple?.tint ?? '#F3EEFF', borderColor: theme.purple?.sub ?? '#9B6DFF' }]}>
+        <View style={[obStyles.insightBanner, { backgroundColor: theme.purple?.tint ?? '#F3EEFF', borderColor: theme.purple?.sub ?? '#9B6DFF' }]}>
           <Text style={{ color: theme.purple?.fg ?? '#5B21B6', fontSize: 13, fontWeight: '600', lineHeight: 18 }}>
             {insight.text}
           </Text>
@@ -269,65 +301,81 @@ function HealthOverview({ onNavigate, theme }: { onNavigate: (t: SubTab) => void
           )}
         </View>
       )}
-
-      {cycleLogModalDate && (
-        <CycleDayLogModal
-          date={cycleLogModalDate}
-          existingLog={null}
-          theme={theme}
-          onClose={() => setCycleLogModalDate(null)}
-          onSaved={() => setCycleLogModalDate(null)}
-        />
-      )}
-    </ScrollView>
+    </View>
   );
 }
 
-const overviewStyles = StyleSheet.create({
-  card: {
+const obStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
     borderRadius: 14,
     borderWidth: 2,
-    padding: 16,
-    gap: 8,
+    overflow: 'hidden',
     shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 1,
     shadowRadius: 0,
     elevation: 4,
   },
-  cardTitle: { fontSize: 13, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', opacity: 0.6 },
+  block: {
+    flex: 1,
+    minHeight: 88,
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+  },
+  divider: { width: 2 },
+  icon: { fontSize: 20 },
+  blockLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase' },
+  blockValue: { fontSize: 13, fontWeight: '700', textAlign: 'center' },
+  blockSub: { fontSize: 11, textAlign: 'center' },
   insightBanner: {
     borderRadius: 12,
     borderWidth: 2,
     padding: 14,
     gap: 2,
   },
-  btn: {
-    marginTop: 4,
-    borderWidth: 2,
-    borderRadius: 10,
-    paddingVertical: 9,
-    paddingHorizontal: 16,
-    alignSelf: 'flex-start',
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 3,
-  },
 });
 
-function AddMedicationModal({ theme, onClose, onSaved }: { theme: any; onClose: () => void; onSaved: () => void }) {
+// ─── AddMedicationModal ───────────────────────────────────────────────────────
+
+function AddMedicationModal({
+  theme,
+  onClose,
+  onSaved,
+  initialValues,
+  editId,
+}: {
+  theme: any;
+  onClose: () => void;
+  onSaved: () => void;
+  initialValues?: {
+    name: string;
+    dosage: string;
+    purpose: string;
+    notes: string;
+    prescriberName: string;
+    refillDate: string;
+    selectedCatId: string | null;
+    selectedTimes: string[];
+    customTime: string;
+  };
+  editId?: string;
+}) {
   const ink = theme.ink;
-  const [name, setName] = useState('');
-  const [dosage, setDosage] = useState('');
-  const [notes, setNotes] = useState('');
-  const [purpose, setPurpose] = useState('');
-  const [refillDate, setRefillDate] = useState('');
-  const [prescriberName, setPrescriberName] = useState('');
-  const [selectedCatId, setSelectedCatId] = useState<string | null>(null);
+  const isEdit = !!editId;
+
+  const [name, setName] = useState(initialValues?.name ?? '');
+  const [dosage, setDosage] = useState(initialValues?.dosage ?? '');
+  const [notes, setNotes] = useState(initialValues?.notes ?? '');
+  const [purpose, setPurpose] = useState(initialValues?.purpose ?? '');
+  const [refillDate, setRefillDate] = useState(initialValues?.refillDate ?? '');
+  const [prescriberName, setPrescriberName] = useState(initialValues?.prescriberName ?? '');
+  const [selectedCatId, setSelectedCatId] = useState<string | null>(initialValues?.selectedCatId ?? null);
   const [categories, setCategories] = useState<ColorCategory[]>([]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
-  const [customTime, setCustomTime] = useState('');
+  const [selectedTimes, setSelectedTimes] = useState<string[]>(initialValues?.selectedTimes ?? []);
+  const [customTime, setCustomTime] = useState(initialValues?.customTime ?? '');
   const [saving, setSaving] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -365,11 +413,23 @@ function AddMedicationModal({ theme, onClose, onSaved }: { theme: any; onClose: 
         if (found) { prescriber_id = found.id; }
         else { const p = await api.addMedicationPrescriber({ name: prescriberName.trim() }); prescriber_id = p?.id ?? null; }
       }
-      await api.addMedication({
-        name: name.trim(), dosage: dosage.trim() || null, notes: notes.trim() || null,
-        purpose: purpose.trim() || null, refill_date: refillDate.trim() || null,
-        color_category_id: selectedCatId, prescriber_id, slots,
-      });
+
+      const payload = {
+        name: name.trim(),
+        dosage: dosage.trim() || null,
+        notes: notes.trim() || null,
+        purpose: purpose.trim() || null,
+        refill_date: refillDate.trim() || null,
+        color_category_id: selectedCatId,
+        prescriber_id,
+        slots,
+      };
+
+      if (isEdit && editId) {
+        await api.updateMedication(editId, payload);
+      } else {
+        await api.addMedication(payload);
+      }
       onSaved();
     } catch (err: any) {
       Alert.alert('Error', err?.message ?? 'Failed to save');
@@ -383,7 +443,9 @@ function AddMedicationModal({ theme, onClose, onSaved }: { theme: any; onClose: 
       <View style={modalStyles.overlay}>
         <View style={[modalStyles.sheet, { backgroundColor: theme.card, borderColor: ink }]}>
           <View style={modalStyles.header}>
-            <Text style={[modalStyles.title, { color: theme.textStrong }]}>Add Medication</Text>
+            <Text style={[modalStyles.title, { color: theme.textStrong }]}>
+              {isEdit ? 'Edit Medication' : 'Add Medication'}
+            </Text>
             <Pressable onPress={onClose}><Text style={{ color: theme.textSoft, fontSize: 22 }}>✕</Text></Pressable>
           </View>
           <ScrollView contentContainerStyle={{ gap: 12, paddingBottom: 20 }} keyboardShouldPersistTaps="handled">
@@ -452,8 +514,74 @@ function AddMedicationModal({ theme, onClose, onSaved }: { theme: any; onClose: 
                 placeholder="Custom time (HH:MM)" placeholderTextColor={theme.textSoft} value={customTime} onChangeText={setCustomTime} />
             )}
             <Pressable style={[modalStyles.saveBtn, { backgroundColor: theme.teal.solid, borderColor: ink }]} onPress={save} disabled={saving}>
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>{saving ? 'Saving…' : 'Save Medication'}</Text>
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>{saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Save Medication'}</Text>
             </Pressable>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ─── MedicationInfoModal ──────────────────────────────────────────────────────
+
+function MedicationInfoModal({ med, theme, onClose }: { med: Medication; theme: any; onClose: () => void }) {
+  const [loading, setLoading] = useState(true);
+  const [labelData, setLabelData] = useState<any>(null);
+  const [found, setFound] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    api.getMedicationLabel(med.id)
+      .then((res: any) => {
+        setFound(res?.found ?? false);
+        setLabelData(res?.label ?? null);
+      })
+      .catch(() => { setFound(false); setLabelData(null); })
+      .finally(() => setLoading(false));
+  }, [med.id]);
+
+  const sections: Array<{ key: string; title: string }> = [
+    { key: 'indications_and_usage', title: 'Indications' },
+    { key: 'dosage_and_administration', title: 'Dosage' },
+    { key: 'warnings', title: 'Warnings' },
+    { key: 'adverse_reactions', title: 'Adverse Reactions' },
+  ];
+
+  return (
+    <Modal transparent animationType="slide" onRequestClose={onClose}>
+      <View style={modalStyles.overlay}>
+        <View style={[modalStyles.sheet, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+          <View style={modalStyles.header}>
+            <Text style={[modalStyles.title, { color: theme.textStrong }]} numberOfLines={1}>{med.name}</Text>
+            <Pressable onPress={onClose}><Text style={{ color: theme.textSoft, fontSize: 22 }}>✕</Text></Pressable>
+          </View>
+          <ScrollView contentContainerStyle={{ gap: 14, paddingBottom: 24 }}>
+            {loading && <ActivityIndicator color={theme.teal.solid} style={{ marginTop: 24 }} />}
+            {!loading && found === false && (
+              <Text style={{ color: theme.textSoft, fontSize: 14, textAlign: 'center', marginTop: 16 }}>
+                No FDA label information available for this medication.
+              </Text>
+            )}
+            {!loading && found === true && labelData && (
+              <>
+                {sections.map(({ key, title }) => {
+                  const val = labelData[key];
+                  if (!val) return null;
+                  const text = Array.isArray(val) ? val.join('\n') : String(val);
+                  return (
+                    <View key={key}>
+                      <Text style={{ color: theme.textStrong, fontWeight: '800', fontSize: 13, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.4 }}>
+                        {title}
+                      </Text>
+                      <Text style={{ color: theme.textSoft, fontSize: 13, lineHeight: 19 }}>{text.slice(0, 800)}</Text>
+                    </View>
+                  );
+                })}
+                <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 8, fontStyle: 'italic' }}>
+                  Per the FDA-approved drug label. Talk to your prescriber about any questions.
+                </Text>
+              </>
+            )}
           </ScrollView>
         </View>
       </View>
@@ -472,7 +600,7 @@ const modalStyles = StyleSheet.create({
     maxHeight: '90%',
   },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  title: { fontSize: 18, fontWeight: '800' },
+  title: { fontSize: 18, fontWeight: '800', flex: 1, marginRight: 12 },
   input: {
     borderWidth: 2,
     borderRadius: 10,
@@ -520,6 +648,8 @@ const modalStyles = StyleSheet.create({
   suggRow: { paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1 },
 });
 
+// ─── MedicationView ───────────────────────────────────────────────────────────
+
 function MedicationView({ theme }: { theme: any }) {
   const navigation = useNavigation<any>();
   const [medications, setMedications] = useState<Medication[]>([]);
@@ -527,6 +657,9 @@ function MedicationView({ theme }: { theme: any }) {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedSlotIds, setSelectedSlotIds] = useState<string[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editMed, setEditMed] = useState<Medication | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [infoMed, setInfoMed] = useState<Medication | null>(null);
   const [refresh, setRefresh] = useState(0);
 
   const load = useCallback(async () => {
@@ -626,10 +759,6 @@ function MedicationView({ theme }: { theme: any }) {
 
           {Object.entries(buckets).map(([bucket, meds]) => {
             if (meds.length === 0) return null;
-            const bucketSlots = meds.flatMap((m) => m.slots.filter((s) => {
-              const b = ['morning', 'midday', 'evening'].includes(s.time_of_day) ? s.time_of_day : 'custom';
-              return b === bucket;
-            }));
             return (
               <View key={bucket} style={[medStyles.bucket, { backgroundColor: theme.card, borderColor: theme.ink, shadowColor: theme.ink }]}>
                 <View style={medStyles.bucketHeader}>
@@ -694,14 +823,32 @@ function MedicationView({ theme }: { theme: any }) {
             const refillDays = med.refill_date
               ? Math.ceil((new Date(med.refill_date).getTime() - Date.now()) / 86400000)
               : null;
+
+            // Brand/generic subtitle logic
+            let brandGenericLine: string | null = null;
+            if (med.brand_name != null && med.generic_name != null) {
+              if (med.name === med.brand_name) {
+                brandGenericLine = `Generic: ${med.generic_name}`;
+              } else if (med.name !== med.brand_name) {
+                brandGenericLine = `Brand: ${med.brand_name}`;
+              }
+            }
+
             return (
               <Pressable
                 key={med.id}
                 style={[medStyles.medCard, { backgroundColor: theme.card, borderColor: theme.ink, shadowColor: theme.ink }]}
                 onPress={() => navigation.navigate('MedicationHistory', { medicationId: med.id, medicationName: med.name })}
                 onLongPress={() => Alert.alert(med.name, 'What would you like to do?', [
-                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Edit',
+                    onPress: () => {
+                      setEditMed(med);
+                      setShowEditModal(true);
+                    },
+                  },
                   { text: 'Remove', style: 'destructive', onPress: () => deleteMed(med.id) },
+                  { text: 'Cancel', style: 'cancel' },
                 ])}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
@@ -709,6 +856,14 @@ function MedicationView({ theme }: { theme: any }) {
                   <View style={{ flex: 1, gap: 2 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Text style={[medStyles.medName, { color: theme.textStrong, flex: 1 }]}>{med.name}</Text>
+                      {/* Info button */}
+                      <Pressable
+                        onPress={() => setInfoMed(med)}
+                        hitSlop={8}
+                        accessibilityLabel={`${med.name} drug label info`}
+                      >
+                        <Text style={{ color: theme.textSoft, fontSize: 16 }}>ⓘ</Text>
+                      </Pressable>
                       {status !== 'active' && (
                         <View style={[medStyles.statusBadge, { backgroundColor: badge.bg }]}>
                           <Text style={[medStyles.statusBadgeText, { color: badge.fg }]}>{badge.label}</Text>
@@ -716,6 +871,7 @@ function MedicationView({ theme }: { theme: any }) {
                       )}
                     </View>
                     {med.dosage && <Text style={{ color: theme.textSoft, fontSize: 12 }}>{med.dosage}</Text>}
+                    {brandGenericLine && <Text style={{ color: theme.textSoft, fontSize: 12 }}>{brandGenericLine}</Text>}
                     {med.purpose && <Text style={{ color: theme.textSoft, fontSize: 12 }}>Purpose: {med.purpose}</Text>}
                     {med.prescriber && <Text style={{ color: theme.textSoft, fontSize: 12 }}>Dr. {med.prescriber.name}</Text>}
                     <Text style={{ color: theme.textSoft, fontSize: 12 }}>
@@ -756,6 +912,34 @@ function MedicationView({ theme }: { theme: any }) {
           theme={theme}
           onClose={() => setShowAddModal(false)}
           onSaved={() => { setShowAddModal(false); setRefresh((r) => r + 1); }}
+        />
+      )}
+
+      {showEditModal && editMed && (
+        <AddMedicationModal
+          theme={theme}
+          editId={editMed.id}
+          initialValues={{
+            name: editMed.name,
+            dosage: editMed.dosage ?? '',
+            purpose: editMed.purpose ?? '',
+            notes: editMed.notes ?? '',
+            prescriberName: editMed.prescriber?.name ?? '',
+            refillDate: editMed.refill_date ?? '',
+            selectedCatId: editMed.color_category?.id ?? null,
+            selectedTimes: editMed.slots.map((s) => s.time_of_day),
+            customTime: editMed.slots.find((s) => s.time_of_day === 'custom')?.specific_time ?? '',
+          }}
+          onClose={() => { setShowEditModal(false); setEditMed(null); }}
+          onSaved={() => { setShowEditModal(false); setEditMed(null); setRefresh((r) => r + 1); }}
+        />
+      )}
+
+      {infoMed && (
+        <MedicationInfoModal
+          med={infoMed}
+          theme={theme}
+          onClose={() => setInfoMed(null)}
         />
       )}
     </View>
@@ -828,6 +1012,8 @@ const medStyles = StyleSheet.create({
   nextDoseText: { fontSize: 13, fontWeight: '700', flex: 1 },
 });
 
+// ─── CycleDayLogModal ─────────────────────────────────────────────────────────
+
 function CycleDayLogModal({
   date,
   existingLog,
@@ -843,6 +1029,7 @@ function CycleDayLogModal({
 }) {
   const [flow, setFlow] = useState<string>(existingLog?.flow_intensity ?? '');
   const [symptoms, setSymptoms] = useState<string[]>(existingLog?.symptoms ?? []);
+  const [energy, setEnergy] = useState<number | null>(existingLog?.energy_level ?? null);
   const [moodSearch, setMoodSearch] = useState('');
   const [moodLabel, setMoodLabel] = useState(existingLog?.mood_label ?? '');
   const [notes, setNotes] = useState(existingLog?.notes ?? '');
@@ -896,6 +1083,7 @@ function CycleDayLogModal({
         symptoms: symptoms.length > 0 ? symptoms : null,
         mood_label: moodLabel || null,
         notes: notes || null,
+        energy_level: energy ?? null,
       });
       onSaved();
     } catch (err: any) {
@@ -906,7 +1094,7 @@ function CycleDayLogModal({
   }
 
   async function deleteLog() {
-    Alert.alert('Delete log?', 'Remove this day\'s log?', [
+    Alert.alert('Delete log?', "Remove this day's log?", [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -936,6 +1124,7 @@ function CycleDayLogModal({
             <Pressable onPress={onClose}><Text style={{ color: theme.textSoft, fontSize: 22 }}>✕</Text></Pressable>
           </View>
           <ScrollView contentContainerStyle={{ gap: 16, paddingBottom: 20 }}>
+            {/* Flow intensity */}
             <View>
               <Text style={[cycleStyles.label, { color: theme.textSoft }]}>Flow intensity</Text>
               <View style={{ flexDirection: 'row', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
@@ -960,6 +1149,7 @@ function CycleDayLogModal({
               </View>
             </View>
 
+            {/* Symptoms */}
             <View>
               <Text style={[cycleStyles.label, { color: theme.textSoft }]}>Symptoms</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
@@ -1003,6 +1193,29 @@ function CycleDayLogModal({
               </View>
             </View>
 
+            {/* Energy level */}
+            <View>
+              <Text style={[cycleStyles.label, { color: theme.textSoft }]}>Energy level</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                  <Pressable
+                    key={n}
+                    style={[
+                      cycleStyles.energyBtn,
+                      {
+                        backgroundColor: energy === n ? theme.teal.solid : theme.page,
+                        borderColor: energy === n ? theme.teal.solid : theme.ink,
+                      },
+                    ]}
+                    onPress={() => setEnergy(energy === n ? null : n)}
+                  >
+                    <Text style={{ color: energy === n ? '#fff' : theme.textSoft, fontSize: 13, fontWeight: '600' }}>{n}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            {/* Mood */}
             <View>
               <Text style={[cycleStyles.label, { color: theme.textSoft }]}>Mood</Text>
               <TextInput
@@ -1019,7 +1232,7 @@ function CycleDayLogModal({
                     style={[
                       cycleStyles.chip,
                       {
-                        backgroundColor: moodLabel === m.label ? theme.violet.solid : theme.page,
+                        backgroundColor: moodLabel === m.label ? theme.violet?.solid ?? theme.purple?.solid ?? theme.teal.solid : theme.page,
                         borderColor: theme.ink,
                       },
                     ]}
@@ -1031,6 +1244,7 @@ function CycleDayLogModal({
               </View>
             </View>
 
+            {/* Notes */}
             <View>
               <Text style={[cycleStyles.label, { color: theme.textSoft }]}>Notes</Text>
               <TextInput
@@ -1053,7 +1267,7 @@ function CycleDayLogModal({
 
             {existingLog && (
               <Pressable onPress={deleteLog} style={{ alignItems: 'center', marginTop: 4 }}>
-                <Text style={{ color: theme.danger, fontSize: 13, fontWeight: '600' }}>Delete this log</Text>
+                <Text style={{ color: theme.danger ?? '#CC3333', fontSize: 13, fontWeight: '600' }}>Delete this log</Text>
               </Pressable>
             )}
           </ScrollView>
@@ -1069,14 +1283,26 @@ const cycleStyles = StyleSheet.create({
   chip: { borderWidth: 2, borderRadius: 20, paddingVertical: 6, paddingHorizontal: 12 },
   input: { borderWidth: 2, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14 },
   addBtn: { borderWidth: 2, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 },
+  energyBtn: { width: 38, height: 38, borderRadius: 10, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
 });
 
-function MonthCalendar({ theme, onDayPress }: { theme: any; onDayPress: (date: string) => void }) {
+// ─── MonthCalendar ────────────────────────────────────────────────────────────
+
+function MonthCalendar({
+  theme,
+  onDayPress,
+  refreshKey,
+}: {
+  theme: any;
+  onDayPress: (date: string) => void;
+  refreshKey?: number;
+}) {
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
   });
   const [logs, setLogs] = useState<CycleLog[]>([]);
+  const [prediction, setPrediction] = useState<Prediction | null>(null);
 
   const { year, month } = currentMonth;
   const firstDay = new Date(year, month, 1);
@@ -1089,14 +1315,29 @@ function MonthCalendar({ theme, onDayPress }: { theme: any; onDayPress: (date: s
     const from = firstDay.toISOString().slice(0, 10);
     const to = lastDay.toISOString().slice(0, 10);
     api.getCycleLogs(from, to).then((res: any) => setLogs(res ?? [])).catch(() => setLogs([]));
-  }, [year, month]);
+    api.getCyclePrediction().then((res: any) => setPrediction(res)).catch(() => setPrediction(null));
+  }, [year, month, refreshKey]);
 
-  function prevMonth() { setCurrentMonth(({ year: y, month: m }) => m === 0 ? { year: y - 1, month: 11 } : { year: y, month: m - 1 }); }
-  function nextMonth() { setCurrentMonth(({ year: y, month: m }) => m === 11 ? { year: y + 1, month: 0 } : { year: y, month: m + 1 }); }
+  function prevMonth() {
+    setCurrentMonth(({ year: y, month: m }) => m === 0 ? { year: y - 1, month: 11 } : { year: y, month: m - 1 });
+  }
+  function nextMonth() {
+    setCurrentMonth(({ year: y, month: m }) => m === 11 ? { year: y + 1, month: 0 } : { year: y, month: m + 1 });
+  }
 
+  // Build log map
   const logMap: Record<string, CycleLog> = {};
   for (const log of logs) {
     logMap[log.log_date] = log;
+  }
+
+  // Build predicted period dates set
+  const predictedDays = new Set<string>();
+  if (prediction?.predictedNextStart) {
+    const periodLen = prediction.avgPeriodLength ?? 5;
+    for (let i = 0; i < periodLen; i++) {
+      predictedDays.add(addDays(prediction.predictedNextStart, i));
+    }
   }
 
   const monthLabel = firstDay.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -1107,9 +1348,9 @@ function MonthCalendar({ theme, onDayPress }: { theme: any; onDayPress: (date: s
   return (
     <View style={[calStyles.container, { backgroundColor: theme.card, borderColor: theme.ink, shadowColor: theme.ink }]}>
       <View style={calStyles.header}>
-        <Pressable onPress={prevMonth}><Text style={{ color: theme.textStrong, fontSize: 20 }}>‹</Text></Pressable>
+        <Pressable onPress={prevMonth} hitSlop={8}><Text style={{ color: theme.textStrong, fontSize: 20 }}>‹</Text></Pressable>
         <Text style={[calStyles.monthLabel, { color: theme.textStrong }]}>{monthLabel}</Text>
-        <Pressable onPress={nextMonth}><Text style={{ color: theme.textStrong, fontSize: 20 }}>›</Text></Pressable>
+        <Pressable onPress={nextMonth} hitSlop={8}><Text style={{ color: theme.textStrong, fontSize: 20 }}>›</Text></Pressable>
       </View>
       <View style={calStyles.dowRow}>
         {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
@@ -1121,21 +1362,77 @@ function MonthCalendar({ theme, onDayPress }: { theme: any; onDayPress: (date: s
           if (day === null) return <View key={'empty-' + idx} style={calStyles.cell} />;
           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           const log = logMap[dateStr];
-          const flowColor = log?.flow_intensity ? FLOW_COLORS[log.flow_intensity] : 'transparent';
           const isToday = dateStr === today;
+          const isPredicted = predictedDays.has(dateStr);
+
+          const isPeriodDay = log?.flow_intensity && log.flow_intensity !== 'none';
+          const hasSymptomLog = (log?.symptoms ?? []).length > 0;
+          const hasMoodLog = log?.mood_label != null && log.mood_label !== '';
+
+          // Cell background
+          let cellBg: string | undefined;
+          if (isPeriodDay) {
+            cellBg = PERIOD_PEACH;
+          }
+
+          // Predicted: dashed border effect using nested view
+          const showPredictedBorder = !isPeriodDay && isPredicted;
+
           return (
             <Pressable
               key={dateStr}
-              style={[
-                calStyles.cell,
-                { backgroundColor: flowColor, borderColor: isToday ? theme.ink : 'transparent', borderWidth: isToday ? 2 : 0 },
-              ]}
+              style={calStyles.cell}
               onPress={() => onDayPress(dateStr)}
             >
+              {/* Predicted lavender border (simulated dashed via borderStyle) */}
+              {showPredictedBorder && (
+                <View style={[
+                  calStyles.cellInner,
+                  { borderColor: PREDICTED_LAVENDER, borderWidth: 2, borderStyle: 'dashed', borderRadius: 6 },
+                ]} />
+              )}
+              {/* Period fill */}
+              {isPeriodDay && (
+                <View style={[calStyles.cellInner, { backgroundColor: cellBg, borderRadius: 6 }]} />
+              )}
+              {/* Today purple ring */}
+              {isToday && (
+                <View style={[calStyles.cellInner, { borderWidth: 2, borderColor: TODAY_PURPLE, borderRadius: 6 }]} />
+              )}
+
               <Text style={[calStyles.dayText, { color: theme.textStrong }]}>{day}</Text>
+
+              {/* Bottom-right: symptom dot (teal) */}
+              {hasSymptomLog && (
+                <View style={[calStyles.dotBR, { backgroundColor: SYMPTOM_TEAL }]} />
+              )}
+              {/* Bottom-left: mood dot (pink) */}
+              {hasMoodLog && (
+                <View style={[calStyles.dotBL, { backgroundColor: MOOD_PINK }]} />
+              )}
             </Pressable>
           );
         })}
+      </View>
+
+      {/* Legend */}
+      <View style={calStyles.legend}>
+        <View style={calStyles.legendItem}>
+          <View style={[calStyles.legendDot, { backgroundColor: PERIOD_PEACH, borderWidth: 1, borderColor: '#ddd' }]} />
+          <Text style={[calStyles.legendText, { color: theme.textSoft }]}>Period</Text>
+        </View>
+        <View style={calStyles.legendItem}>
+          <View style={[calStyles.legendDot, { backgroundColor: PREDICTED_LAVENDER }]} />
+          <Text style={[calStyles.legendText, { color: theme.textSoft }]}>Predicted</Text>
+        </View>
+        <View style={calStyles.legendItem}>
+          <View style={[calStyles.legendDot, { backgroundColor: SYMPTOM_TEAL }]} />
+          <Text style={[calStyles.legendText, { color: theme.textSoft }]}>Symptoms</Text>
+        </View>
+        <View style={calStyles.legendItem}>
+          <View style={[calStyles.legendDot, { backgroundColor: MOOD_PINK }]} />
+          <Text style={[calStyles.legendText, { color: theme.textSoft }]}>Mood</Text>
+        </View>
       </View>
     </View>
   );
@@ -1156,89 +1453,384 @@ const calStyles = StyleSheet.create({
   dowRow: { flexDirection: 'row', marginBottom: 4 },
   dowLabel: { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '700' },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  cell: { width: '14.28%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 6 },
-  dayText: { fontSize: 12, fontWeight: '500' },
+  cell: {
+    width: '14.28%',
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  cellInner: {
+    position: 'absolute',
+    top: 1,
+    left: 1,
+    right: 1,
+    bottom: 1,
+  },
+  dayText: { fontSize: 12, fontWeight: '500', zIndex: 1 },
+  dotBR: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    zIndex: 2,
+  },
+  dotBL: {
+    position: 'absolute',
+    bottom: 2,
+    left: 2,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    zIndex: 2,
+  },
+  legend: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.07)',
+  },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  legendDot: { width: 10, height: 10, borderRadius: 5 },
+  legendText: { fontSize: 11 },
 });
+
+// ─── CycleView ────────────────────────────────────────────────────────────────
 
 function CycleView({ theme }: { theme: any }) {
   const [prediction, setPrediction] = useState<Prediction | null>(null);
   const [history, setHistory] = useState<Array<{ start: string; end: string; length_days: number }>>([]);
-  const [modalDate, setModalDate] = useState<string | null>(null);
-  const [modalLog, setModalLog] = useState<CycleLog | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedLog, setSelectedLog] = useState<CycleLog | null>(null);
+  const [logModalDate, setLogModalDate] = useState<string | null>(null);
+  const [logModalLog, setLogModalLog] = useState<CycleLog | null>(null);
   const [calRefresh, setCalRefresh] = useState(0);
+  const [instructionDismissed, setInstructionDismissed] = useState<boolean | null>(null);
+  const [topSymptoms, setTopSymptoms] = useState<string[]>([]);
 
   useEffect(() => {
     api.getCyclePrediction().then((res: any) => setPrediction(res)).catch(() => {});
     api.getCycleHistory().then((res: any) => setHistory(res ?? [])).catch(() => {});
+    api.getCycleInstructionCardStatus().then((res: any) => setInstructionDismissed(res?.dismissed ?? false)).catch(() => setInstructionDismissed(false));
+    api.getRankedSymptoms().then((res: any) => {
+      const common: string[] = res?.common ?? [];
+      setTopSymptoms(common.slice(0, 3));
+    }).catch(() => {});
   }, [calRefresh]);
 
-  async function openDay(dateStr: string) {
+  async function onDayPress(dateStr: string) {
+    setSelectedDate(dateStr);
     try {
       const log = await api.getCycleLog(dateStr);
-      setModalLog(log ?? null);
+      setSelectedLog(log ?? null);
     } catch {
-      setModalLog(null);
+      setSelectedLog(null);
     }
-    setModalDate(dateStr);
   }
 
-  const avgCycle = history.length >= 2
-    ? Math.round(history.reduce((acc, _, i) => {
-        if (i === 0) return acc;
-        const prev = new Date(history[i - 1].start).getTime();
-        const curr = new Date(history[i].start).getTime();
-        return acc + (curr - prev) / 86400000;
-      }, 0) / (history.length - 1))
-    : null;
+  async function dismissInstruction() {
+    setInstructionDismissed(true);
+    try { await api.dismissCycleInstructionCard(); } catch {}
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Regularity: check last 3 cycle lengths
+  let cycleRegularity: 'Consistent' | 'Irregular' | null = null;
+  if (history.length >= 3) {
+    const recentLengths = history.slice(-3).map((h) => h.length_days);
+    const minL = Math.min(...recentLengths);
+    const maxL = Math.max(...recentLengths);
+    cycleRegularity = (maxL - minL) <= 3 ? 'Consistent' : 'Irregular';
+  }
+
+  const showInsightsCard = (prediction?.cycleLengthsUsed ?? 0) >= 3;
+
+  // Selected day panel data
+  const selectedDateLabel = selectedDate
+    ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : '';
+
+  const isFutureOrNoLog = selectedDate && (selectedDate > today || !selectedLog);
+
+  // Phase for selected date (approximation based on prediction currentCycleDay offset)
+  let selectedPhase = '';
+  if (selectedDate && prediction?.lastPeriodStart) {
+    const dayNum = Math.round((new Date(selectedDate).getTime() - new Date(prediction.lastPeriodStart).getTime()) / 86400000) + 1;
+    if (dayNum > 0) selectedPhase = getPhaseLabel(dayNum);
+  }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 40 }}>
-      {prediction && prediction.confidence !== 'none' && (
-        <View style={[overviewStyles.card, { backgroundColor: theme.card, borderColor: theme.ink, shadowColor: theme.ink }]}>
-          <Text style={{ color: theme.textStrong, fontSize: 28, fontWeight: '800' }}>Day {prediction.currentCycleDay}</Text>
-          <Text style={{ color: theme.textSoft, fontSize: 14, marginTop: 2 }}>
-            {getPhaseLabel(prediction.currentCycleDay ?? 1)} phase
+    <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }}>
+      {/* Instruction card */}
+      {instructionDismissed === false && (
+        <View style={[insStyles.card, { backgroundColor: theme.teal.tint, borderColor: theme.teal.solid, shadowColor: theme.ink }]}>
+          <Text style={[insStyles.cardTitle, { color: theme.teal.fg }]}>Getting started with Cycle Tracking</Text>
+          <Text style={{ color: theme.teal.fg, fontSize: 13, lineHeight: 19, marginTop: 4 }}>
+            Log your flow, symptoms, and mood each day to see predictions and patterns.
           </Text>
-          {prediction.predictedNextStart && (
-            <Text style={{ color: theme.textSoft, fontSize: 13, marginTop: 4 }}>
-              Period expected ~{formatDate(addDays(prediction.predictedNextStart, -2))} – {formatDate(addDays(prediction.predictedNextStart, 2))}
-            </Text>
-          )}
-          <Text style={{ color: theme.textSoft, fontSize: 12, marginTop: 2 }}>
-            Based on {prediction.cycleLengthsUsed} cycles · {prediction.confidence} confidence
-          </Text>
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+            <Pressable
+              style={[insStyles.btn, { borderColor: theme.teal.solid, backgroundColor: theme.card }]}
+              onPress={() => Alert.alert('Cycle Tracking', 'Tap any day on the calendar to log flow, symptoms, mood, and energy. After 3+ cycles, you will see period predictions.')}
+            >
+              <Text style={{ color: theme.teal.fg, fontWeight: '700', fontSize: 13 }}>Learn more</Text>
+            </Pressable>
+            <Pressable
+              style={[insStyles.btn, { borderColor: theme.teal.solid, backgroundColor: theme.teal.solid }]}
+              onPress={dismissInstruction}
+            >
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>Dismiss</Text>
+            </Pressable>
+          </View>
         </View>
       )}
 
-      <MonthCalendar key={calRefresh} theme={theme} onDayPress={openDay} />
+      {/* Calendar */}
+      <MonthCalendar
+        key={calRefresh}
+        theme={theme}
+        onDayPress={onDayPress}
+        refreshKey={calRefresh}
+      />
 
-      {history.length >= 2 && avgCycle !== null && (
-        <View style={[overviewStyles.card, { backgroundColor: theme.card, borderColor: theme.ink, shadowColor: theme.ink }]}>
-          <Text style={[overviewStyles.cardTitle, { color: theme.textStrong }]}>Cycle trend</Text>
-          <Text style={{ color: theme.textStrong, fontSize: 20, fontWeight: '800' }}>{avgCycle} days average</Text>
-          <Text style={{ color: theme.textSoft, fontSize: 12 }}>Last {history.length} periods</Text>
+      {/* Selected day detail panel */}
+      {selectedDate && (
+        <View style={[insStyles.panel, { backgroundColor: theme.card, borderColor: theme.ink, shadowColor: theme.ink }]}>
+          <Text style={[insStyles.panelTitle, { color: theme.textStrong }]}>
+            {selectedDateLabel}{selectedPhase ? ` · ${selectedPhase} phase` : ''}
+          </Text>
+
+          {isFutureOrNoLog ? (
+            <>
+              <Text style={{ color: theme.textSoft, fontSize: 13, marginTop: 4 }}>No log for this day.</Text>
+              <Pressable
+                style={[insStyles.editBtn, { borderColor: theme.ink, backgroundColor: theme.teal.tint }]}
+                onPress={() => { setLogModalDate(selectedDate); setLogModalLog(null); }}
+              >
+                <Text style={{ color: theme.teal.fg, fontWeight: '700', fontSize: 13 }}>Log this day</Text>
+              </Pressable>
+            </>
+          ) : selectedLog ? (
+            <>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                {selectedLog.flow_intensity && selectedLog.flow_intensity !== 'none' && (
+                  <Text style={[insStyles.tag, { backgroundColor: PERIOD_PEACH, color: '#7A4A38' }]}>
+                    Flow: {selectedLog.flow_intensity}
+                  </Text>
+                )}
+                {selectedLog.mood_label && (
+                  <Text style={[insStyles.tag, { backgroundColor: MOOD_PINK, color: '#7A3850' }]}>
+                    Mood: {selectedLog.mood_label}
+                  </Text>
+                )}
+                {selectedLog.energy_level != null && (
+                  <Text style={[insStyles.tag, { backgroundColor: SYMPTOM_TEAL, color: '#2A5A58' }]}>
+                    Energy: {selectedLog.energy_level}/10
+                  </Text>
+                )}
+              </View>
+              {(selectedLog.symptoms ?? []).length > 0 && (
+                <Text style={{ color: theme.textSoft, fontSize: 13, marginTop: 4 }}>
+                  Symptoms: {selectedLog.symptoms!.join(', ')}
+                </Text>
+              )}
+              {selectedLog.notes ? (
+                <Text style={{ color: theme.textSoft, fontSize: 13, marginTop: 4, fontStyle: 'italic' }}>
+                  "{selectedLog.notes}"
+                </Text>
+              ) : null}
+              <Pressable
+                style={[insStyles.editBtn, { borderColor: theme.ink, backgroundColor: theme.teal.tint }]}
+                onPress={() => { setLogModalDate(selectedDate); setLogModalLog(selectedLog); }}
+              >
+                <Text style={{ color: theme.teal.fg, fontWeight: '700', fontSize: 13 }}>Edit Entry</Text>
+              </Pressable>
+            </>
+          ) : null}
         </View>
       )}
 
-      {modalDate && (
+      {/* Cycle insights card */}
+      {showInsightsCard && (
+        <View style={[insStyles.panel, { backgroundColor: theme.card, borderColor: theme.ink, shadowColor: theme.ink }]}>
+          <Text style={[insStyles.panelTitle, { color: theme.textStrong }]}>Cycle Insights</Text>
+          <View style={{ gap: 6, marginTop: 6 }}>
+            {prediction?.avgCycleLength != null && (
+              <Text style={{ color: theme.textSoft, fontSize: 13 }}>
+                Average cycle: <Text style={{ color: theme.textStrong, fontWeight: '700' }}>{prediction.avgCycleLength} days</Text>
+              </Text>
+            )}
+            {(() => {
+              const avgPL = prediction?.avgPeriodLength ?? 5;
+              return (
+                <Text style={{ color: theme.textSoft, fontSize: 13 }}>
+                  Average period: <Text style={{ color: theme.textStrong, fontWeight: '700' }}>{avgPL} days</Text>
+                </Text>
+              );
+            })()}
+            {cycleRegularity && (
+              <Text style={{ color: theme.textSoft, fontSize: 13 }}>
+                Regularity: <Text style={{ color: cycleRegularity === 'Consistent' ? theme.teal.fg : theme.coral?.fg ?? '#A05040', fontWeight: '700' }}>{cycleRegularity}</Text>
+              </Text>
+            )}
+            {topSymptoms.length > 0 && (
+              <Text style={{ color: theme.textSoft, fontSize: 13 }}>
+                Top symptoms: <Text style={{ color: theme.textStrong, fontWeight: '700' }}>{topSymptoms.join(', ')}</Text>
+              </Text>
+            )}
+            {prediction?.cycleLengthsUsed != null && (
+              <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 2 }}>
+                Based on {prediction.cycleLengthsUsed} cycles
+              </Text>
+            )}
+          </View>
+        </View>
+      )}
+
+      {/* Cycle history */}
+      {history.length > 0 && (
+        <View style={[insStyles.panel, { backgroundColor: theme.card, borderColor: theme.ink, shadowColor: theme.ink }]}>
+          <Text style={[insStyles.panelTitle, { color: theme.textStrong }]}>Cycle History</Text>
+          {history.slice(0, 6).map((h, i) => (
+            <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderTopWidth: i === 0 ? 0 : 1, borderTopColor: 'rgba(0,0,0,0.06)' }}>
+              <Text style={{ color: theme.textSoft, fontSize: 13 }}>
+                {formatDate(h.start)} – {formatDate(h.end)}
+              </Text>
+              <Text style={{ color: theme.textStrong, fontSize: 13, fontWeight: '700' }}>
+                {h.length_days}d
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {logModalDate && (
         <CycleDayLogModal
-          date={modalDate}
-          existingLog={modalLog}
+          date={logModalDate}
+          existingLog={logModalLog}
           theme={theme}
-          onClose={() => setModalDate(null)}
-          onSaved={() => { setModalDate(null); setCalRefresh((r) => r + 1); }}
+          onClose={() => { setLogModalDate(null); setLogModalLog(null); }}
+          onSaved={() => {
+            setLogModalDate(null);
+            setLogModalLog(null);
+            setCalRefresh((r) => r + 1);
+            // Re-fetch selected log if same date
+            if (selectedDate === logModalDate) {
+              api.getCycleLog(logModalDate).then((log: any) => setSelectedLog(log ?? null)).catch(() => setSelectedLog(null));
+            }
+          }}
         />
       )}
     </ScrollView>
   );
 }
 
+const insStyles = StyleSheet.create({
+  card: {
+    borderRadius: 14,
+    borderWidth: 2,
+    padding: 16,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
+  },
+  cardTitle: { fontSize: 14, fontWeight: '800' },
+  btn: {
+    borderWidth: 2,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  panel: {
+    borderRadius: 14,
+    borderWidth: 2,
+    padding: 14,
+    gap: 4,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
+  },
+  panelTitle: { fontSize: 14, fontWeight: '800' },
+  tag: {
+    fontSize: 12,
+    fontWeight: '700',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  editBtn: {
+    marginTop: 10,
+    borderWidth: 2,
+    borderRadius: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    alignSelf: 'flex-start',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+});
+
+// ─── Tab strip (medication | cycle) ──────────────────────────────────────────
+
+function TabStrip({ active, onChange, theme }: { active: SubTab; onChange: (t: SubTab) => void; theme: any }) {
+  return (
+    <View style={[stripStyles.row, { borderBottomColor: theme.cardBorder }]}>
+      {(['medication', 'cycle'] as SubTab[]).map((tab) => (
+        <Pressable
+          key={tab}
+          style={[
+            stripStyles.chip,
+            {
+              backgroundColor: active === tab ? theme.teal.solid : theme.card,
+              borderColor: theme.ink,
+              shadowColor: theme.ink,
+            },
+          ]}
+          onPress={() => onChange(tab)}
+        >
+          <Text style={[stripStyles.chipText, { color: active === tab ? '#fff' : theme.textSoft, fontWeight: active === tab ? '700' : '400' }]}>
+            {tab === 'medication' ? 'Medication' : 'Cycle'}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+const stripStyles = StyleSheet.create({
+  row: { flexDirection: 'row', gap: 8, padding: 12, borderBottomWidth: 1 },
+  chip: {
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 2,
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 2,
+  },
+  chipText: { fontSize: 13 },
+});
+
+// ─── HealthTabScreen (root) ───────────────────────────────────────────────────
+
 export function HealthTabScreen() {
   const { theme } = useTheme();
   const { preferences } = useTabPreferences();
   const { medication, cycle } = preferences.health;
   const bothEnabled = medication && cycle;
-  const [activeSubTab, setActiveSubTab] = useState<SubTab>('overview');
+  const [activeSubTab, setActiveSubTab] = useState<SubTab>(medication ? 'medication' : 'cycle');
 
   if (!medication && !cycle) {
     return (
@@ -1251,14 +1843,291 @@ export function HealthTabScreen() {
   }
 
   const effectiveTab: SubTab = bothEnabled ? activeSubTab : medication ? 'medication' : 'cycle';
-  const showChips = bothEnabled;
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.page }}>
-      {showChips && <ChipRow active={effectiveTab} onChange={setActiveSubTab} theme={theme} />}
-      {effectiveTab === 'overview' && <HealthOverview onNavigate={setActiveSubTab} theme={theme} />}
-      {effectiveTab === 'medication' && <MedicationView theme={theme} />}
-      {effectiveTab === 'cycle' && <CycleView theme={theme} />}
+      {bothEnabled && (
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          stickyHeaderIndices={[0]}
+        >
+          {/* Sticky overview blocks */}
+          <View style={{ backgroundColor: theme.page, padding: 12, paddingBottom: 0 }}>
+            <OverviewBlocks onNavigate={setActiveSubTab} theme={theme} />
+          </View>
+
+          {/* Tab strip */}
+          <TabStrip active={effectiveTab} onChange={setActiveSubTab} theme={theme} />
+
+          {/* Active sub-tab content — not full-screen scrollable, rendered inline */}
+          {effectiveTab === 'medication' && <MedicationViewInline theme={theme} />}
+          {effectiveTab === 'cycle' && <CycleView theme={theme} />}
+        </ScrollView>
+      )}
+
+      {!bothEnabled && (
+        <>
+          {medication && <MedicationView theme={theme} />}
+          {cycle && !medication && <CycleView theme={theme} />}
+        </>
+      )}
+    </View>
+  );
+}
+
+// ─── MedicationViewInline (non-flex-1 version for nested scroll) ──────────────
+
+function MedicationViewInline({ theme }: { theme: any }) {
+  const navigation = useNavigation<any>();
+  const [medications, setMedications] = useState<Medication[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedSlotIds, setSelectedSlotIds] = useState<string[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editMed, setEditMed] = useState<Medication | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [infoMed, setInfoMed] = useState<Medication | null>(null);
+  const [refresh, setRefresh] = useState(0);
+
+  const load = useCallback(async () => {
+    try {
+      const meds = await api.getMedications();
+      setMedications(meds ?? []);
+    } catch {
+      setMedications([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load, refresh]);
+
+  const buckets: Record<string, Medication[]> = { morning: [], midday: [], evening: [], custom: [] };
+  for (const med of medications) {
+    for (const slot of med.slots) {
+      const bucket = ['morning', 'midday', 'evening'].includes(slot.time_of_day) ? slot.time_of_day : 'custom';
+      if (!buckets[bucket].find((m) => m.id === med.id)) {
+        buckets[bucket].push(med);
+      }
+    }
+  }
+
+  async function markAllTaken(time_of_day: string) {
+    try { await api.markSlotTaken(time_of_day); setRefresh((r) => r + 1); }
+    catch (err: any) { Alert.alert('Error', err?.message ?? 'Failed'); }
+  }
+
+  async function toggleSlot(slot: MedSlot) {
+    try {
+      if (slot.dose_log) { await api.deleteDoseLog(slot.dose_log.id); }
+      else { await api.markSelectedTaken([slot.id]); }
+      setRefresh((r) => r + 1);
+    } catch (err: any) { Alert.alert('Error', err?.message ?? 'Failed'); }
+  }
+
+  async function markSelectedDone() {
+    try {
+      await api.markSelectedTaken(selectedSlotIds);
+      setSelectedSlotIds([]); setSelectMode(false); setRefresh((r) => r + 1);
+    } catch (err: any) { Alert.alert('Error', err?.message ?? 'Failed'); }
+  }
+
+  function deleteMed(id: string) {
+    Alert.alert('Remove medication?', 'This will hide the medication from your schedule.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: async () => { try { await api.deleteMedication(id); setRefresh((r) => r + 1); } catch {} } },
+    ]);
+  }
+
+  const BUCKET_LABELS: Record<string, string> = { morning: 'Morning', midday: 'Midday', evening: 'Evening', custom: 'Custom' };
+
+  if (loading) return <ActivityIndicator color={theme.teal.solid} style={{ marginTop: 40 }} />;
+
+  return (
+    <View style={{ padding: 16, gap: 16, paddingBottom: 24 }}>
+      {(() => { const msg = nextDoseCallout(medications); return msg ? (
+        <View style={[medStyles.nextDoseBar, { backgroundColor: theme.teal.tint, borderColor: theme.teal.solid }]}>
+          <Text style={{ fontSize: 14 }}>⏰</Text>
+          <Text style={[medStyles.nextDoseText, { color: theme.teal.sub }]}>Next: {msg}</Text>
+        </View>
+      ) : null; })()}
+
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={[medStyles.sectionHead, { color: theme.textStrong }]}>Today's Schedule</Text>
+        <Pressable onPress={() => { setSelectMode((s) => !s); setSelectedSlotIds([]); }}>
+          <Text style={{ color: theme.teal.solid, fontWeight: '700', fontSize: 13 }}>{selectMode ? 'Done' : 'Select'}</Text>
+        </Pressable>
+      </View>
+
+      {Object.entries(buckets).map(([bucket, meds]) => {
+        if (meds.length === 0) return null;
+        return (
+          <View key={bucket} style={[medStyles.bucket, { backgroundColor: theme.card, borderColor: theme.ink, shadowColor: theme.ink }]}>
+            <View style={medStyles.bucketHeader}>
+              <Text style={[medStyles.bucketLabel, { color: theme.textStrong }]}>{BUCKET_LABELS[bucket]}</Text>
+              <Pressable onPress={() => markAllTaken(bucket)}>
+                <Text style={{ color: theme.teal.solid, fontWeight: '700', fontSize: 12 }}>Mark all</Text>
+              </Pressable>
+            </View>
+            {meds.map((med) => {
+              const slot = med.slots.find((s) => {
+                const b = ['morning', 'midday', 'evening'].includes(s.time_of_day) ? s.time_of_day : 'custom';
+                return b === bucket;
+              });
+              if (!slot) return null;
+              const taken = slot.dose_log !== null;
+              const isSelected = selectedSlotIds.includes(slot.id);
+              return (
+                <Pressable
+                  key={med.id + slot.id}
+                  style={[medStyles.medRow, { borderTopColor: theme.cardBorder }]}
+                  onPress={() => {
+                    if (selectMode) {
+                      setSelectedSlotIds((prev) => prev.includes(slot.id) ? prev.filter((x) => x !== slot.id) : [...prev, slot.id]);
+                    } else { toggleSlot(slot); }
+                  }}
+                >
+                  <View style={[medStyles.circle, { borderColor: taken ? theme.teal.solid : theme.cardBorder, backgroundColor: taken ? theme.teal.solid : 'transparent' }]}>
+                    {taken && <Text style={{ color: '#fff', fontSize: 11 }}>✓</Text>}
+                    {selectMode && !taken && (
+                      <View style={[medStyles.selectBox, { borderColor: theme.ink, backgroundColor: isSelected ? theme.teal.solid : 'transparent' }]}>
+                        {isSelected && <Text style={{ color: '#fff', fontSize: 10 }}>✓</Text>}
+                      </View>
+                    )}
+                  </View>
+                  {med.color_category && <View style={[medStyles.colorDot, { backgroundColor: med.color_category.color_hex }]} />}
+                  <View style={{ flex: 1 }}>
+                    <Text style={[medStyles.medName, { color: taken ? theme.textSoft : theme.textStrong }]}>{med.name}</Text>
+                    {med.dosage ? <Text style={{ color: theme.textSoft, fontSize: 12 }}>{med.dosage}</Text> : null}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        );
+      })}
+
+      <Text style={[medStyles.sectionHead, { color: theme.textStrong, marginTop: 8 }]}>My Medications</Text>
+      <Pressable
+        style={[medStyles.addBtn, { borderColor: theme.ink, backgroundColor: theme.teal.tint, shadowColor: theme.ink }]}
+        onPress={() => setShowAddModal(true)}
+      >
+        <Text style={{ color: theme.teal.fg, fontWeight: '700', fontSize: 14 }}>+ Add medication</Text>
+      </Pressable>
+
+      {medications.map((med) => {
+        const status = computeMedStatus(med);
+        const badge = STATUS_BADGE[status];
+        const refillDays = med.refill_date
+          ? Math.ceil((new Date(med.refill_date).getTime() - Date.now()) / 86400000)
+          : null;
+
+        let brandGenericLine: string | null = null;
+        if (med.brand_name != null && med.generic_name != null) {
+          if (med.name === med.brand_name) {
+            brandGenericLine = `Generic: ${med.generic_name}`;
+          } else {
+            brandGenericLine = `Brand: ${med.brand_name}`;
+          }
+        }
+
+        return (
+          <Pressable
+            key={med.id}
+            style={[medStyles.medCard, { backgroundColor: theme.card, borderColor: theme.ink, shadowColor: theme.ink }]}
+            onPress={() => navigation.navigate('MedicationHistory', { medicationId: med.id, medicationName: med.name })}
+            onLongPress={() => Alert.alert(med.name, 'What would you like to do?', [
+              { text: 'Edit', onPress: () => { setEditMed(med); setShowEditModal(true); } },
+              { text: 'Remove', style: 'destructive', onPress: () => deleteMed(med.id) },
+              { text: 'Cancel', style: 'cancel' },
+            ])}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+              <View style={[medStyles.colorDot, { backgroundColor: med.color_category?.color_hex ?? '#D1D5DB' }]} />
+              <View style={{ flex: 1, gap: 2 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={[medStyles.medName, { color: theme.textStrong, flex: 1 }]}>{med.name}</Text>
+                  <Pressable onPress={() => setInfoMed(med)} hitSlop={8}>
+                    <Text style={{ color: theme.textSoft, fontSize: 16 }}>ⓘ</Text>
+                  </Pressable>
+                  {status !== 'active' && (
+                    <View style={[medStyles.statusBadge, { backgroundColor: badge.bg }]}>
+                      <Text style={[medStyles.statusBadgeText, { color: badge.fg }]}>{badge.label}</Text>
+                    </View>
+                  )}
+                </View>
+                {med.dosage && <Text style={{ color: theme.textSoft, fontSize: 12 }}>{med.dosage}</Text>}
+                {brandGenericLine && <Text style={{ color: theme.textSoft, fontSize: 12 }}>{brandGenericLine}</Text>}
+                {med.purpose && <Text style={{ color: theme.textSoft, fontSize: 12 }}>Purpose: {med.purpose}</Text>}
+                {med.prescriber && <Text style={{ color: theme.textSoft, fontSize: 12 }}>Dr. {med.prescriber.name}</Text>}
+                <Text style={{ color: theme.textSoft, fontSize: 12 }}>
+                  {med.slots.map((s) => s.time_of_day).join(', ') || 'No schedule'}
+                </Text>
+                {refillDays !== null && (
+                  <Text style={{ color: refillDays <= 0 ? theme.coral.solid : theme.textSoft, fontSize: 12 }}>
+                    {refillDays <= 0 ? 'Refill overdue' : `Refill in ${refillDays} day${refillDays !== 1 ? 's' : ''}`}
+                  </Text>
+                )}
+              </View>
+              <Text style={{ color: theme.textSoft, fontSize: 16 }}>›</Text>
+            </View>
+          </Pressable>
+        );
+      })}
+
+      <Pressable onPress={() => navigation.navigate('MedicationImport')}>
+        <Text style={{ color: theme.teal.solid, fontSize: 13, fontWeight: '600', textDecorationLine: 'underline', textAlign: 'center', marginTop: 4 }}>
+          Import from CSV / Excel
+        </Text>
+      </Pressable>
+
+      {selectMode && selectedSlotIds.length > 0 && (
+        <View style={[medStyles.fab, { backgroundColor: theme.teal.solid, borderColor: theme.ink, shadowColor: theme.ink }]}>
+          <Pressable onPress={markSelectedDone}>
+            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>
+              Mark {selectedSlotIds.length} selected as taken
+            </Text>
+          </Pressable>
+        </View>
+      )}
+
+      {showAddModal && (
+        <AddMedicationModal
+          theme={theme}
+          onClose={() => setShowAddModal(false)}
+          onSaved={() => { setShowAddModal(false); setRefresh((r) => r + 1); }}
+        />
+      )}
+
+      {showEditModal && editMed && (
+        <AddMedicationModal
+          theme={theme}
+          editId={editMed.id}
+          initialValues={{
+            name: editMed.name,
+            dosage: editMed.dosage ?? '',
+            purpose: editMed.purpose ?? '',
+            notes: editMed.notes ?? '',
+            prescriberName: editMed.prescriber?.name ?? '',
+            refillDate: editMed.refill_date ?? '',
+            selectedCatId: editMed.color_category?.id ?? null,
+            selectedTimes: editMed.slots.map((s) => s.time_of_day),
+            customTime: editMed.slots.find((s) => s.time_of_day === 'custom')?.specific_time ?? '',
+          }}
+          onClose={() => { setShowEditModal(false); setEditMed(null); }}
+          onSaved={() => { setShowEditModal(false); setEditMed(null); setRefresh((r) => r + 1); }}
+        />
+      )}
+
+      {infoMed && (
+        <MedicationInfoModal
+          med={infoMed}
+          theme={theme}
+          onClose={() => setInfoMed(null)}
+        />
+      )}
     </View>
   );
 }
