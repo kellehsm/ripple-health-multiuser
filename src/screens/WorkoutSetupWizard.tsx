@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, Alert,
 } from 'react-native';
@@ -320,6 +320,14 @@ export function WorkoutSetupWizard({ onComplete }: Props) {
   function goNext() { setStep((s) => s + 1); }
   function goBack() { setStep((s) => s - 1); }
 
+  // Trigger generation once when step transitions to 8 (not in render body)
+  useEffect(() => {
+    if (step === 8 && !generating && generatedDays === null) {
+      handleGenerate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
   // ── Step 8: Generate + Preview ─────────────────────────────────────────────
 
   if (step === 8) {
@@ -335,8 +343,6 @@ export function WorkoutSetupWizard({ onComplete }: Props) {
     }
 
     if (!generatedDays) {
-      // Trigger generation on first render of step 8
-      handleGenerate();
       return (
         <View style={[styles.centered, { backgroundColor: theme.page }]}>
           <ActivityIndicator size="large" color={theme.teal?.solid ?? ink} />

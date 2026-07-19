@@ -3,7 +3,7 @@ import {
   View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator, Modal, FlatList,
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
+import { File } from 'expo-file-system';
 import { useTheme } from '../theme/ThemeContext';
 import { api } from '../api/client';
 import { useNavigation } from '@react-navigation/native';
@@ -58,9 +58,7 @@ export function MedicationImportScreen() {
         return;
       }
 
-      const fileBase64 = await FileSystem.readAsStringAsync(asset.uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      const fileBase64 = await new File(asset.uri).base64();
 
       const res = await api.previewMedicationImport(fileBase64, asset.name ?? 'import.csv');
       if (!res?.headers?.length || !res.rows?.length) {
