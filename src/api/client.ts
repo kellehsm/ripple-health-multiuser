@@ -467,6 +467,9 @@ export const api = {
   deleteExerciseEntry: function (entryId: string) {
     return request('/exercise/log-entries/' + entryId, { method: 'DELETE' });
   },
+  getExercisePreferences: function () {
+    return request('/exercise/preferences');
+  },
 
   // ── Workout wizard & programs ─────────────────────────────────────────────────
   getWorkoutWizardStatus: function () {
