@@ -473,6 +473,9 @@ export const api = {
   getExerciseSuggestion: function () {
     return request('/exercise/suggestion');
   },
+  getExerciseProgression: function (exerciseId: string) {
+    return request('/exercise/progression/' + exerciseId);
+  },
 
   // ── Workout wizard & programs ─────────────────────────────────────────────────
   getWorkoutWizardStatus: function () {
