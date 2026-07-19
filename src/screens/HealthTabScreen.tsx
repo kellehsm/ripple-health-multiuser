@@ -122,6 +122,7 @@ const chipStyles = StyleSheet.create({
 function HealthOverview({ onNavigate, theme }: { onNavigate: (t: SubTab) => void; theme: any }) {
   const [medications, setMedications] = useState<Medication[]>([]);
   const [prediction, setPrediction] = useState<Prediction | null>(null);
+  const [insight, setInsight] = useState<{ id: string; text: string; confidence: string } | null>(null);
   const [cycleLogModalDate, setCycleLogModalDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -129,9 +130,11 @@ function HealthOverview({ onNavigate, theme }: { onNavigate: (t: SubTab) => void
     Promise.all([
       api.getMedications().catch(() => []),
       api.getCyclePrediction().catch(() => null),
-    ]).then(([meds, pred]) => {
+      api.getHealthOverviewInsight().catch(() => null),
+    ]).then(([meds, pred, ins]) => {
       setMedications(meds ?? []);
       setPrediction(pred);
+      setInsight(ins);
     }).finally(() => setLoading(false));
   }, []);
 
@@ -187,6 +190,19 @@ function HealthOverview({ onNavigate, theme }: { onNavigate: (t: SubTab) => void
         </Pressable>
       </View>
 
+      {insight && (
+        <View style={[overviewStyles.insightBanner, { backgroundColor: theme.purple?.tint ?? '#F3EEFF', borderColor: theme.purple?.sub ?? '#9B6DFF' }]}>
+          <Text style={{ color: theme.purple?.fg ?? '#5B21B6', fontSize: 13, fontWeight: '600', lineHeight: 18 }}>
+            {insight.text}
+          </Text>
+          {insight.confidence === 'tentative' && (
+            <Text style={{ color: theme.purple?.sub ?? '#9B6DFF', fontSize: 11, marginTop: 2 }}>
+              Based on limited data — may change as more cycles are logged.
+            </Text>
+          )}
+        </View>
+      )}
+
       {cycleLogModalDate && (
         <CycleDayLogModal
           date={cycleLogModalDate}
@@ -212,6 +228,12 @@ const overviewStyles = StyleSheet.create({
     elevation: 4,
   },
   cardTitle: { fontSize: 13, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', opacity: 0.6 },
+  insightBanner: {
+    borderRadius: 12,
+    borderWidth: 2,
+    padding: 14,
+    gap: 2,
+  },
   btn: {
     marginTop: 4,
     borderWidth: 2,

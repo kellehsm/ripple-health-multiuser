@@ -519,6 +519,9 @@ export const api = {
   getRankedMoods: function (q = '') {
     return request('/cycle/moods/ranked?q=' + encodeURIComponent(q));
   },
+  getHealthOverviewInsight: function () {
+    return request('/cycle/overview-insight');
+  },
 
   // ── Tab preferences ───────────────────────────────────────────────────────────
   getTabPreferences: function () {
