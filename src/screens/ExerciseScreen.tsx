@@ -5,6 +5,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { api } from '../api/client';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { WorkoutSetupWizard } from './WorkoutSetupWizard';
+import { useTabPreferences } from '../hooks/useTabPreferences';
 
 interface WorkoutSuggestion {
   type: string;
@@ -72,6 +73,7 @@ const FOCUS_LABEL: Record<string, string> = {
 export function ExerciseScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<any>();
+  const { preferences } = useTabPreferences();
   const ink = theme.ink;
 
   const [sessions, setSessions] = useState<ExerciseSession[]>([]);
@@ -84,9 +86,13 @@ export function ExerciseScreen() {
   const [wizardDone, setWizardDone] = useState<boolean | null>(null);
 
   useFocusEffect(useCallback(() => {
+    if (!preferences.selectedModules.includes('exercise')) {
+      navigation.navigate('Home');
+      return;
+    }
     setLoading(true);
     Promise.all([
-      api.getWorkoutWizardStatus().catch(() => ({ complete: true })),
+      api.getWorkoutWizardStatus().catch(() => ({ complete: false })),
       api.listExerciseSessions(20, 0).catch(() => []),
       api.getExerciseSuggestion().catch(() => null),
       api.listWorkoutPrograms().catch(() => []),

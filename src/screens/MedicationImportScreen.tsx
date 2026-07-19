@@ -9,12 +9,14 @@ import { api } from '../api/client';
 import { useNavigation } from '@react-navigation/native';
 
 const APP_FIELDS: Array<{ key: string; label: string }> = [
-  { key: 'name',       label: 'Medication name' },
-  { key: 'dosage',     label: 'Dosage / strength' },
-  { key: 'schedule',   label: 'Schedule / frequency' },
-  { key: 'prescriber', label: 'Prescriber / doctor' },
-  { key: 'pharmacy',   label: 'Pharmacy' },
-  { key: 'notes',      label: 'Notes' },
+  { key: 'name',         label: 'Medication name' },
+  { key: 'dosage',       label: 'Dosage / strength' },
+  { key: 'schedule',     label: 'Schedule / frequency' },
+  { key: 'prescriber',   label: 'Prescriber / doctor' },
+  { key: 'pharmacy',     label: 'Pharmacy' },
+  { key: 'notes',        label: 'Notes' },
+  { key: 'brand_name',   label: 'Brand Name' },
+  { key: 'generic_name', label: 'Generic Name' },
 ];
 
 type Step = 'pick' | 'mapping' | 'done';
@@ -79,7 +81,7 @@ export function MedicationImportScreen() {
 
   async function commitImport() {
     if (!mapping.name) {
-      Alert.alert('Required', 'You must map the "Medication name" column before importing.');
+      Alert.alert('Medication name required', 'Please map the Medication name column to continue.');
       return;
     }
     setImporting(true);

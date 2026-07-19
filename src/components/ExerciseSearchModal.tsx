@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Modal, View, Text, TextInput, Pressable, FlatList,
-  StyleSheet, KeyboardAvoidingView, Platform, ScrollView,
+  StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image,
 } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { api } from '../api/client';
 import { LoadingIndicator } from './LoadingIndicator';
+
+const IMAGE_BASE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
 
 interface ExerciseResult {
   id: string;
@@ -155,7 +157,17 @@ export function ExerciseSearchModal({ visible, onClose, onAdd }: Props) {
           /* ── Log entry form ── */
           <ScrollView contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
             <View style={[styles.exerciseChip, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
-              <Text style={{ fontSize: 18 }}>🏋️</Text>
+              {selected.images.length > 0 ? (
+                <Image
+                  source={{ uri: IMAGE_BASE + selected.images[0] }}
+                  style={styles.chipImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={[styles.chipImagePlaceholder, { backgroundColor: theme.teal.tint }]}>
+                  <Text style={{ fontSize: 22 }}>🏋️</Text>
+                </View>
+              )}
               <View style={{ flex: 1 }}>
                 <Text style={[styles.chipName, { color: theme.textStrong }]}>{selected.name}</Text>
                 {selected.primary_muscles.length > 0 && (
@@ -294,6 +306,15 @@ export function ExerciseSearchModal({ visible, onClose, onAdd }: Props) {
                   onPress={() => setSelected(item)}
                   style={[styles.resultRow, { borderBottomColor: theme.cardBorder }]}
                 >
+                  {item.images.length > 0 ? (
+                    <Image
+                      source={{ uri: IMAGE_BASE + item.images[0] }}
+                      style={styles.resultThumb}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={[styles.resultThumb, styles.resultThumbPlaceholder, { backgroundColor: theme.teal.tint }]} />
+                  )}
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.resultName, { color: theme.textStrong }]}>{item.name}</Text>
                     <Text style={[styles.resultMeta, { color: theme.textSoft }]}>
@@ -343,9 +364,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     gap: 12,
+  },
+  resultThumb: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+  },
+  resultThumbPlaceholder: {
+    opacity: 0.4,
   },
   resultName: { fontSize: 15, fontWeight: '600' },
   resultMeta: { fontSize: 12, marginTop: 2, textTransform: 'capitalize' },
@@ -354,10 +383,22 @@ const styles = StyleSheet.create({
   exerciseChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
+  },
+  chipImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 8,
+  },
+  chipImagePlaceholder: {
+    width: 64,
+    height: 64,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   chipName: { fontSize: 15, fontWeight: '700' },
   chipMuscles: { fontSize: 12, textTransform: 'capitalize', marginTop: 2 },

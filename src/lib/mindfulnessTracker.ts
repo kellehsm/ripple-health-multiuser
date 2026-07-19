@@ -1,5 +1,6 @@
 import * as SecureStore from "expo-secure-store";
 import { toast } from "./toast";
+import { api } from "../api/client";
 
 const KEY = "mindfulness_stats";
 
@@ -36,8 +37,13 @@ const MILESTONE_MESSAGES: Record<number, string> = {
   100: "100 sessions. You're a mindfulness pro.",
 };
 
-export async function trackMindfulnessCompletion(type: string): Promise<void> {
+export async function trackMindfulnessCompletion(type: string, duration_seconds?: number): Promise<void> {
   const total = await recordCompletion(type);
   const msg = MILESTONE_MESSAGES[total];
   if (msg) toast(msg, "success", 4500);
+
+  // Sync to backend (best-effort — SecureStore already written above)
+  try {
+    await api.logMindfulness({ type, ...(duration_seconds != null ? { duration_seconds } : {}) });
+  } catch { /* offline or error — local SecureStore is source of truth */ }
 }

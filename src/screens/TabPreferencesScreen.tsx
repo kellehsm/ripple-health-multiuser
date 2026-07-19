@@ -37,7 +37,7 @@ export function TabPreferencesScreen({ onDone, mode, onCancel }: TabPreferencesS
         return prev.filter((m) => m !== id);
       }
       if (prev.length >= MAX_SELECTED_MODULES) {
-        Alert.alert('Limit reached', `You can pick up to ${MAX_SELECTED_MODULES} tabs.`);
+        Alert.alert('Limit reached', `You can select up to ${MAX_SELECTED_MODULES} modules.`);
         return prev;
       }
       return [...prev, id];

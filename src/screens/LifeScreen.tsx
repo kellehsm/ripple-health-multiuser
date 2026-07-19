@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { useTabPreferences } from "../hooks/useTabPreferences";
 import {
   ScrollView,
   View,
@@ -80,6 +82,13 @@ export function LifeScreen() {
   const card = theme.card;
   const styles = useMemo(() => makeStyles(ink, card), [ink, card]);
   const navigation = useNavigation<any>();
+  const { preferences } = useTabPreferences();
+
+  useFocusEffect(useCallback(() => {
+    if (!preferences.selectedModules.includes('hobbies')) {
+      navigation.navigate('Home');
+    }
+  }, [preferences.selectedModules]));
 
   const [books, setBooks] = useState<Book[]>([]);
   const [loadingBooks, setLoadingBooks] = useState(true);

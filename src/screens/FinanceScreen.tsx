@@ -4,11 +4,12 @@ import {
   StyleSheet, RefreshControl, Alert
 } from "react-native";
 import { LoadingIndicator } from "../components/LoadingIndicator";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
+import { useTabPreferences } from "../hooks/useTabPreferences";
 import { EmptyState } from "../components/EmptyState";
 import { toast, Msg } from "../lib/toast";
 
@@ -38,9 +39,17 @@ function startOfWeek(): string {
 
 export function FinanceScreen() {
   const { theme } = useTheme();
+  const navigation = useNavigation<any>();
+  const { preferences } = useTabPreferences();
   const ink = theme.ink;
   const card = theme.card;
   const styles = useMemo(() => makeStyles(ink, card), [ink, card]);
+
+  useFocusEffect(useCallback(() => {
+    if (!preferences.selectedModules.includes('finance')) {
+      navigation.navigate('Home');
+    }
+  }, [preferences.selectedModules]));
 
   const [entries, setEntries] = useState<SpendingEntry[]>([]);
   const [loading, setLoading] = useState(true);

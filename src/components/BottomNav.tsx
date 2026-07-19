@@ -124,6 +124,7 @@ const styles = StyleSheet.create({
   },
   iconSlot: {
     flex: 1,
+    minWidth: 44,
     alignItems: 'center',
     justifyContent: 'flex-end',
     paddingBottom: 2,

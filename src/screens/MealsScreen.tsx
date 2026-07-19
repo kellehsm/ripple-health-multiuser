@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useTabPreferences } from "../hooks/useTabPreferences";
 import {
   ScrollView,
   View,
@@ -569,9 +571,17 @@ function MiniGlucoseChart({
 
 export function MealsScreen() {
   const { theme } = useTheme();
+  const navigation = useNavigation<any>();
+  const { preferences } = useTabPreferences();
   const ink = theme.ink;
   const card = theme.card;
   const styles = useMemo(() => makeStyles(ink, card), [ink, card]);
+
+  useFocusEffect(useCallback(() => {
+    if (!preferences.selectedModules.includes('meals')) {
+      navigation.navigate('Home');
+    }
+  }, [preferences.selectedModules]));
 
   const [mealType, setMealType] = useState<MealType>("breakfast");
   const [searchQuery, setSearchQuery] = useState("");

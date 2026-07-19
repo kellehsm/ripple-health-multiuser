@@ -4,6 +4,7 @@ import { LoadingIndicator } from "../../components/LoadingIndicator";
 import { useTheme } from "../../theme/ThemeContext";
 import { api } from "../../api/client";
 import { getMuteUntil, muteFor, clearMute, untilTomorrow7am, MUTE_PRESETS } from "../../lib/muteNotifications";
+import { useFocusEffect } from "@react-navigation/native";
 
 type SmartNotifs = {
   meal_reminders?: { enabled?: boolean; breakfast?: any; lunch?: any; dinner?: any };
@@ -62,6 +63,7 @@ export function NotificationsSettingsScreen() {
   const [hn, setHn] = useState<HealthNotifs>({});
   const [saving, setSaving] = useState(false);
   const [muteUntilMs, setMuteUntilMs] = useState<number | null>(null);
+  const [cycleEnabled, setCycleEnabled] = useState(true);
 
   useEffect(() => {
     api.getSettings().then((s) => {
@@ -70,6 +72,12 @@ export function NotificationsSettingsScreen() {
     }).catch(() => {});
     getMuteUntil().then(setMuteUntilMs).catch(() => {});
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      api.getTabPreferences().then((p: any) => setCycleEnabled(p?.health?.cycle ?? false)).catch(() => {});
+    }, [])
+  );
 
   async function save(patch: SmartNotifs) {
     const merged = { ...sn, ...patch };
@@ -264,29 +272,35 @@ export function NotificationsSettingsScreen() {
       {/* Cycle reminders */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>CYCLE REMINDERS</Text>
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
-        <ToggleRow label="Period approaching reminder"
-          value={hn.period_approaching_reminder_enabled !== false}
-          onChange={(v) => saveHealth({ period_approaching_reminder_enabled: v })} theme={theme} />
-        {hn.period_approaching_reminder_enabled !== false && (
-          <View style={{ marginTop: 4 }}>
-            <Text style={[styles.subLabel, { color: theme.textStrong }]}>Days before to remind</Text>
-            <HourChips hours={[1, 2, 3, 4, 5]}
-              current={hn.period_approaching_lead_days ?? 2}
-              onSelect={(d) => saveHealth({ period_approaching_lead_days: d })}
-              accentColor={theme.coral?.sub ?? "#E87A96"} theme={theme} />
-          </View>
+        {cycleEnabled ? (
+          <>
+            <ToggleRow label="Period approaching reminder"
+              value={hn.period_approaching_reminder_enabled === true}
+              onChange={(v) => saveHealth({ period_approaching_reminder_enabled: v })} theme={theme} />
+            {hn.period_approaching_reminder_enabled === true && (
+              <View style={{ marginTop: 4 }}>
+                <Text style={[styles.subLabel, { color: theme.textStrong }]}>Days before to remind</Text>
+                <HourChips hours={[1, 2, 3, 4, 5]}
+                  current={hn.period_approaching_lead_days ?? 2}
+                  onSelect={(d) => saveHealth({ period_approaching_lead_days: d })}
+                  accentColor={theme.coral?.sub ?? "#E87A96"} theme={theme} />
+              </View>
+            )}
+            <View style={{ marginTop: 8 }}>
+              <ToggleRow label="Daily cycle log reminder (optional)"
+                value={hn.cycle_log_reminders_enabled === true}
+                onChange={(v) => saveHealth({ cycle_log_reminders_enabled: v })} theme={theme} />
+              {hn.cycle_log_reminders_enabled === true && (
+                <HourChips hours={[17, 18, 19, 20, 21]}
+                  current={hn.cycle_log_hour ?? 20}
+                  onSelect={(h) => saveHealth({ cycle_log_hour: h })}
+                  accentColor={theme.coral?.sub ?? "#E87A96"} theme={theme} />
+              )}
+            </View>
+          </>
+        ) : (
+          <Text style={{ color: theme.textSoft, fontSize: 12 }}>Enable the Cycle tracker in Tab Settings to use cycle reminders.</Text>
         )}
-        <View style={{ marginTop: 8 }}>
-          <ToggleRow label="Daily cycle log reminder (optional)"
-            value={hn.cycle_log_reminders_enabled === true}
-            onChange={(v) => saveHealth({ cycle_log_reminders_enabled: v })} theme={theme} />
-          {hn.cycle_log_reminders_enabled === true && (
-            <HourChips hours={[17, 18, 19, 20, 21]}
-              current={hn.cycle_log_hour ?? 20}
-              onSelect={(h) => saveHealth({ cycle_log_hour: h })}
-              accentColor={theme.coral?.sub ?? "#E87A96"} theme={theme} />
-          )}
-        </View>
       </View>
 
       {/* Activity reminder */}
