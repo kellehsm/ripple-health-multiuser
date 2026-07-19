@@ -26,13 +26,80 @@ interface MedSlot {
   dose_log: { id: string; status: string; taken_at: string } | null;
 }
 
+interface ColorCategory {
+  id: string;
+  label: string;
+  color_hex: string;
+}
+
+interface MedPrescriber {
+  id: string;
+  name: string;
+}
+
 interface Medication {
   id: string;
   name: string;
   dosage: string | null;
   active: boolean;
   notes: string | null;
+  purpose: string | null;
+  refill_date: string | null;
+  created_at: string;
+  prescriber: MedPrescriber | null;
+  color_category: ColorCategory | null;
   slots: MedSlot[];
+}
+
+type MedStatus = 'active' | 'new' | 'expiring' | 'refill_needed';
+
+function computeMedStatus(med: Medication): MedStatus {
+  const daysSinceAdded = (Date.now() - new Date(med.created_at).getTime()) / 86400000;
+  if (daysSinceAdded < 7) return 'new';
+  if (med.refill_date) {
+    const daysUntil = (new Date(med.refill_date).getTime() - Date.now()) / 86400000;
+    if (daysUntil <= 0) return 'refill_needed';
+    if (daysUntil <= 7) return 'expiring';
+  }
+  return 'active';
+}
+
+const STATUS_BADGE: Record<MedStatus, { label: string; bg: string; fg: string }> = {
+  active:        { label: 'Active',          bg: 'transparent',  fg: 'transparent' },
+  new:           { label: 'New',             bg: '#DCFCE7',      fg: '#166534' },
+  expiring:      { label: 'Refill soon',     bg: '#FEF9C3',      fg: '#854D0E' },
+  refill_needed: { label: 'Refill needed',   bg: '#FEE2E2',      fg: '#991B1B' },
+};
+
+const TOD_HOUR: Record<string, number> = { morning: 8, midday: 12, evening: 20 };
+
+function nextDoseCallout(medications: Medication[]): string | null {
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  let earliest: { name: string; mins: number } | null = null;
+
+  for (const med of medications) {
+    for (const slot of med.slots) {
+      if (slot.dose_log !== null) continue;
+      let slotMins: number;
+      if (slot.specific_time && slot.time_of_day === 'custom') {
+        const [hh, mm] = slot.specific_time.split(':').map(Number);
+        slotMins = (hh || 0) * 60 + (mm || 0);
+      } else {
+        slotMins = (TOD_HOUR[slot.time_of_day] ?? 8) * 60;
+      }
+      if (slotMins >= nowMins && (!earliest || slotMins < earliest.mins)) {
+        earliest = { name: med.name, mins: slotMins };
+      }
+    }
+  }
+
+  if (!earliest) return null;
+  const diffMins = earliest.mins - nowMins;
+  if (diffMins < 60) return `${earliest.name} in ${diffMins} min`;
+  const h = Math.floor(diffMins / 60);
+  const m = diffMins % 60;
+  return m > 0 ? `${earliest.name} in ${h}h ${m}m` : `${earliest.name} in ${h}h`;
 }
 
 interface CycleLog {
@@ -249,29 +316,33 @@ const overviewStyles = StyleSheet.create({
 });
 
 function AddMedicationModal({ theme, onClose, onSaved }: { theme: any; onClose: () => void; onSaved: () => void }) {
+  const ink = theme.ink;
   const [name, setName] = useState('');
   const [dosage, setDosage] = useState('');
   const [notes, setNotes] = useState('');
+  const [purpose, setPurpose] = useState('');
+  const [refillDate, setRefillDate] = useState('');
+  const [prescriberName, setPrescriberName] = useState('');
+  const [selectedCatId, setSelectedCatId] = useState<string | null>(null);
+  const [categories, setCategories] = useState<ColorCategory[]>([]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
   const [customTime, setCustomTime] = useState('');
   const [saving, setSaving] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  useEffect(() => {
+    api.getMedicationCategories().then(setCategories).catch(() => {});
+  }, []);
+
   function onNameChange(text: string) {
     setName(text);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       if (text.length >= 2) {
-        try {
-          const results = await api.searchMedicationNames(text);
-          setSuggestions(Array.isArray(results) ? results.slice(0, 5) : []);
-        } catch {
-          setSuggestions([]);
-        }
-      } else {
-        setSuggestions([]);
-      }
+        try { setSuggestions((await api.searchMedicationNames(text)).slice(0, 5)); }
+        catch { setSuggestions([]); }
+      } else setSuggestions([]);
     }, 250);
   }
 
@@ -287,7 +358,18 @@ function AddMedicationModal({ theme, onClose, onSaved }: { theme: any; onClose: 
         time_of_day: t,
         specific_time: t === 'custom' ? customTime || null : null,
       }));
-      await api.addMedication({ name: name.trim(), dosage: dosage.trim() || null, notes: notes.trim() || null, slots });
+      let prescriber_id: string | null = null;
+      if (prescriberName.trim()) {
+        const existing = (await api.getMedicationPrescribers()) as MedPrescriber[];
+        const found = existing.find((p) => p.name.toLowerCase() === prescriberName.trim().toLowerCase());
+        if (found) { prescriber_id = found.id; }
+        else { const p = await api.addMedicationPrescriber({ name: prescriberName.trim() }); prescriber_id = p?.id ?? null; }
+      }
+      await api.addMedication({
+        name: name.trim(), dosage: dosage.trim() || null, notes: notes.trim() || null,
+        purpose: purpose.trim() || null, refill_date: refillDate.trim() || null,
+        color_category_id: selectedCatId, prescriber_id, slots,
+      });
       onSaved();
     } catch (err: any) {
       Alert.alert('Error', err?.message ?? 'Failed to save');
@@ -299,58 +381,66 @@ function AddMedicationModal({ theme, onClose, onSaved }: { theme: any; onClose: 
   return (
     <Modal transparent animationType="slide" onRequestClose={onClose}>
       <View style={modalStyles.overlay}>
-        <View style={[modalStyles.sheet, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+        <View style={[modalStyles.sheet, { backgroundColor: theme.card, borderColor: ink }]}>
           <View style={modalStyles.header}>
             <Text style={[modalStyles.title, { color: theme.textStrong }]}>Add Medication</Text>
             <Pressable onPress={onClose}><Text style={{ color: theme.textSoft, fontSize: 22 }}>✕</Text></Pressable>
           </View>
-          <ScrollView contentContainerStyle={{ gap: 12, paddingBottom: 20 }}>
+          <ScrollView contentContainerStyle={{ gap: 12, paddingBottom: 20 }} keyboardShouldPersistTaps="handled">
             <View>
               <TextInput
-                style={[modalStyles.input, { borderColor: theme.ink, color: theme.textStrong, backgroundColor: theme.page }]}
+                style={[modalStyles.input, { borderColor: ink, color: theme.textStrong, backgroundColor: theme.page }]}
                 placeholder="Medication name"
                 placeholderTextColor={theme.textSoft}
                 value={name}
                 onChangeText={onNameChange}
               />
               {suggestions.length > 0 && (
-                <View style={[modalStyles.suggestions, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+                <View style={[modalStyles.suggestions, { backgroundColor: theme.card, borderColor: ink }]}>
                   {suggestions.map((s) => (
-                    <Pressable key={s} style={[modalStyles.suggRow, { borderBottomColor: theme.cardBorder }]} onPress={() => { setName(s); setSuggestions([]); }}>
+                    <Pressable key={s} style={[modalStyles.suggRow, { borderBottomColor: theme.cardBorder }]}
+                      onPress={() => { setName(s); setSuggestions([]); }}>
                       <Text style={{ color: theme.textStrong, fontSize: 14 }}>{s}</Text>
                     </Pressable>
                   ))}
                 </View>
               )}
             </View>
-            <TextInput
-              style={[modalStyles.input, { borderColor: theme.ink, color: theme.textStrong, backgroundColor: theme.page }]}
-              placeholder="Dosage (e.g. 10mg)"
-              placeholderTextColor={theme.textSoft}
-              value={dosage}
-              onChangeText={setDosage}
-            />
-            <TextInput
-              style={[modalStyles.input, { borderColor: theme.ink, color: theme.textStrong, backgroundColor: theme.page }]}
-              placeholder="Notes (optional)"
-              placeholderTextColor={theme.textSoft}
-              value={notes}
-              onChangeText={setNotes}
-            />
+            <TextInput style={[modalStyles.input, { borderColor: ink, color: theme.textStrong, backgroundColor: theme.page }]}
+              placeholder="Dosage (e.g. 10mg)" placeholderTextColor={theme.textSoft} value={dosage} onChangeText={setDosage} />
+            <TextInput style={[modalStyles.input, { borderColor: ink, color: theme.textStrong, backgroundColor: theme.page }]}
+              placeholder="Purpose (optional)" placeholderTextColor={theme.textSoft} value={purpose} onChangeText={setPurpose} />
+            <TextInput style={[modalStyles.input, { borderColor: ink, color: theme.textStrong, backgroundColor: theme.page }]}
+              placeholder="Prescriber (optional)" placeholderTextColor={theme.textSoft} value={prescriberName} onChangeText={setPrescriberName} />
+            <TextInput style={[modalStyles.input, { borderColor: ink, color: theme.textStrong, backgroundColor: theme.page }]}
+              placeholder="Refill date (YYYY-MM-DD)" placeholderTextColor={theme.textSoft} value={refillDate} onChangeText={setRefillDate} keyboardType="numeric" />
+            <TextInput style={[modalStyles.input, { borderColor: ink, color: theme.textStrong, backgroundColor: theme.page }]}
+              placeholder="Notes (optional)" placeholderTextColor={theme.textSoft} value={notes} onChangeText={setNotes} />
+
+            {categories.length > 0 && (
+              <>
+                <Text style={[modalStyles.label, { color: theme.textSoft }]}>Category</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {categories.map((cat) => (
+                    <Pressable key={cat.id} onPress={() => setSelectedCatId(selectedCatId === cat.id ? null : cat.id)}
+                      style={[modalStyles.catChip, {
+                        borderColor: selectedCatId === cat.id ? cat.color_hex : theme.cardBorder,
+                        backgroundColor: selectedCatId === cat.id ? cat.color_hex + '22' : theme.page,
+                      }]}>
+                      <View style={[modalStyles.catDot, { backgroundColor: cat.color_hex }]} />
+                      <Text style={{ fontSize: 12, color: theme.textStrong, fontWeight: '600' }}>{cat.label}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </>
+            )}
+
             <Text style={[modalStyles.label, { color: theme.textSoft }]}>Schedule</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {['morning', 'midday', 'evening', 'custom'].map((t) => (
-                <Pressable
-                  key={t}
-                  style={[
-                    modalStyles.timeChip,
-                    {
-                      backgroundColor: selectedTimes.includes(t) ? theme.teal.solid : theme.page,
-                      borderColor: theme.ink,
-                    },
-                  ]}
-                  onPress={() => toggleTime(t)}
-                >
+                <Pressable key={t} style={[modalStyles.timeChip, {
+                    backgroundColor: selectedTimes.includes(t) ? theme.teal.solid : theme.page, borderColor: ink }]}
+                  onPress={() => toggleTime(t)}>
                   <Text style={{ color: selectedTimes.includes(t) ? '#fff' : theme.textSoft, fontWeight: '600', fontSize: 13 }}>
                     {t.charAt(0).toUpperCase() + t.slice(1)}
                   </Text>
@@ -358,19 +448,10 @@ function AddMedicationModal({ theme, onClose, onSaved }: { theme: any; onClose: 
               ))}
             </View>
             {selectedTimes.includes('custom') && (
-              <TextInput
-                style={[modalStyles.input, { borderColor: theme.ink, color: theme.textStrong, backgroundColor: theme.page }]}
-                placeholder="Custom time (HH:MM)"
-                placeholderTextColor={theme.textSoft}
-                value={customTime}
-                onChangeText={setCustomTime}
-              />
+              <TextInput style={[modalStyles.input, { borderColor: ink, color: theme.textStrong, backgroundColor: theme.page }]}
+                placeholder="Custom time (HH:MM)" placeholderTextColor={theme.textSoft} value={customTime} onChangeText={setCustomTime} />
             )}
-            <Pressable
-              style={[modalStyles.saveBtn, { backgroundColor: theme.teal.solid, borderColor: theme.ink }]}
-              onPress={save}
-              disabled={saving}
-            >
+            <Pressable style={[modalStyles.saveBtn, { backgroundColor: theme.teal.solid, borderColor: ink }]} onPress={save} disabled={saving}>
               <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>{saving ? 'Saving…' : 'Save Medication'}</Text>
             </Pressable>
           </ScrollView>
@@ -406,6 +487,16 @@ const modalStyles = StyleSheet.create({
     paddingVertical: 7,
     paddingHorizontal: 14,
   },
+  catChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1.5,
+    borderRadius: 20,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+  },
+  catDot: { width: 10, height: 10, borderRadius: 5 },
   saveBtn: {
     borderWidth: 2,
     borderRadius: 12,
@@ -518,6 +609,14 @@ function MedicationView({ theme }: { theme: any }) {
         <ActivityIndicator color={theme.teal.solid} style={{ marginTop: 40 }} />
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 100 }}>
+          {/* Next dose callout */}
+          {(() => { const msg = nextDoseCallout(medications); return msg ? (
+            <View style={[medStyles.nextDoseBar, { backgroundColor: theme.teal.tint, borderColor: theme.teal.solid }]}>
+              <Text style={{ fontSize: 14 }}>⏰</Text>
+              <Text style={[medStyles.nextDoseText, { color: theme.teal.sub }]}>Next: {msg}</Text>
+            </View>
+          ) : null; })()}
+
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <Text style={[medStyles.sectionHead, { color: theme.textStrong }]}>Today's Schedule</Text>
             <Pressable onPress={() => { setSelectMode((s) => !s); setSelectedSlotIds([]); }}>
@@ -567,6 +666,9 @@ function MedicationView({ theme }: { theme: any }) {
                           </View>
                         )}
                       </View>
+                      {med.color_category && (
+                        <View style={[medStyles.colorDot, { backgroundColor: med.color_category.color_hex }]} />
+                      )}
                       <View style={{ flex: 1 }}>
                         <Text style={[medStyles.medName, { color: taken ? theme.textSoft : theme.textStrong }]}>{med.name}</Text>
                         {med.dosage ? <Text style={{ color: theme.textSoft, fontSize: 12 }}>{med.dosage}</Text> : null}
@@ -586,26 +688,54 @@ function MedicationView({ theme }: { theme: any }) {
             <Text style={{ color: theme.teal.fg, fontWeight: '700', fontSize: 14 }}>+ Add medication</Text>
           </Pressable>
 
-          {medications.map((med) => (
-            <Pressable
-              key={med.id}
-              style={[medStyles.medCard, { backgroundColor: theme.card, borderColor: theme.ink, shadowColor: theme.ink }]}
-              onLongPress={() => Alert.alert(med.name, 'What would you like to do?', [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Remove', style: 'destructive', onPress: () => deleteMed(med.id) },
-              ])}
-            >
-              <Text style={[medStyles.medName, { color: theme.textStrong }]}>{med.name}</Text>
-              {med.dosage ? <Text style={{ color: theme.textSoft, fontSize: 12 }}>{med.dosage}</Text> : null}
-              <Text style={{ color: theme.textSoft, fontSize: 12 }}>
-                {med.slots.map((s) => s.time_of_day).join(', ') || 'No schedule'}
-              </Text>
-            </Pressable>
-          ))}
+          {medications.map((med) => {
+            const status = computeMedStatus(med);
+            const badge = STATUS_BADGE[status];
+            const refillDays = med.refill_date
+              ? Math.ceil((new Date(med.refill_date).getTime() - Date.now()) / 86400000)
+              : null;
+            return (
+              <Pressable
+                key={med.id}
+                style={[medStyles.medCard, { backgroundColor: theme.card, borderColor: theme.ink, shadowColor: theme.ink }]}
+                onPress={() => navigation.navigate('MedicationHistory', { medicationId: med.id, medicationName: med.name })}
+                onLongPress={() => Alert.alert(med.name, 'What would you like to do?', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Remove', style: 'destructive', onPress: () => deleteMed(med.id) },
+                ])}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+                  <View style={[medStyles.colorDot, { backgroundColor: med.color_category?.color_hex ?? '#D1D5DB' }]} />
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Text style={[medStyles.medName, { color: theme.textStrong, flex: 1 }]}>{med.name}</Text>
+                      {status !== 'active' && (
+                        <View style={[medStyles.statusBadge, { backgroundColor: badge.bg }]}>
+                          <Text style={[medStyles.statusBadgeText, { color: badge.fg }]}>{badge.label}</Text>
+                        </View>
+                      )}
+                    </View>
+                    {med.dosage && <Text style={{ color: theme.textSoft, fontSize: 12 }}>{med.dosage}</Text>}
+                    {med.purpose && <Text style={{ color: theme.textSoft, fontSize: 12 }}>Purpose: {med.purpose}</Text>}
+                    {med.prescriber && <Text style={{ color: theme.textSoft, fontSize: 12 }}>Dr. {med.prescriber.name}</Text>}
+                    <Text style={{ color: theme.textSoft, fontSize: 12 }}>
+                      {med.slots.map((s) => s.time_of_day).join(', ') || 'No schedule'}
+                    </Text>
+                    {refillDays !== null && (
+                      <Text style={{ color: refillDays <= 0 ? theme.coral.solid : theme.textSoft, fontSize: 12 }}>
+                        {refillDays <= 0 ? 'Refill overdue' : `Refill in ${refillDays} day${refillDays !== 1 ? 's' : ''}`}
+                      </Text>
+                    )}
+                  </View>
+                  <Text style={{ color: theme.textSoft, fontSize: 16 }}>›</Text>
+                </View>
+              </Pressable>
+            );
+          })}
 
           <Pressable onPress={() => navigation.navigate('MedicationImport')}>
             <Text style={{ color: theme.teal.solid, fontSize: 13, fontWeight: '600', textDecorationLine: 'underline', textAlign: 'center', marginTop: 4 }}>
-              Import from CSV
+              Import from CSV / Excel
             </Text>
           </Pressable>
         </ScrollView>
@@ -684,6 +814,18 @@ const medStyles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 8,
   },
+  colorDot: { width: 10, height: 10, borderRadius: 5, marginTop: 4 },
+  statusBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  statusBadgeText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
+  nextDoseBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  nextDoseText: { fontSize: 13, fontWeight: '700', flex: 1 },
 });
 
 function CycleDayLogModal({
