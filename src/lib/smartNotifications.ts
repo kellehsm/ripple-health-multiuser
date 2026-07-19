@@ -13,18 +13,22 @@ export const CH_MOOD     = "ripple-mood";
 export const CH_BOOKS    = "ripple-books";
 export const CH_HOBBIES  = "ripple-hobbies";
 export const CH_SPENDING = "ripple-spending";
+export const CH_MEDS     = "ripple-medication";
+export const CH_CYCLE    = "ripple-cycle";
 
 export async function initSmartChannels() {
   await Promise.all([
-    notifee.createChannel({ id: CH_MEALS,    name: "Meal Reminders",    importance: AndroidImportance.DEFAULT }),
-    notifee.createChannel({ id: CH_GLUCOSE,  name: "Glucose Alerts",    importance: AndroidImportance.HIGH }),
-    notifee.createChannel({ id: CH_EVENING,  name: "Evening Check-in",  importance: AndroidImportance.DEFAULT }),
-    notifee.createChannel({ id: CH_WATER,    name: "Water Reminders",   importance: AndroidImportance.DEFAULT }),
-    notifee.createChannel({ id: CH_STREAK,   name: "Streak Protection", importance: AndroidImportance.DEFAULT }),
-    notifee.createChannel({ id: CH_MOOD,     name: "Mood Check-in",     importance: AndroidImportance.DEFAULT }),
-    notifee.createChannel({ id: CH_BOOKS,    name: "Reading Reminders", importance: AndroidImportance.MIN }),
-    notifee.createChannel({ id: CH_HOBBIES,  name: "Hobby Reminders",   importance: AndroidImportance.MIN }),
-    notifee.createChannel({ id: CH_SPENDING, name: "Spending Reminders",importance: AndroidImportance.MIN }),
+    notifee.createChannel({ id: CH_MEALS,    name: "Meal Reminders",         importance: AndroidImportance.DEFAULT }),
+    notifee.createChannel({ id: CH_GLUCOSE,  name: "Glucose Alerts",         importance: AndroidImportance.HIGH }),
+    notifee.createChannel({ id: CH_EVENING,  name: "Evening Check-in",       importance: AndroidImportance.DEFAULT }),
+    notifee.createChannel({ id: CH_WATER,    name: "Water Reminders",        importance: AndroidImportance.DEFAULT }),
+    notifee.createChannel({ id: CH_STREAK,   name: "Streak Protection",      importance: AndroidImportance.DEFAULT }),
+    notifee.createChannel({ id: CH_MOOD,     name: "Mood Check-in",          importance: AndroidImportance.DEFAULT }),
+    notifee.createChannel({ id: CH_BOOKS,    name: "Reading Reminders",      importance: AndroidImportance.MIN }),
+    notifee.createChannel({ id: CH_HOBBIES,  name: "Hobby Reminders",        importance: AndroidImportance.MIN }),
+    notifee.createChannel({ id: CH_SPENDING, name: "Spending Reminders",     importance: AndroidImportance.MIN }),
+    notifee.createChannel({ id: CH_MEDS,     name: "Medication Reminders",   importance: AndroidImportance.HIGH }),
+    notifee.createChannel({ id: CH_CYCLE,    name: "Cycle Reminders",        importance: AndroidImportance.DEFAULT }),
   ]);
 }
 
@@ -494,6 +498,131 @@ export async function checkBookReminder(settings: any, now: Date) {
       },
     });
   } catch (_) {}
+}
+
+// ─── Medication reminders ─────────────────────────────────────────────────────
+// Fires once per time-of-day bucket (morning/midday/evening) when the scheduled
+// hour passes and the user hasn't yet logged that slot today.
+
+const DEFAULT_MED_HOURS: Record<string, number> = { morning: 8, midday: 12, evening: 20 };
+
+export async function checkMedicationReminders(settings: any, now: Date) {
+  if (await areMuted()) return;
+  const medCfg = settings?.health_notifications;
+  if (!medCfg?.medication_reminders_enabled) return;
+
+  const slotHours: Record<string, number> = {
+    morning: medCfg.medication_morning_hour ?? DEFAULT_MED_HOURS.morning,
+    midday:  medCfg.medication_midday_hour  ?? DEFAULT_MED_HOURS.midday,
+    evening: medCfg.medication_evening_hour ?? DEFAULT_MED_HOURS.evening,
+  };
+
+  const nowH = now.getHours();
+  const dueSlots = (Object.entries(slotHours) as [string, number][]).filter(
+    ([slot, hour]) => nowH >= hour && !wasSent(`med_reminder_${slot}`)
+  );
+  if (dueSlots.length === 0) return;
+
+  try {
+    const meds: any[] = await api.getMedications();
+    if (!Array.isArray(meds) || meds.length === 0) return;
+
+    for (const [slot] of dueSlots) {
+      markSent(`med_reminder_${slot}`);
+      const dueMeds = meds.filter(
+        (m: any) => m.active && m.slots?.some((s: any) => {
+          const bucket = ["morning", "midday", "evening"].includes(s.time_of_day) ? s.time_of_day : "custom";
+          return bucket === slot && s.dose_log === null;
+        })
+      );
+      if (dueMeds.length === 0) continue;
+
+      const body = dueMeds.length === 1
+        ? `Time for ${dueMeds[0].name}${dueMeds[0].dosage ? ` (${dueMeds[0].dosage})` : ""}`
+        : `${dueMeds.length} medications due for ${slot}`;
+
+      await notifee.displayNotification({
+        id: `med-reminder-${slot}`,
+        title: "Medication reminder",
+        body,
+        data: { target: "health", action: "medication" },
+        android: {
+          channelId: CH_MEDS,
+          smallIcon: "ic_launcher",
+          pressAction: { id: "default", launchActivity: "default" },
+          actions: [
+            { title: "Open app", pressAction: { id: "open-health", launchActivity: "default" } },
+            { title: "Later",    pressAction: { id: `skip-med-${slot}` } },
+          ],
+        },
+      });
+    }
+  } catch (_) {}
+}
+
+// ─── Cycle reminders ──────────────────────────────────────────────────────────
+// Period approaching: fire once per predicted start date (tracked by module var).
+// Cycle log reminder: fire once per day at the configured hour if today not logged.
+
+let lastPeriodApproachingFiredFor: string | null = null;
+
+export async function checkCycleReminders(settings: any, now: Date) {
+  if (await areMuted()) return;
+  const cycleCfg = settings?.health_notifications;
+
+  // Period approaching
+  if (cycleCfg?.period_approaching_reminder_enabled !== false) {
+    try {
+      const prediction = await api.getCyclePrediction();
+      if (prediction?.predictedNextStart && prediction.confidence !== "none") {
+        const daysUntil = Math.round((new Date(prediction.predictedNextStart).getTime() - now.getTime()) / 86400000);
+        const leadDays: number = cycleCfg?.period_approaching_lead_days ?? 2;
+        if (daysUntil >= 0 && daysUntil <= leadDays && lastPeriodApproachingFiredFor !== prediction.predictedNextStart) {
+          lastPeriodApproachingFiredFor = prediction.predictedNextStart;
+          await notifee.displayNotification({
+            id: "cycle-period-approaching",
+            title: "Cycle",
+            body: `Period expected in about ${daysUntil} day${daysUntil === 1 ? "" : "s"}`,
+            data: { target: "health", action: "cycle" },
+            android: {
+              channelId: CH_CYCLE,
+              smallIcon: "ic_launcher",
+              pressAction: { id: "default", launchActivity: "default" },
+            },
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  // Daily cycle log reminder
+  if (cycleCfg?.cycle_log_reminders_enabled) {
+    const targetH: number = cycleCfg.cycle_log_hour ?? 20;
+    if (now.getHours() >= targetH && !isNighttime(now) && !wasSent("cycle_log_reminder")) {
+      markSent("cycle_log_reminder");
+      try {
+        const today = now.toISOString().slice(0, 10);
+        const log = await api.getCycleLog(today);
+        if (!log) {
+          await notifee.displayNotification({
+            id: "cycle-log-reminder",
+            title: "Cycle tracker",
+            body: "Don't forget to log your cycle today.",
+            data: { target: "health", action: "cycle" },
+            android: {
+              channelId: CH_CYCLE,
+              smallIcon: "ic_launcher",
+              pressAction: { id: "default", launchActivity: "default" },
+              actions: [
+                { title: "Log now", pressAction: { id: "log-cycle", launchActivity: "default" } },
+                { title: "Skip",    pressAction: { id: "skip-cycle" } },
+              ],
+            },
+          });
+        }
+      } catch (_) {}
+    }
+  }
 }
 
 // ─── Hobby reminder ───────────────────────────────────────────────────────────

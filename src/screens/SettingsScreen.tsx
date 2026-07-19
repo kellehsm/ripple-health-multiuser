@@ -87,6 +87,12 @@ export function SettingsScreen() {
         <MenuRow title="Dexcom" subtitle="CGM credentials" onPress={() => nav("SettingsDexcom")} theme={theme} />
       </View>
 
+      {/* Health */}
+      <Text style={[styles.groupLabel, { color: theme.textSoft }]}>HEALTH</Text>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+        <MenuRow title="Import Medications from CSV" onPress={() => nav("MedicationImport")} theme={theme} />
+      </View>
+
       {/* Notifications */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>NOTIFICATIONS</Text>
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>

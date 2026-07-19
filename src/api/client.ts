@@ -459,6 +459,70 @@ export const api = {
     return request('/exercise/log-entries/' + entryId, { method: 'DELETE' });
   },
 
+  // ── Medications ───────────────────────────────────────────────────────────────
+  getMedications: function () {
+    return request('/medications');
+  },
+  searchMedicationNames: function (q: string) {
+    return request('/medications/search?q=' + encodeURIComponent(q));
+  },
+  addMedication: function (payload: object) {
+    return request('/medications', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  updateMedication: function (id: string, payload: object) {
+    return request('/medications/' + id, { method: 'PATCH', body: JSON.stringify(payload) });
+  },
+  deleteMedication: function (id: string) {
+    return request('/medications/' + id, { method: 'DELETE' });
+  },
+  previewMedicationImport: function (csv: string) {
+    return request('/medications/import/preview', { method: 'POST', body: JSON.stringify({ csv }) });
+  },
+  commitMedicationImport: function (rows: object[]) {
+    return request('/medications/import/commit', { method: 'POST', body: JSON.stringify({ rows }) });
+  },
+  markSlotTaken: function (time_of_day: string, date?: string) {
+    return request('/medication-doses/mark-slot', { method: 'POST', body: JSON.stringify({ time_of_day, date }) });
+  },
+  markSelectedTaken: function (slot_ids: string[], date?: string) {
+    return request('/medication-doses/mark-selected', { method: 'POST', body: JSON.stringify({ slot_ids, date }) });
+  },
+  deleteDoseLog: function (id: string) {
+    return request('/medication-doses/' + id, { method: 'DELETE' });
+  },
+
+  // ── Cycle ─────────────────────────────────────────────────────────────────────
+  upsertCycleLog: function (payload: object) {
+    return request('/cycle/logs', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  getCycleLogs: function (from: string, to: string) {
+    return request(`/cycle/logs?from=${from}&to=${to}`);
+  },
+  getCycleLog: function (date: string) {
+    return request('/cycle/logs/' + date);
+  },
+  deleteCycleLog: function (date: string) {
+    return request('/cycle/logs/' + date, { method: 'DELETE' });
+  },
+  getCyclePrediction: function () {
+    return request('/cycle/prediction');
+  },
+  getCycleHistory: function () {
+    return request('/cycle/history');
+  },
+  getRankedSymptoms: function () {
+    return request('/cycle/symptoms/ranked');
+  },
+  addCustomSymptom: function (label: string) {
+    return request('/cycle/symptoms/custom', { method: 'POST', body: JSON.stringify({ label }) });
+  },
+  getRankedMoods: function (q = '') {
+    return request('/cycle/moods/ranked?q=' + encodeURIComponent(q));
+  },
+  getHealthOverviewInsight: function () {
+    return request('/cycle/overview-insight');
+  },
+
   // ── Tab preferences ───────────────────────────────────────────────────────────
   getTabPreferences: function () {
     return request('/user/tab-preferences');
