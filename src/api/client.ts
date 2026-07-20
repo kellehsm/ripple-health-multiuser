@@ -633,4 +633,27 @@ export const api = {
   deleteAnnotation: function (id: string) {
     return request("/annotations/" + id, { method: "DELETE" });
   },
+
+  // ── Plaid ─────────────────────────────────────────────────────────────────────
+  plaidCreateLinkToken: function () {
+    return request("/plaid/create-link-token", { method: "POST", body: "{}" });
+  },
+  plaidExchangeToken: function (public_token: string, institution_id?: string, institution_name?: string) {
+    return request("/plaid/exchange-token", {
+      method: "POST",
+      body: JSON.stringify({ public_token, institution_id, institution_name }),
+    });
+  },
+  plaidGetAccounts: function () {
+    return request("/plaid/accounts");
+  },
+  plaidSync: function () {
+    return request("/plaid/sync", { method: "POST", body: "{}" });
+  },
+  plaidGetItems: function () {
+    return request("/plaid/items");
+  },
+  plaidDeleteItem: function (itemId: string) {
+    return request("/plaid/items/" + itemId, { method: "DELETE" });
+  },
 };
