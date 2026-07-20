@@ -1,5 +1,6 @@
 import * as SecureStore from "expo-secure-store";
 import { File, Paths } from "expo-file-system";
+import { clearAllBarcodeCache } from "../utils/barcodeCache";
 
 const TOKEN_KEY = "ripple_jwt";
 const WIDGET_AUTH_FILE = "widget_auth.json";
@@ -50,5 +51,6 @@ export function registerLogoutHandler(cb: () => void): void {
 
 export async function logout(): Promise<void> {
   await clearToken();
+  try { clearAllBarcodeCache(); } catch {}
   _logoutHandler?.();
 }

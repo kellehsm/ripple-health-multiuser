@@ -38,3 +38,7 @@ export function setCachedBarcode(barcode: string, result: Record<string, any>): 
 export function invalidateBarcodeCache(barcode: string): void {
   db.runSync(`DELETE FROM barcode_cache WHERE barcode = ?`, [barcode]);
 }
+
+export function clearAllBarcodeCache(): void {
+  db.runSync(`DELETE FROM barcode_cache`);
+}
