@@ -143,11 +143,13 @@ const FLOW_COLORS: Record<string, string> = {
 };
 
 // Calendar indicator colors
-const PERIOD_PEACH      = '#F5C4B3';
-const PREDICTED_LAVENDER = '#D8CDEF';
-const TODAY_PURPLE      = '#B092D9';
-const SYMPTOM_TEAL      = '#A8DAD9';
-const MOOD_PINK         = '#F2D4DC';
+const PERIOD_PEACH        = '#F5C4B3';   // light flow (also legend reference)
+const PREDICTED_START_BG  = '#B392D9';   // solid fill for predicted period start day
+const PREDICTED_DAYS_BG   = '#EDE8F8';   // light fill for other predicted period days
+const PREDICTED_LAVENDER  = '#C4ABEF';   // dashed border for predicted days
+const TODAY_PURPLE        = '#B092D9';   // today ring
+const SYMPTOM_TEAL        = '#A8DAD9';
+const MOOD_PINK           = '#F2D4DC';
 
 function addDays(dateStr: string, n: number): string {
   const d = new Date(dateStr);
@@ -1375,10 +1377,11 @@ function MonthCalendar({
 
   // Build predicted period dates set
   const predictedDays = new Set<string>();
-  if (prediction?.predictedNextStart) {
-    const periodLen = prediction.avgPeriodLength ?? 5;
+  const predictedStartDay = prediction?.predictedNextStart ?? null;
+  if (predictedStartDay) {
+    const periodLen = prediction!.avgPeriodLength ?? 5;
     for (let i = 0; i < periodLen; i++) {
-      predictedDays.add(addDays(prediction.predictedNextStart, i));
+      predictedDays.add(addDays(predictedStartDay, i));
     }
   }
 
@@ -1407,18 +1410,13 @@ function MonthCalendar({
           const isToday = dateStr === today;
           const isPredicted = predictedDays.has(dateStr);
 
-          const isPeriodDay = log?.flow_intensity && log.flow_intensity !== 'none';
+          const isPeriodDay = !!(log?.flow_intensity && log.flow_intensity !== 'none');
+          const flowBg = isPeriodDay ? (FLOW_COLORS[log!.flow_intensity!] ?? PERIOD_PEACH) : undefined;
           const hasSymptomLog = (log?.symptoms ?? []).length > 0;
           const hasMoodLog = log?.mood_label != null && log.mood_label !== '';
 
-          // Cell background
-          let cellBg: string | undefined;
-          if (isPeriodDay) {
-            cellBg = PERIOD_PEACH;
-          }
-
-          // Predicted: dashed border effect using nested view
-          const showPredictedBorder = !isPeriodDay && isPredicted;
+          const isPredictedStart = dateStr === predictedStartDay;
+          const isOtherPredicted = isPredicted && !isPredictedStart;
 
           return (
             <Pressable
@@ -1426,16 +1424,20 @@ function MonthCalendar({
               style={calStyles.cell}
               onPress={() => onDayPress(dateStr)}
             >
-              {/* Predicted lavender border (simulated dashed via borderStyle) */}
-              {showPredictedBorder && (
-                <View style={[
-                  calStyles.cellInner,
-                  { borderColor: PREDICTED_LAVENDER, borderWidth: 2, borderStyle: 'dashed', borderRadius: 6 },
-                ]} />
+              {/* Predicted start day — solid saturated lavender fill */}
+              {!isPeriodDay && isPredictedStart && (
+                <View style={[calStyles.cellInner, { backgroundColor: PREDICTED_START_BG, borderRadius: 6 }]} />
               )}
-              {/* Period fill */}
+              {/* Other predicted days — light fill + dashed border */}
+              {!isPeriodDay && isOtherPredicted && (
+                <View style={[calStyles.cellInner, { backgroundColor: PREDICTED_DAYS_BG, borderRadius: 6 }]} />
+              )}
+              {!isPeriodDay && isOtherPredicted && (
+                <View style={[calStyles.cellInner, { borderColor: PREDICTED_LAVENDER, borderWidth: 1.5, borderStyle: 'dashed', borderRadius: 6 }]} />
+              )}
+              {/* Period fill — flow intensity gradient color */}
               {isPeriodDay && (
-                <View style={[calStyles.cellInner, { backgroundColor: cellBg, borderRadius: 6 }]} />
+                <View style={[calStyles.cellInner, { backgroundColor: flowBg, borderRadius: 6 }]} />
               )}
               {/* Today purple ring */}
               {isToday && (
@@ -1460,12 +1462,20 @@ function MonthCalendar({
       {/* Legend */}
       <View style={calStyles.legend}>
         <View style={calStyles.legendItem}>
-          <View style={[calStyles.legendDot, { backgroundColor: PERIOD_PEACH, borderWidth: 1, borderColor: '#ddd' }]} />
+          <View style={{ flexDirection: 'row', gap: 2 }}>
+            {(['spotting', 'light', 'medium', 'heavy'] as const).map((f) => (
+              <View key={f} style={[calStyles.legendSwatch, { backgroundColor: FLOW_COLORS[f] }]} />
+            ))}
+          </View>
           <Text style={[calStyles.legendText, { color: theme.textSoft }]}>Period</Text>
         </View>
         <View style={calStyles.legendItem}>
-          <View style={[calStyles.legendDot, { backgroundColor: PREDICTED_LAVENDER }]} />
-          <Text style={[calStyles.legendText, { color: theme.textSoft }]}>Predicted</Text>
+          <View style={[calStyles.legendDot, { backgroundColor: PREDICTED_START_BG }]} />
+          <Text style={[calStyles.legendText, { color: theme.textSoft }]}>Next period</Text>
+        </View>
+        <View style={calStyles.legendItem}>
+          <View style={[calStyles.legendDot, { backgroundColor: PREDICTED_DAYS_BG, borderWidth: 1.5, borderColor: PREDICTED_LAVENDER }]} />
+          <Text style={[calStyles.legendText, { color: theme.textSoft }]}>Predicted days</Text>
         </View>
         <View style={calStyles.legendItem}>
           <View style={[calStyles.legendDot, { backgroundColor: SYMPTOM_TEAL }]} />
@@ -1539,6 +1549,7 @@ const calStyles = StyleSheet.create({
   },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   legendDot: { width: 10, height: 10, borderRadius: 5 },
+  legendSwatch: { width: 8, height: 10, borderRadius: 2 },
   legendText: { fontSize: 11 },
 });
 

@@ -10,15 +10,15 @@ import { api } from "../api/client";
 import { InsightCard, Insight } from "../components/InsightCard";
 
 const TYPE_GROUPS: { label: string; types: string[]; emoji: string }[] = [
-  { label: "All",          types: [],                                    emoji: "✨" },
-  { label: "Wellness",     types: ["glucose", "sleep", "activity", "water"], emoji: "❤️" },
-  { label: "Mindfulness",  types: ["mood", "books"],                    emoji: "🧠" },
-  { label: "Hobbies",      types: ["hobbies"],                          emoji: "🎨" },
-  { label: "Medication",   types: ["medication"],                       emoji: "💊" },
-  { label: "Exercise",     types: ["exercise"],                         emoji: "🏋️" },
-  { label: "Finance",      types: ["spending", "streak"],               emoji: "💰" },
-  { label: "Cycle",        types: ["cycle"],                            emoji: "🌸" },
-  { label: "Combined",     types: ["combined"],                         emoji: "🔗" },
+  { label: "All",          types: [],                                              emoji: "✨" },
+  { label: "Wellness",     types: ["glucose", "sleep", "activity", "water", "steps"], emoji: "❤️" },
+  { label: "Mindfulness",  types: ["mood"],                                        emoji: "🧠" },
+  { label: "Hobbies",      types: ["hobbies", "books"],                            emoji: "🎨" },
+  { label: "Medication",   types: ["medication"],                                  emoji: "💊" },
+  { label: "Exercise",     types: ["exercise"],                                    emoji: "🏋️" },
+  { label: "Finance",      types: ["spending", "streak"],                          emoji: "💰" },
+  { label: "Cycle",        types: ["cycle"],                                       emoji: "🌸" },
+  { label: "Combined",     types: ["combined"],                                    emoji: "🔗" },
 ];
 
 export function InsightsScreen() {
