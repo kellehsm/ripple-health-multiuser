@@ -31,6 +31,7 @@ const TYPE_ICON: Record<string, string> = {
   hobbies: "bicycle-outline",
   spending: "wallet-outline",
   streak: "flame",
+  mindfulness: "leaf-outline",
 };
 
 const CONFIDENCE_LABEL: Record<Confidence, string> = {
@@ -213,6 +214,17 @@ const DATA_KEY_META: Record<string, KeyMeta> = {
   // Weekend
   weekend_days:                    { label: "Weekend Days" },
   weekday_days:                    { label: "Weekday Days" },
+  // Mindfulness
+  mindfulness_days:                { label: "Mindfulness Days" },
+  no_mindfulness_days:             { label: "No Mindfulness Days" },
+  avg_mood_mindfulness:            { label: "Mood (Mindfulness)", unit: "/5" },
+  avg_mood_no_mindfulness:         { label: "Mood (No Mindfulness)", unit: "/5" },
+  avg_glucose_mindfulness:         { label: "Glucose (Mindfulness)", unit: " mg/dL" },
+  avg_glucose_no_mindfulness:      { label: "Glucose (No Mindfulness)", unit: " mg/dL" },
+  avg_resting_hr_mindfulness:      { label: "Heart Rate (Mindfulness)", unit: " bpm" },
+  avg_resting_hr_no_mindfulness:   { label: "Heart Rate (No Mindfulness)", unit: " bpm" },
+  avg_spend_mindfulness:           { label: "Spend (Mindfulness)", unit: " $" },
+  avg_spend_no_mindfulness:        { label: "Spend (No Mindfulness)", unit: " $" },
 };
 
 const SKIP_KEYS = new Set([
@@ -230,9 +242,10 @@ const TYPE_TIP: Record<string, string> = {
   hobbies:    "Scheduling hobby time intentionally can help sustain the pattern.",
   spending:   "Small changes in routine often shift spending patterns over time.",
   streak:     "Consistency is its own reward — keep the streak alive.",
-  medication: "Never adjust your medication schedule without consulting your doctor.",
-  cycle:      "Cycle-based patterns can vary month to month — keep tracking.",
-  exercise:   "Rest days are part of any effective training routine.",
+  medication:   "Never adjust your medication schedule without consulting your doctor.",
+  cycle:        "Cycle-based patterns can vary month to month — keep tracking.",
+  exercise:     "Rest days are part of any effective training routine.",
+  mindfulness:  "Even a short session counts — consistency over duration.",
 };
 
 function formatSupportingData(data: Record<string, unknown>): Array<{ label: string; value: string }> {
