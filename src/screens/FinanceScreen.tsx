@@ -1,298 +1,627 @@
 import React, { useState, useCallback, useMemo } from "react";
 import {
-  ScrollView, View, Text, TextInput, Pressable,
-  StyleSheet, RefreshControl, Alert
+  ScrollView, View, Text, TextInput, Pressable, StyleSheet,
+  RefreshControl, Alert, Modal, KeyboardAvoidingView, Platform,
+  TouchableWithoutFeedback, Keyboard,
 } from "react-native";
-import { LoadingIndicator } from "../components/LoadingIndicator";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
+import * as Haptics from "expo-haptics";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
-import { useTabPreferences } from "../hooks/useTabPreferences";
+import { LoadingIndicator } from "../components/LoadingIndicator";
 import { EmptyState } from "../components/EmptyState";
-import { toast, Msg } from "../lib/toast";
+import { toast } from "../lib/toast";
 
 type SpendingEntry = {
   id: string;
   amount: number;
   category: string | null;
+  merchant_name: string | null;
+  notes: string | null;
+  source: string | null;
+  plaid_transaction_id: string | null;
   logged_at: string;
 };
 
-const CATEGORIES = ["food", "transport", "health", "shopping", "entertainment", "subscriptions", "other"];
+const CATEGORIES = [
+  "Food & Dining",
+  "Shopping",
+  "Entertainment",
+  "Personal Care",
+  "Transport",
+  "Health",
+  "Subscriptions",
+  "Home",
+  "Rent / Mortgage",
+  "Utilities",
+  "Other",
+];
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+const CAT_COLOR: Record<string, string> = {
+  "Food & Dining":   "#A62A50",
+  "Shopping":        "#7B3FBF",
+  "Entertainment":   "#3FA0A6",
+  "Personal Care":   "#CE7A92",
+  "Transport":       "#5A7FA8",
+  "Health":          "#5FAD8C",
+  "Subscriptions":   "#B8860B",
+  "Home":            "#8A8A8A",
+  "Rent / Mortgage": "#AAAAAA",
+  "Utilities":       "#AAAAAA",
+  "Other":           "#999999",
+};
+
+function normalizeCategory(cat: string | null): string {
+  if (!cat) return "Other";
+  const map: Record<string, string> = {
+    "food":              "Food & Dining",
+    "food & dining":     "Food & Dining",
+    "transport":         "Transport",
+    "health":            "Health",
+    "shopping":          "Shopping",
+    "entertainment":     "Entertainment",
+    "subscriptions":     "Subscriptions",
+    "subscription":      "Subscriptions",
+    "personal care":     "Personal Care",
+    "personal_care":     "Personal Care",
+    "home":              "Home",
+    "other":             "Other",
+    "income / transfer": "Other",
+  };
+  return map[cat.toLowerCase()] ?? cat;
 }
 
 function formatAmount(n: number): string {
-  return "$" + n.toFixed(2);
+  return "$" + Number(n).toFixed(2);
 }
 
-function startOfWeek(): string {
+function startOfToday(): Date {
   const d = new Date();
-  d.setDate(d.getDate() - d.getDay()); // Sunday
   d.setHours(0, 0, 0, 0);
-  return d.toISOString();
+  return d;
 }
+
+function startOfWeek(): Date {
+  const d = new Date();
+  d.setDate(d.getDate() - d.getDay());
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function localDateStr(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function formatDayHeader(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  const today = startOfToday();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (date.getTime() === today.getTime()) return "Today";
+  if (date.getTime() === yesterday.getTime()) return "Yesterday";
+  return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+function groupByDay(entries: SpendingEntry[]): [string, SpendingEntry[]][] {
+  const map: Record<string, SpendingEntry[]> = {};
+  for (const e of entries) {
+    const day = localDateStr(e.logged_at);
+    (map[day] ??= []).push(e);
+  }
+  return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
+}
+
+function todayStr(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export function FinanceScreen() {
   const { theme } = useTheme();
-  const navigation = useNavigation<any>();
-  const { preferences } = useTabPreferences();
   const ink = theme.ink;
-  const card = theme.card;
-  const styles = useMemo(() => makeStyles(ink, card), [ink, card]);
-
-  useFocusEffect(useCallback(() => {
-    if (!preferences.selectedModules.includes('finance')) {
-      navigation.navigate('Home');
-    }
-  }, [preferences.selectedModules]));
 
   const [entries, setEntries] = useState<SpendingEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [view, setView] = useState<"day" | "week">("week");
 
-  // Add expense form
-  const [showForm, setShowForm] = useState(false);
-  const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("other");
-  const [submitting, setSubmitting] = useState(false);
-  const [amountError, setAmountError] = useState<string | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [addAmount, setAddAmount] = useState("");
+  const [addCategory, setAddCategory] = useState("Food & Dining");
+  const [addMerchant, setAddMerchant] = useState("");
+  const [addDate, setAddDate] = useState(todayStr());
+  const [addNotes, setAddNotes] = useState("");
+  const [addError, setAddError] = useState<string | null>(null);
+  const [addSubmitting, setAddSubmitting] = useState(false);
+
+  const [editEntry, setEditEntry] = useState<SpendingEntry | null>(null);
+  const [editCategory, setEditCategory] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [editSubmitting, setEditSubmitting] = useState(false);
 
   async function load(isRefresh = false) {
     if (isRefresh) setRefreshing(true);
-    else setLoading(true);
-    setError(null);
+    else if (!entries.length) setLoading(true);
     try {
-      const since = new Date(Date.now() - 30 * 86400000).toISOString();
+      const since = new Date(Date.now() - 60 * 86400000).toISOString();
       const data = await api.spending(since);
       setEntries(Array.isArray(data) ? data : []);
     } catch {
-      setError(Msg.loadData);
+      toast("Couldn't load spending.", "error");
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }
 
-  useFocusEffect(useCallback(() => { load(); }, []));
-
-  // Weekly total (Sunday–Saturday)
-  const weekStart = useMemo(() => new Date(startOfWeek()), []);
-  const weekEntries = useMemo(
-    () => entries.filter(e => new Date(e.logged_at) >= weekStart),
-    [entries, weekStart]
-  );
-  const weekTotal = useMemo(
-    () => weekEntries.reduce((s, e) => s + Number(e.amount), 0),
-    [weekEntries]
-  );
-
-  // Category breakdown for this week
-  const categoryTotals = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const e of weekEntries) {
-      const cat = e.category?.toLowerCase() || "other";
-      map[cat] = (map[cat] || 0) + Number(e.amount);
-    }
-    return Object.entries(map).sort((a, b) => b[1] - a[1]);
-  }, [weekEntries]);
-
-  const maxCatTotal = categoryTotals[0]?.[1] ?? 1;
-
-  // Recent entries (last 14 days)
-  const recent = useMemo(
-    () => entries.slice(0, 30),
-    [entries]
-  );
-
-  async function submitExpense(parsed: number) {
-    setSubmitting(true);
+  async function syncPlaid() {
+    setSyncing(true);
     try {
-      await api.addSpending({ amount: parsed, category, logged_at: new Date().toISOString() });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      toast("Expense logged.");
-      setAmount("");
-      setCategory("other");
-      setShowForm(false);
+      await api.plaidSync();
       await load();
     } catch {
-      toast(Msg.addSpending, "error");
+      // silent — pull to refresh recovers
     } finally {
-      setSubmitting(false);
+      setSyncing(false);
     }
   }
 
-  async function handleAddExpense() {
-    setAmountError(null);
-    const parsed = parseFloat(amount.replace(",", "."));
-    if (!amount.trim() || isNaN(parsed) || parsed <= 0) {
-      setAmountError("Please enter a valid amount greater than $0.");
+  useFocusEffect(
+    useCallback(() => {
+      load();
+      syncPlaid();
+    }, [])
+  );
+
+  const viewStart = view === "day" ? startOfToday() : startOfWeek();
+
+  const filtered = useMemo(
+    () => entries.filter((e) => new Date(e.logged_at) >= viewStart),
+    [entries, view]
+  );
+
+  const total = useMemo(
+    () => filtered.reduce((s, e) => s + Number(e.amount), 0),
+    [filtered]
+  );
+
+  const categoryTotals = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const e of filtered) {
+      const cat = normalizeCategory(e.category);
+      map[cat] = (map[cat] ?? 0) + Number(e.amount);
+    }
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  }, [filtered]);
+
+  const maxCat = categoryTotals[0]?.[1] ?? 1;
+  const grouped = useMemo(() => groupByDay(filtered), [filtered]);
+
+  function resetAdd() {
+    setAddAmount("");
+    setAddCategory("Food & Dining");
+    setAddMerchant("");
+    setAddDate(todayStr());
+    setAddNotes("");
+    setAddError(null);
+  }
+
+  async function submitAdd(parsed: number) {
+    setAddSubmitting(true);
+    try {
+      await api.addSpending({
+        amount: parsed,
+        category: addCategory,
+        merchant_name: addMerchant.trim() || null,
+        notes: addNotes.trim() || null,
+        logged_at: addDate + "T12:00:00.000Z",
+        source: "manual",
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setShowAdd(false);
+      resetAdd();
+      await load();
+      toast("Expense logged.");
+    } catch {
+      toast("Couldn't save expense.", "error");
+    } finally {
+      setAddSubmitting(false);
+    }
+  }
+
+  async function handleAdd() {
+    setAddError(null);
+    const parsed = parseFloat(addAmount.replace(",", "."));
+    if (!addAmount.trim() || isNaN(parsed) || parsed <= 0) {
+      setAddError("Enter a valid amount.");
       return;
     }
     if (parsed > 10000) {
-      Alert.alert(
-        "Does this look right?",
-        `$${parsed.toFixed(2)} is a large single expense — just checking it's not a typo.`,
-        [
-          { text: "Let me fix it", style: "cancel" },
-          { text: "Yes, save it", onPress: () => submitExpense(parsed) },
-        ]
-      );
+      Alert.alert("Large amount", `$${parsed.toFixed(2)} — confirm it's not a typo.`, [
+        { text: "Fix it", style: "cancel" },
+        { text: "Save", onPress: () => void submitAdd(parsed) },
+      ]);
       return;
     }
-    await submitExpense(parsed);
+    await submitAdd(parsed);
+  }
+
+  function openEdit(entry: SpendingEntry) {
+    setEditEntry(entry);
+    setEditCategory(normalizeCategory(entry.category));
+    setEditNotes(entry.notes ?? "");
+  }
+
+  async function handleEdit() {
+    if (!editEntry) return;
+    setEditSubmitting(true);
+    try {
+      await api.patchSpending(editEntry.id, { category: editCategory, notes: editNotes.trim() || null });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setEditEntry(null);
+      await load();
+      toast("Updated.");
+    } catch {
+      toast("Couldn't update.", "error");
+    } finally {
+      setEditSubmitting(false);
+    }
+  }
+
+  function handleDeleteFromEdit() {
+    if (!editEntry) return;
+    const label = editEntry.merchant_name ?? editEntry.category ?? "this entry";
+    Alert.alert("Delete entry?", `Remove "${label}"?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete", style: "destructive",
+        onPress: async () => {
+          try {
+            await api.deleteSpending(editEntry.id);
+            setEditEntry(null);
+            await load();
+            toast("Deleted.");
+          } catch {
+            toast("Couldn't delete.", "error");
+          }
+        },
+      },
+    ]);
+  }
+
+  const s = useMemo(() => makeStyles(ink, theme.card), [ink, theme.card]);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.page, alignItems: "center", justifyContent: "center" }}>
+        <LoadingIndicator size="large" color={theme.purple.solid} />
+      </View>
+    );
   }
 
   return (
-    <ScrollView
-      style={{ backgroundColor: theme.page }}
-      contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={theme.teal.bar} />}
-    >
-      {loading ? (
-        <View style={{ paddingVertical: 40, alignItems: "center" }}>
-          <LoadingIndicator size="large" color={theme.purple.solid} />
+    <>
+      <ScrollView
+        style={{ backgroundColor: theme.page }}
+        contentContainerStyle={s.content}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={theme.purple.solid} />
+        }
+      >
+        {/* Day / Week toggle */}
+        <View style={[s.toggle, { backgroundColor: theme.card, borderColor: ink }]}>
+          {(["day", "week"] as const).map((v) => (
+            <Pressable
+              key={v}
+              onPress={() => setView(v)}
+              style={[s.toggleBtn, view === v && { backgroundColor: theme.purple.solid }]}
+              accessibilityRole="button"
+            >
+              <Text style={[s.toggleText, { color: view === v ? "#fff" : theme.textSoft }]}>
+                {v === "day" ? "Today" : "This Week"}
+              </Text>
+            </Pressable>
+          ))}
         </View>
-      ) : error ? (
-        <EmptyState emoji="⚠️" title="Couldn't load spending" message={error} actionLabel="Retry" onAction={() => load()} />
-      ) : (
-        <>
-          {/* Weekly total */}
-          <View style={[styles.card, { backgroundColor: theme.purple.tint, borderColor: ink }]}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <View>
-                <Text style={[styles.sectionLabel, { color: theme.purple.sub }]}>SPENT THIS WEEK</Text>
-                <Text style={[styles.weekTotal, { color: theme.purple.fg }]}>{formatAmount(weekTotal)}</Text>
-                <Text style={[styles.subLabel, { color: theme.purple.sub }]}>
-                  {weekEntries.length} transaction{weekEntries.length !== 1 ? "s" : ""} · last 7 days
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => setShowForm(s => !s)}
-                style={[styles.addBtn, { backgroundColor: theme.purple.solid, borderColor: ink }]}
-                accessibilityRole="button"
-                accessibilityLabel="Add expense"
-              >
-                <Ionicons name={showForm ? "close" : "add"} size={18} color="#fff" />
-              </Pressable>
+
+        {/* Total card */}
+        <View style={[s.card, { backgroundColor: theme.purple.tint, borderColor: ink }]}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <View>
+              <Text style={[s.label, { color: theme.purple.sub }]}>
+                {view === "day" ? "SPENT TODAY" : "SPENT THIS WEEK"}
+              </Text>
+              <Text style={[s.totalAmt, { color: theme.purple.fg }]}>{formatAmount(total)}</Text>
+              <Text style={[s.sublabel, { color: theme.purple.sub }]}>
+                {filtered.length} transaction{filtered.length !== 1 ? "s" : ""}
+                {syncing ? "  ·  syncing…" : ""}
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => setShowAdd(true)}
+              style={[s.addBtn, { backgroundColor: theme.purple.solid, borderColor: ink }]}
+              accessibilityRole="button"
+              accessibilityLabel="Add expense"
+            >
+              <Ionicons name="add" size={20} color="#fff" />
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Category breakdown chart */}
+        {categoryTotals.length > 0 && (
+          <View style={[s.card, { borderColor: ink }]}>
+            <Text style={[s.cardTitle, { color: theme.textStrong }]}>Where it went</Text>
+            <View style={{ gap: 11, marginTop: 6 }}>
+              {categoryTotals.map(([cat, amt]) => {
+                const color = CAT_COLOR[cat] ?? "#999";
+                return (
+                  <View key={cat}>
+                    <View style={s.chartRow}>
+                      <Text style={[s.chartCat, { color: theme.textStrong }]}>{cat}</Text>
+                      <Text style={[s.chartAmt, { color }]}>{formatAmount(amt)}</Text>
+                    </View>
+                    <View style={[s.barTrack, { backgroundColor: color + "22" }]}>
+                      <View style={[s.barFill, { backgroundColor: color, width: `${Math.round((amt / maxCat) * 100)}%` as any }]} />
+                    </View>
+                  </View>
+                );
+              })}
             </View>
           </View>
+        )}
 
-          {/* Add expense form */}
-          {showForm && (
-            <View style={[styles.card, { borderColor: ink }]}>
-              <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Log expense</Text>
+        {/* Transaction list grouped by day */}
+        {grouped.length === 0 ? (
+          <EmptyState
+            emoji="💳"
+            title={view === "day" ? "Nothing logged today" : "Nothing this week"}
+            message="Track cash manually or connect a bank in Settings to auto-import transactions."
+            actionLabel="Log an expense"
+            onAction={() => setShowAdd(true)}
+          />
+        ) : (
+          grouped.map(([day, dayEntries]) => (
+            <View key={day}>
+              <Text style={[s.dayHeader, { color: theme.textSoft }]}>{formatDayHeader(day)}</Text>
+              <View style={[s.card, { borderColor: ink }]}>
+                {dayEntries.map((e, i) => {
+                  const cat = normalizeCategory(e.category);
+                  const color = CAT_COLOR[cat] ?? "#999";
+                  return (
+                    <Pressable
+                      key={e.id}
+                      onPress={() => openEdit(e)}
+                      style={[
+                        s.txRow,
+                        i < dayEntries.length - 1 && { borderBottomWidth: 1, borderBottomColor: ink + "18" },
+                      ]}
+                      accessibilityRole="button"
+                    >
+                      <View style={{ flex: 1, gap: 3 }}>
+                        <Text style={[s.merchant, { color: theme.textStrong }]} numberOfLines={1}>
+                          {e.merchant_name ?? cat}
+                        </Text>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                          <View style={[s.catBadge, { backgroundColor: color + "20" }]}>
+                            <Text style={[s.catBadgeText, { color }]}>{cat}</Text>
+                          </View>
+                          {e.source === "plaid" && (
+                            <Ionicons name="card-outline" size={11} color={theme.textSoft} />
+                          )}
+                          <Text style={[s.txTime, { color: theme.textSoft }]}>{formatTime(e.logged_at)}</Text>
+                        </View>
+                        {e.notes ? (
+                          <Text style={[s.txNotes, { color: theme.textSoft }]} numberOfLines={1}>{e.notes}</Text>
+                        ) : null}
+                      </View>
+                      <Text style={[s.txAmt, { color: theme.purple.sub }]}>{formatAmount(Number(e.amount))}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          ))
+        )}
 
-              <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>Amount ($)</Text>
+        <View style={{ height: 32 }} />
+      </ScrollView>
+
+      {/* Add modal */}
+      <Modal
+        visible={showAdd}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => { setShowAdd(false); resetAdd(); }}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1, backgroundColor: theme.page }}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <ScrollView contentContainerStyle={s.modalContent} keyboardShouldPersistTaps="handled">
+              <View style={s.modalHeader}>
+                <Text style={[s.modalTitle, { color: theme.textStrong }]}>Log expense</Text>
+                <Pressable onPress={() => { setShowAdd(false); resetAdd(); }}>
+                  <Ionicons name="close" size={24} color={theme.textSoft} />
+                </Pressable>
+              </View>
+
+              <Text style={[s.fieldLabel, { color: theme.textSoft }]}>Amount</Text>
               <TextInput
-                value={amount}
-                onChangeText={v => { setAmount(v); setAmountError(null); }}
+                value={addAmount}
+                onChangeText={(v) => { setAddAmount(v); setAddError(null); }}
                 keyboardType="decimal-pad"
                 placeholder="0.00"
                 placeholderTextColor={theme.textSoft}
-                style={[styles.textInput, { color: theme.textStrong, borderColor: amountError ? theme.coral.solid : ink }]}
+                autoFocus
+                style={[s.amountInput, { color: theme.textStrong, borderColor: addError ? "#E8654E" : ink }]}
                 returnKeyType="done"
-                accessibilityLabel="Expense amount"
               />
-              {amountError ? (
-                <Text style={[styles.errorText, { color: theme.coral.solid }]}>{amountError}</Text>
-              ) : null}
+              {addError ? <Text style={[s.errorText, { color: "#E8654E" }]}>{addError}</Text> : null}
 
-              <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>Category</Text>
-              <View style={styles.catRow}>
-                {CATEGORIES.map(cat => (
-                  <Pressable
-                    key={cat}
-                    onPress={() => setCategory(cat)}
-                    style={[styles.catChip, {
-                      backgroundColor: category === cat ? theme.purple.solid : "transparent",
-                      borderColor: category === cat ? theme.purple.solid : ink,
-                    }]}
-                    accessibilityRole="button"
-                    accessibilityLabel={cat}
-                  >
-                    <Text style={{ color: category === cat ? "#fff" : theme.textSoft, fontSize: 12, fontWeight: "600" }}>
-                      {cat}
-                    </Text>
-                  </Pressable>
-                ))}
+              <Text style={[s.fieldLabel, { color: theme.textSoft }]}>Category</Text>
+              <View style={s.chipWrap}>
+                {CATEGORIES.map((cat) => {
+                  const active = addCategory === cat;
+                  const color = CAT_COLOR[cat] ?? "#999";
+                  return (
+                    <Pressable
+                      key={cat}
+                      onPress={() => setAddCategory(cat)}
+                      style={[s.chip, {
+                        borderColor: active ? color : ink + "55",
+                        backgroundColor: active ? color + "22" : "transparent",
+                      }]}
+                    >
+                      <Text style={[s.chipText, { color: active ? color : theme.textSoft, fontWeight: active ? "700" : "500" }]}>
+                        {cat}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
+
+              <Text style={[s.fieldLabel, { color: theme.textSoft }]}>Store / merchant (optional)</Text>
+              <TextInput
+                value={addMerchant}
+                onChangeText={setAddMerchant}
+                placeholder="e.g. Chipotle, Amazon"
+                placeholderTextColor={theme.textSoft}
+                style={[s.textInput, { color: theme.textStrong, borderColor: ink }]}
+                returnKeyType="next"
+              />
+
+              <Text style={[s.fieldLabel, { color: theme.textSoft }]}>Date</Text>
+              <TextInput
+                value={addDate}
+                onChangeText={setAddDate}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={theme.textSoft}
+                style={[s.textInput, { color: theme.textStrong, borderColor: ink }]}
+                returnKeyType="next"
+              />
+
+              <Text style={[s.fieldLabel, { color: theme.textSoft }]}>Notes (optional)</Text>
+              <TextInput
+                value={addNotes}
+                onChangeText={setAddNotes}
+                placeholder="Any extra detail…"
+                placeholderTextColor={theme.textSoft}
+                multiline
+                numberOfLines={2}
+                style={[s.textInput, { color: theme.textStrong, borderColor: ink, minHeight: 60, textAlignVertical: "top" }]}
+              />
 
               <Pressable
-                onPress={handleAddExpense}
-                disabled={submitting}
-                style={[styles.submitBtn, { backgroundColor: theme.purple.solid, borderColor: ink, opacity: submitting ? 0.6 : 1 }]}
-                accessibilityRole="button"
-                accessibilityLabel="Save expense"
+                onPress={handleAdd}
+                disabled={addSubmitting}
+                style={[s.saveBtn, { backgroundColor: theme.purple.solid, borderColor: ink, opacity: addSubmitting ? 0.6 : 1 }]}
               >
-                {submitting
+                {addSubmitting
                   ? <LoadingIndicator size="small" color="#fff" />
-                  : <Text style={styles.submitText}>Save</Text>}
+                  : <Text style={s.saveBtnText}>Save expense</Text>}
               </Pressable>
-            </View>
-          )}
+            </ScrollView>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </Modal>
 
-          {/* Category breakdown */}
-          {categoryTotals.length > 0 ? (
-            <View style={[styles.card, { borderColor: ink }]}>
-              <Text style={[styles.cardTitle, { color: theme.textStrong }]}>This week by category</Text>
-              <View style={{ gap: 10, marginTop: 4 }}>
-                {categoryTotals.map(([cat, total]) => (
-                  <View key={cat}>
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
-                      <Text style={[styles.catLabel, { color: theme.textStrong }]}>{cat}</Text>
-                      <Text style={[styles.catLabel, { color: theme.purple.sub }]}>{formatAmount(total)}</Text>
-                    </View>
-                    <View style={[styles.barTrack, { backgroundColor: theme.purple.bg }]}>
-                      <View
-                        style={[styles.barFill, {
-                          backgroundColor: theme.purple.solid,
-                          width: `${Math.round((total / maxCatTotal) * 100)}%` as any,
-                        }]}
-                      />
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </View>
-          ) : null}
-
-          {/* Recent entries */}
-          {recent.length > 0 ? (
-            <View style={[styles.card, { borderColor: ink }]}>
-              <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Recent</Text>
-              {recent.map((e, i) => (
-                <View
-                  key={e.id}
-                  style={[styles.entryRow, i < recent.length - 1 && { borderBottomWidth: 1, borderBottomColor: ink + "1A" }]}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.entryCategory, { color: theme.textStrong }]}>{e.category || "other"}</Text>
-                    <Text style={[styles.entryDate, { color: theme.textSoft }]}>{formatDate(e.logged_at)}</Text>
-                  </View>
-                  <Text style={[styles.entryAmount, { color: theme.purple.sub }]}>{formatAmount(Number(e.amount))}</Text>
+      {/* Edit modal */}
+      <Modal
+        visible={!!editEntry}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setEditEntry(null)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1, backgroundColor: theme.page }}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <ScrollView contentContainerStyle={s.modalContent} keyboardShouldPersistTaps="handled">
+              <View style={s.modalHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.modalTitle, { color: theme.textStrong }]} numberOfLines={1}>
+                    {editEntry?.merchant_name ?? "Edit entry"}
+                  </Text>
+                  {editEntry && (
+                    <Text style={[s.editMeta, { color: theme.textSoft }]}>
+                      {formatAmount(Number(editEntry.amount))}  ·  {formatTime(editEntry.logged_at)}
+                      {editEntry.source === "plaid" ? "  ·  imported" : ""}
+                    </Text>
+                  )}
                 </View>
-              ))}
-            </View>
-          ) : (
-            <EmptyState
-              emoji="💳"
-              title="No spending logged yet"
-              message="Add expenses to discover patterns in how you spend — and how it relates to your mood and stress levels."
-              actionLabel="Log your first expense"
-              onAction={() => setShowForm(true)}
-            />
-          )}
-        </>
-      )}
-    </ScrollView>
+                <Pressable onPress={() => setEditEntry(null)} style={{ marginLeft: 12 }}>
+                  <Ionicons name="close" size={24} color={theme.textSoft} />
+                </Pressable>
+              </View>
+
+              <Text style={[s.fieldLabel, { color: theme.textSoft }]}>Category</Text>
+              <View style={s.chipWrap}>
+                {CATEGORIES.map((cat) => {
+                  const active = editCategory === cat;
+                  const color = CAT_COLOR[cat] ?? "#999";
+                  return (
+                    <Pressable
+                      key={cat}
+                      onPress={() => setEditCategory(cat)}
+                      style={[s.chip, {
+                        borderColor: active ? color : ink + "55",
+                        backgroundColor: active ? color + "22" : "transparent",
+                      }]}
+                    >
+                      <Text style={[s.chipText, { color: active ? color : theme.textSoft, fontWeight: active ? "700" : "500" }]}>
+                        {cat}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <Text style={[s.fieldLabel, { color: theme.textSoft }]}>Notes</Text>
+              <TextInput
+                value={editNotes}
+                onChangeText={setEditNotes}
+                placeholder="Add a note…"
+                placeholderTextColor={theme.textSoft}
+                multiline
+                numberOfLines={3}
+                style={[s.textInput, { color: theme.textStrong, borderColor: ink, minHeight: 70, textAlignVertical: "top" }]}
+              />
+
+              <Pressable
+                onPress={handleEdit}
+                disabled={editSubmitting}
+                style={[s.saveBtn, { backgroundColor: theme.purple.solid, borderColor: ink, opacity: editSubmitting ? 0.6 : 1 }]}
+              >
+                {editSubmitting
+                  ? <LoadingIndicator size="small" color="#fff" />
+                  : <Text style={s.saveBtnText}>Save changes</Text>}
+              </Pressable>
+
+              <Pressable onPress={handleDeleteFromEdit} style={[s.deleteBtn, { borderColor: ink }]}>
+                <Text style={[s.deleteBtnText, { color: "#E8654E" }]}>Delete entry</Text>
+              </Pressable>
+            </ScrollView>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </Modal>
+    </>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 function makeStyles(ink: string, card: string) {
   const shadow = {
@@ -303,38 +632,58 @@ function makeStyles(ink: string, card: string) {
     elevation: 4,
   };
   return StyleSheet.create({
-    content: { padding: 16, gap: 12 },
-    card: { borderRadius: 14, borderWidth: 2, padding: 16, backgroundColor: card, ...shadow, gap: 6 },
-    cardTitle: { fontSize: 16, fontWeight: "800", marginBottom: 4 },
-    sectionLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 0.8, marginBottom: 4 },
-    weekTotal: { fontSize: 36, fontWeight: "900", lineHeight: 42 },
-    subLabel: { fontSize: 12, marginTop: 2 },
+    content:     { padding: 16, gap: 12, paddingBottom: 40 },
+    toggle:      { flexDirection: "row", borderRadius: 12, borderWidth: 2, overflow: "hidden", ...shadow },
+    toggleBtn:   { flex: 1, paddingVertical: 10, alignItems: "center" },
+    toggleText:  { fontSize: 13, fontWeight: "700" },
+    card:        { borderRadius: 14, borderWidth: 2, padding: 16, backgroundColor: card, ...shadow, gap: 4 },
+    cardTitle:   { fontSize: 15, fontWeight: "800", marginBottom: 2 },
+    label:       { fontSize: 10, fontWeight: "800", letterSpacing: 0.8, marginBottom: 2 },
+    totalAmt:    { fontSize: 38, fontWeight: "900", lineHeight: 44 },
+    sublabel:    { fontSize: 12, marginTop: 2 },
     addBtn: {
-      width: 36, height: 36, borderRadius: 18, borderWidth: 2,
+      width: 38, height: 38, borderRadius: 19, borderWidth: 2,
       alignItems: "center", justifyContent: "center",
       shadowColor: ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 3,
     },
-    fieldLabel: { fontSize: 12, marginBottom: 2 },
+    chartRow:    { flexDirection: "row", justifyContent: "space-between", marginBottom: 4 },
+    chartCat:    { fontSize: 13, fontWeight: "600" },
+    chartAmt:    { fontSize: 13, fontWeight: "700" },
+    barTrack:    { height: 7, borderRadius: 4, overflow: "hidden" },
+    barFill:     { height: "100%", borderRadius: 4 },
+    dayHeader:   { fontSize: 11, fontWeight: "800", letterSpacing: 0.6, marginBottom: -4, marginLeft: 4 },
+    txRow:       { flexDirection: "row", alignItems: "center", paddingVertical: 12, gap: 12 },
+    merchant:    { fontSize: 14, fontWeight: "700" },
+    catBadge:    { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
+    catBadgeText:{ fontSize: 10, fontWeight: "700" },
+    txTime:      { fontSize: 11 },
+    txNotes:     { fontSize: 11, fontStyle: "italic" },
+    txAmt:       { fontSize: 15, fontWeight: "800", minWidth: 64, textAlign: "right" },
+    modalContent:{ padding: 20, gap: 10, paddingBottom: 40 },
+    modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 },
+    modalTitle:  { fontSize: 20, fontWeight: "800" },
+    editMeta:    { fontSize: 12, marginTop: 2 },
+    fieldLabel:  { fontSize: 12, fontWeight: "600", marginBottom: -2 },
+    amountInput: {
+      borderWidth: 2, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
+      fontSize: 32, fontWeight: "800",
+      shadowColor: ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2,
+    },
+    errorText:   { fontSize: 12, marginTop: -4 },
     textInput: {
       borderWidth: 2, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10,
-      fontSize: 18, fontWeight: "700",
+      fontSize: 15, fontWeight: "500",
       shadowColor: ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2,
     },
-    errorText: { fontSize: 12, marginTop: -2 },
-    catRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-    catChip: { borderWidth: 1.5, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
-    catLabel: { fontSize: 13, fontWeight: "600" },
-    submitBtn: {
-      borderRadius: 10, borderWidth: 2, paddingVertical: 12,
-      alignItems: "center", marginTop: 4,
-      shadowColor: ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2,
+    chipWrap:    { flexDirection: "row", flexWrap: "wrap", gap: 7 },
+    chip:        { borderWidth: 1.5, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+    chipText:    { fontSize: 12 },
+    saveBtn: {
+      borderRadius: 12, borderWidth: 2, paddingVertical: 14, alignItems: "center", marginTop: 6,
+      shadowColor: ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 3,
     },
-    submitText: { color: "#fff", fontWeight: "700", fontSize: 15 },
-    barTrack: { height: 6, borderRadius: 4, overflow: "hidden" },
-    barFill: { height: "100%", borderRadius: 4 },
-    entryRow: { flexDirection: "row", alignItems: "center", paddingVertical: 10 },
-    entryCategory: { fontSize: 14, fontWeight: "600", textTransform: "capitalize" },
-    entryDate: { fontSize: 11, marginTop: 1 },
-    entryAmount: { fontSize: 15, fontWeight: "700" },
+    saveBtnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
+    deleteBtn:   { borderRadius: 12, borderWidth: 2, paddingVertical: 12, alignItems: "center", backgroundColor: "transparent" },
+    deleteBtnText:{ fontWeight: "700", fontSize: 15 },
   });
 }

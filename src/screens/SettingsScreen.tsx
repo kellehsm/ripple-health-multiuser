@@ -85,6 +85,8 @@ export function SettingsScreen() {
         <MenuRow title="Health Connect" subtitle="Sync, permissions & live tracking" onPress={() => nav("SettingsHealthConnect")} theme={theme} />
         <View style={[styles.divider, { backgroundColor: theme.cardBorder }]} />
         <MenuRow title="Dexcom" subtitle="CGM credentials" onPress={() => nav("SettingsDexcom")} theme={theme} />
+        <View style={[styles.divider, { backgroundColor: theme.cardBorder }]} />
+        <MenuRow title="Connected Banks" subtitle="Plaid · auto-import transactions" onPress={() => nav("SettingsBanks")} theme={theme} />
       </View>
 
       {/* Health */}

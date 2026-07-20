@@ -225,6 +225,12 @@ export const api = {
   addSpending: function (payload: Record<string, unknown>) {
     return requestQueued("/spending", { method: "POST", body: JSON.stringify(payload) }, payload);
   },
+  patchSpending: function (id: string, payload: { category?: string | null; notes?: string | null }) {
+    return request("/spending/" + id, { method: "PATCH", body: JSON.stringify(payload) });
+  },
+  deleteSpending: function (id: string) {
+    return request("/spending/" + id, { method: "DELETE" });
+  },
 
   // ── Journal / Mood ────────────────────────────────────────────────────────
   logMood: function (mood_score: number, entry_text?: string) {
