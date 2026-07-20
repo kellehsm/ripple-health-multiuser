@@ -119,7 +119,7 @@ const cleanSlate: Theme = {
 // 6. Charcoal steel + bright teal/coral/berry family adapted for dark contrast
 const midnightSteel: Theme = {
   id: "midnight-steel", name: "Midnight Steel", group: "Dark", isDark: true,
-  ink: "#3A4A5A", cream: "#1A1E24", page: "#161A20", card: "#1E242C", cardBorder: "#2C3640",
+  ink: "#8AAABF", cream: "#1A1E24", page: "#161A20", card: "#1E242C", cardBorder: "#486C8A",
   textStrong: "#E0EAF5", textSoft: "#7A8C9A",
   primary: "#5B8DB8", success: "#3DAA7A", warning: "#D4880A", danger: "#E05050",
   glucoseHigh: "#E05050", glucoseLow: "#4AB8D0",
@@ -139,7 +139,7 @@ const midnightSteel: Theme = {
 // 7. Deep navy + cyan, gold, neon magenta
 const deepNavy: Theme = {
   id: "deep-navy", name: "Deep Navy", group: "Dark", isDark: true,
-  ink: "#2A3A50", cream: "#0E1422", page: "#0A0E18", card: "#10182A", cardBorder: "#1A2840",
+  ink: "#6A92C0", cream: "#0E1422", page: "#0A0E18", card: "#10182A", cardBorder: "#487098",
   textStrong: "#E8F2FF", textSoft: "#7090B8",
   primary: "#00C8FF", success: "#00E878", warning: "#FFB800", danger: "#FF4040",
   glucoseHigh: "#FF5080", glucoseLow: "#00A8FF",
@@ -159,7 +159,7 @@ const deepNavy: Theme = {
 // 8. Deep plum + rose, amber, bright mint
 const velvetDusk: Theme = {
   id: "velvet-dusk", name: "Velvet Dusk", group: "Dark", isDark: true,
-  ink: "#3A2848", cream: "#160C20", page: "#120818", card: "#1A1028", cardBorder: "#2A1A3A",
+  ink: "#A87CCC", cream: "#160C20", page: "#120818", card: "#1A1028", cardBorder: "#8050B8",
   textStrong: "#F0E8FF", textSoft: "#A070C0",
   primary: "#E060C0", success: "#40D890", warning: "#E0A020", danger: "#FF4060",
   glucoseHigh: "#FF5070", glucoseLow: "#60A0FF",
@@ -179,7 +179,7 @@ const velvetDusk: Theme = {
 // 9. Deep forest + lime green, sky blue, warm amber
 const forestNight: Theme = {
   id: "forest-night", name: "Forest Night", group: "Dark", isDark: true,
-  ink: "#203028", cream: "#0C1A0C", page: "#080E08", card: "#0E1810", cardBorder: "#182A1A",
+  ink: "#6AA850", cream: "#0C1A0C", page: "#080E08", card: "#0E1810", cardBorder: "#3E7830",
   textStrong: "#E8F5E0", textSoft: "#78A870",
   primary: "#88D840", success: "#60E080", warning: "#F0A030", danger: "#F04830",
   glucoseHigh: "#F06040", glucoseLow: "#60B8F0",
@@ -199,7 +199,7 @@ const forestNight: Theme = {
 // 10. Espresso brown + terracotta, sage green, dusty blue
 const espresso: Theme = {
   id: "espresso", name: "Espresso", group: "Dark", isDark: true,
-  ink: "#3A2820", cream: "#120E0A", page: "#0E0908", card: "#18120E", cardBorder: "#2A1E18",
+  ink: "#B08868", cream: "#120E0A", page: "#0E0908", card: "#18120E", cardBorder: "#8A6040",
   textStrong: "#F5EDD8", textSoft: "#9A8060",
   primary: "#E07840", success: "#60C080", warning: "#D0A020", danger: "#E06060",
   glucoseHigh: "#E05840", glucoseLow: "#70A8E0",

@@ -247,7 +247,7 @@ export function SignupScreen({ onSignupSuccess, onBackToLogin }: Props) {
           <Animated.View style={{ marginBottom: 14, opacity: fadeAnims[2], transform: [{ translateY: slideAnims[2] }] }}>
             <Text style={[styles.label, { color: theme.ink ?? "#111" }]}>FULL NAME (OPTIONAL)</Text>
             <TextInput
-              style={[styles.input, { backgroundColor: "#fff", borderColor: theme.ink ?? "#111", color: theme.textStrong ?? "#111" }]}
+              style={[styles.input, { backgroundColor: theme.card, borderColor: theme.ink ?? "#111", color: theme.textStrong ?? "#111" }]}
               value={name}
               onChangeText={setName}
               autoCapitalize="words"
@@ -261,7 +261,7 @@ export function SignupScreen({ onSignupSuccess, onBackToLogin }: Props) {
           <Animated.View style={{ marginBottom: 14, opacity: fadeAnims[3], transform: [{ translateY: slideAnims[3] }] }}>
             <Text style={[styles.label, { color: theme.ink ?? "#111" }]}>EMAIL</Text>
             <TextInput
-              style={[styles.input, { backgroundColor: "#fff", borderColor: theme.ink ?? "#111", color: theme.textStrong ?? "#111" }]}
+              style={[styles.input, { backgroundColor: theme.card, borderColor: theme.ink ?? "#111", color: theme.textStrong ?? "#111" }]}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -276,7 +276,7 @@ export function SignupScreen({ onSignupSuccess, onBackToLogin }: Props) {
           <Animated.View style={{ marginBottom: 14, opacity: fadeAnims[4], transform: [{ translateY: slideAnims[4] }] }}>
             <Text style={[styles.label, { color: theme.ink ?? "#111" }]}>PASSWORD</Text>
             <TextInput
-              style={[styles.input, { backgroundColor: "#fff", borderColor: theme.ink ?? "#111", color: theme.textStrong ?? "#111" }]}
+              style={[styles.input, { backgroundColor: theme.card, borderColor: theme.ink ?? "#111", color: theme.textStrong ?? "#111" }]}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -285,7 +285,7 @@ export function SignupScreen({ onSignupSuccess, onBackToLogin }: Props) {
             />
             <Text style={[styles.label, { color: theme.ink ?? "#111", marginTop: 14 }]}>CONFIRM PASSWORD</Text>
             <TextInput
-              style={[styles.input, { backgroundColor: "#fff", borderColor: theme.ink ?? "#111", color: theme.textStrong ?? "#111" }]}
+              style={[styles.input, { backgroundColor: theme.card, borderColor: theme.ink ?? "#111", color: theme.textStrong ?? "#111" }]}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry

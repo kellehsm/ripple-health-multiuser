@@ -16,10 +16,15 @@ function withAndroidWidget(config) {
     'android',
     (mod) => {
       const root = mod.modRequest.platformProjectRoot;
+      const pkgName = mod.android?.package || 'com.kellehs.wellness';
+      const pkgPath = pkgName.replace(/\./g, '/');
 
-      const ktDir = path.join(root, 'app/src/main/java/com/kellehs/wellness');
+      const ktDir = path.join(root, `app/src/main/java/${pkgPath}`);
       fs.mkdirSync(ktDir, { recursive: true });
-      fs.copyFileSync(path.join(SRC, 'RippleWidgetProvider.kt'), path.join(ktDir, 'RippleWidgetProvider.kt'));
+      // Rewrite package declaration to match the actual app package
+      let ktContent = fs.readFileSync(path.join(SRC, 'RippleWidgetProvider.kt'), 'utf8');
+      ktContent = ktContent.replace(/^package .+$/m, `package ${pkgName}`);
+      fs.writeFileSync(path.join(ktDir, 'RippleWidgetProvider.kt'), ktContent);
 
       const layoutDir = path.join(root, 'app/src/main/res/layout');
       fs.mkdirSync(layoutDir, { recursive: true });
@@ -46,14 +51,17 @@ function withAndroidWidget(config) {
     const app = mod.modResults.manifest.application[0];
     if (!app.receiver) app.receiver = [];
 
+    const pkgName = mod.android?.package || 'com.kellehs.wellness';
+    const receiverClass = `${pkgName}.RippleWidgetProvider`;
+
     const alreadyAdded = app.receiver.some(
-      (r) => r.$['android:name'] === 'com.kellehs.wellness.RippleWidgetProvider'
+      (r) => r.$['android:name'] === receiverClass
     );
 
     if (!alreadyAdded) {
       app.receiver.push({
         $: {
-          'android:name': 'com.kellehs.wellness.RippleWidgetProvider',
+          'android:name': receiverClass,
           'android:exported': 'true',
           'android:label': '@string/widget_label',
         },

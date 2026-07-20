@@ -161,29 +161,29 @@ export function LoginScreen({ onLoginSuccess, onShowSignup }: Props) {
 
           {/* Email field */}
           <Animated.View style={{ marginBottom: 14, opacity: fadeAnims[2], transform: [{ translateY: slideAnims[2] }] }}>
-            <Text style={[styles.label, { color: "#111" }]}>EMAIL</Text>
+            <Text style={[styles.label, { color: theme.ink }]}>EMAIL</Text>
             <TextInput
-              style={[styles.input, { backgroundColor: "#fff", borderColor: "#111", color: "#111" }]}
+              style={[styles.input, { backgroundColor: theme.card, borderColor: theme.ink, color: theme.textStrong }]}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
               placeholder="your@email.com"
-              placeholderTextColor="#999"
+              placeholderTextColor={theme.textSoft}
             />
           </Animated.View>
 
           {/* Password field */}
           <Animated.View style={{ marginBottom: 8, opacity: fadeAnims[3], transform: [{ translateY: slideAnims[3] }] }}>
-            <Text style={[styles.label, { color: "#111" }]}>PASSWORD</Text>
+            <Text style={[styles.label, { color: theme.ink }]}>PASSWORD</Text>
             <TextInput
-              style={[styles.input, { backgroundColor: "#fff", borderColor: "#111", color: "#111" }]}
+              style={[styles.input, { backgroundColor: theme.card, borderColor: theme.ink, color: theme.textStrong }]}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
               placeholder="••••••••"
-              placeholderTextColor="#999"
+              placeholderTextColor={theme.textSoft}
             />
           </Animated.View>
 
