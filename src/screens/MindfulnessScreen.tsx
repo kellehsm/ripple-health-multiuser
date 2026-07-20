@@ -112,9 +112,7 @@ export function MindfulnessScreen() {
   const [activeSection, setActiveSection] = useState<Section | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const [sectionLoading, setSectionLoading] = useState(false);
-  const [screenLoading, setScreenLoading] = useState(true);
   const contentFade = useRef(new Animated.Value(1)).current;
-  const screenLoadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -124,11 +122,6 @@ export function MindfulnessScreen() {
           markTooltipSeen("mindfulness");
         }
       });
-      setScreenLoading(true);
-      screenLoadTimerRef.current = setTimeout(() => setScreenLoading(false), 750);
-      return () => {
-        if (screenLoadTimerRef.current) clearTimeout(screenLoadTimerRef.current);
-      };
     }, [])
   );
 
@@ -158,7 +151,7 @@ export function MindfulnessScreen() {
       contentContainerStyle={{ padding: 16 }}
       keyboardShouldPersistTaps="handled"
     >
-      {(screenLoading || sectionLoading) ? (
+      {sectionLoading ? (
         <View style={{ alignItems: "center", paddingVertical: 80 }}>
           <RippleLoader size="large" />
         </View>
