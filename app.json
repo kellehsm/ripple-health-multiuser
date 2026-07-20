@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Ripple Wellness",
+    "name": "Ripple Dev",
     "slug": "ripple-health",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "ripple",
+    "scheme": "rippledev",
     "userInterfaceStyle": "automatic",
     "ios": {
       "infoPlist": {
@@ -13,7 +13,7 @@
       }
     },
     "android": {
-      "package": "com.kellehs.wellness",
+      "package": "com.kellehs.wellness.dev",
       "adaptiveIcon": {
         "backgroundColor": "#FBFAF7",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
