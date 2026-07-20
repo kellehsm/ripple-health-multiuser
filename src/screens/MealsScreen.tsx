@@ -572,16 +572,17 @@ function MiniGlucoseChart({
 export function MealsScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<any>();
-  const { preferences } = useTabPreferences();
+  const { preferences, loading: prefsLoading } = useTabPreferences();
   const ink = theme.ink;
   const card = theme.card;
   const styles = useMemo(() => makeStyles(ink, card), [ink, card]);
 
   useFocusEffect(useCallback(() => {
+    if (prefsLoading) return;
     if (!preferences.selectedModules.includes('meals')) {
       navigation.navigate('Home');
     }
-  }, [preferences.selectedModules]));
+  }, [prefsLoading, preferences.selectedModules]));
 
   const [mealType, setMealType] = useState<MealType>("breakfast");
   const [searchQuery, setSearchQuery] = useState("");

@@ -19,6 +19,7 @@ try {
 import { CommonActions } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ThemeProvider } from "./src/theme/ThemeContext";
+import { TabPreferencesProvider } from "./src/context/TabPreferencesContext";
 import { OfflineBanner } from "./src/components/OfflineBanner";
 import { RootTabs } from "./src/navigation/RootTabs";
 import { RippleLoader } from "./src/components/RippleLoader";
@@ -295,6 +296,7 @@ export default function App() {
     <SafeAreaProvider>
       <AppErrorBoundary>
         <ThemeProvider>
+          <TabPreferencesProvider>
           <StatusBar style="dark" />
           <RootTabs onNavigationStateChange={handleNavigationStateChange} />
           <OfflineBanner />
@@ -312,6 +314,7 @@ export default function App() {
               </Pressable>
             </View>
           )}
+          </TabPreferencesProvider>
         </ThemeProvider>
       </AppErrorBoundary>
     </SafeAreaProvider>
