@@ -73,7 +73,7 @@ const FOCUS_LABEL: Record<string, string> = {
 export function ExerciseScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<any>();
-  const { preferences } = useTabPreferences();
+  const { preferences, loading: prefsLoading } = useTabPreferences();
   const ink = theme.ink;
 
   const [sessions, setSessions] = useState<ExerciseSession[]>([]);
@@ -86,6 +86,7 @@ export function ExerciseScreen() {
   const [wizardDone, setWizardDone] = useState<boolean | null>(null);
 
   useFocusEffect(useCallback(() => {
+    if (prefsLoading) return;
     if (!preferences.selectedModules.includes('exercise')) {
       navigation.navigate('Home');
       return;
@@ -102,7 +103,7 @@ export function ExerciseScreen() {
       setSuggestion(sug ?? null);
       setActiveProgram((progs as any[]).find((p: any) => p.is_active) ?? null);
     }).finally(() => setLoading(false));
-  }, []));
+  }, [prefsLoading, preferences.selectedModules]));
 
   async function handleStart() {
     setStarting(true);

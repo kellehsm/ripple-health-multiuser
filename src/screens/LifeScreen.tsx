@@ -82,13 +82,14 @@ export function LifeScreen() {
   const card = theme.card;
   const styles = useMemo(() => makeStyles(ink, card), [ink, card]);
   const navigation = useNavigation<any>();
-  const { preferences } = useTabPreferences();
+  const { preferences, loading: prefsLoading } = useTabPreferences();
 
   useFocusEffect(useCallback(() => {
+    if (prefsLoading) return;
     if (!preferences.selectedModules.includes('hobbies')) {
       navigation.navigate('Home');
     }
-  }, [preferences.selectedModules]));
+  }, [prefsLoading, preferences.selectedModules]));
 
   const [books, setBooks] = useState<Book[]>([]);
   const [loadingBooks, setLoadingBooks] = useState(true);
