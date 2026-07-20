@@ -10,13 +10,15 @@ import { api } from "../api/client";
 import { InsightCard, Insight } from "../components/InsightCard";
 
 const TYPE_GROUPS: { label: string; types: string[]; emoji: string }[] = [
-  { label: "All", types: [], emoji: "✨" },
-  { label: "Wellness", types: ["glucose", "sleep", "activity", "water"], emoji: "❤️" },
-  { label: "Mind", types: ["mood", "books", "hobbies"], emoji: "🧠" },
-  { label: "Habits", types: ["spending", "streak"], emoji: "🔥" },
-  { label: "Medication", types: ["medication"], emoji: "💊" },
-  { label: "Exercise", types: ["exercise"], emoji: "🏋️" },
-  { label: "Combined", types: ["combined"], emoji: "🔗" },
+  { label: "All",          types: [],                                    emoji: "✨" },
+  { label: "Wellness",     types: ["glucose", "sleep", "activity", "water"], emoji: "❤️" },
+  { label: "Mindfulness",  types: ["mood", "books"],                    emoji: "🧠" },
+  { label: "Hobbies",      types: ["hobbies"],                          emoji: "🎨" },
+  { label: "Medication",   types: ["medication"],                       emoji: "💊" },
+  { label: "Exercise",     types: ["exercise"],                         emoji: "🏋️" },
+  { label: "Finance",      types: ["spending", "streak"],               emoji: "💰" },
+  { label: "Cycle",        types: ["cycle"],                            emoji: "🌸" },
+  { label: "Combined",     types: ["combined"],                         emoji: "🔗" },
 ];
 
 export function InsightsScreen() {
@@ -117,28 +119,31 @@ export function InsightsScreen() {
         </Pressable>
       </View>
 
-      {/* Filter tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-        <View style={{ flexDirection: "row", gap: 8, paddingRight: 4 }}>
-          {TYPE_GROUPS.map((g, idx) => {
-            const active = activeGroup === idx;
-            return (
-              <Pressable
-                key={g.label}
-                onPress={() => setActiveGroup(idx)}
-                style={[
-                  styles.filterTab,
-                  { borderColor: ink, backgroundColor: active ? ink : "transparent" },
-                ]}
-              >
-                <Text style={[styles.filterText, { color: active ? theme.page : theme.textSoft }]}>
-                  {g.emoji}  {g.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </ScrollView>
+      {/* Filter grid — row 1: first 4, row 2: remaining */}
+      <View style={{ gap: 7, marginBottom: 12 }}>
+        {[TYPE_GROUPS.slice(0, 4), TYPE_GROUPS.slice(4)].map((row, rowIdx) => (
+          <View key={rowIdx} style={{ flexDirection: "row", gap: 7 }}>
+            {row.map((g) => {
+              const idx = TYPE_GROUPS.indexOf(g);
+              const active = activeGroup === idx;
+              return (
+                <Pressable
+                  key={g.label}
+                  onPress={() => setActiveGroup(idx)}
+                  style={[
+                    styles.filterTab,
+                    { flex: 1, borderColor: ink, backgroundColor: active ? ink : "transparent" },
+                  ]}
+                >
+                  <Text style={[styles.filterText, { color: active ? theme.page : theme.textSoft }]} numberOfLines={1}>
+                    {g.emoji} {g.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ))}
+      </View>
 
       {loading && (
         <View style={{ paddingVertical: 40, alignItems: "center" }}>
