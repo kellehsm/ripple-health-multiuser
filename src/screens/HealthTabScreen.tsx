@@ -215,12 +215,20 @@ function OverviewBlocks({
     ? 'No schedule'
     : `${takenSlots} of ${totalSlots} taken`;
 
-  const cycleDayLine = prediction && prediction.confidence !== 'none' && prediction.currentCycleDay
+  const cycleDayLine = prediction?.currentCycleDay
     ? `Day ${prediction.currentCycleDay}`
     : 'Log to start';
-  const cyclePhase = prediction && prediction.confidence !== 'none' && prediction.currentCycleDay
+  const cyclePhase = prediction?.currentCycleDay
     ? getPhaseLabel(prediction.currentCycleDay)
     : '';
+  const cycleProgressLine = (() => {
+    if (!prediction || prediction.confidence !== 'none') return null;
+    const logged = (prediction as any).cyclesLogged ?? 0;
+    const needed = (prediction as any).cyclesNeeded ?? 2;
+    if (logged === 0) return `Log ${needed} cycles to unlock predictions`;
+    if (logged < needed) return `${needed - logged} more cycle${needed - logged > 1 ? 's' : ''} needed for predictions`;
+    return null;
+  })();
 
   const symptomLine = weekSymptomCount > 0
     ? `${weekSymptomCount} this wk`
@@ -274,6 +282,7 @@ function OverviewBlocks({
           <Text style={[obStyles.blockLabel, { color: theme.textStrong }]}>Cycle</Text>
           <Text style={[obStyles.blockValue, { color: theme.purple?.fg ?? '#5B21B6' }]}>{cycleDayLine}</Text>
           {cyclePhase ? <Text style={[obStyles.blockSub, { color: theme.textSoft }]}>{cyclePhase}</Text> : null}
+          {cycleProgressLine ? <Text style={[obStyles.blockSub, { color: theme.textSoft, fontSize: 9 }]}>{cycleProgressLine}</Text> : null}
         </Pressable>
 
         <View style={[obStyles.divider, { backgroundColor: theme.ink }]} />
@@ -1056,7 +1065,9 @@ function CycleDayLogModal({
   const [symptoms, setSymptoms] = useState<string[]>(existingLog?.symptoms ?? []);
   const [energy, setEnergy] = useState<number | null>(existingLog?.energy_level ?? null);
   const [moodSearch, setMoodSearch] = useState('');
-  const [moodLabel, setMoodLabel] = useState(existingLog?.mood_label ?? '');
+  const [moodLabels, setMoodLabels] = useState<string[]>(
+    existingLog?.mood_label ? existingLog.mood_label.split(',').map((s) => s.trim()).filter(Boolean) : []
+  );
   const [notes, setNotes] = useState(existingLog?.notes ?? '');
   const [commonSymptoms, setCommonSymptoms] = useState<string[]>([]);
   const [moreSymptoms, setMoreSymptoms] = useState<string[]>([]);
@@ -1106,7 +1117,7 @@ function CycleDayLogModal({
         log_date: date,
         flow_intensity: flow || null,
         symptoms: symptoms.length > 0 ? symptoms : null,
-        mood_label: moodLabel || null,
+        mood_label: moodLabels.length > 0 ? moodLabels.join(', ') : null,
         notes: notes || null,
         energy_level: energy ?? null,
       });
@@ -1136,7 +1147,8 @@ function CycleDayLogModal({
     ]);
   }
 
-  const visibleSymptoms = showMore ? [...commonSymptoms, ...moreSymptoms] : commonSymptoms;
+  const allSymptoms = [...commonSymptoms, ...moreSymptoms];
+  const visibleSymptoms = showMore ? allSymptoms : allSymptoms.slice(0, 8);
 
   return (
     <Modal transparent animationType="slide" onRequestClose={onClose}>
@@ -1194,10 +1206,10 @@ function CycleDayLogModal({
                   </Pressable>
                 ))}
               </View>
-              {moreSymptoms.length > 0 && (
+              {allSymptoms.length > 8 && (
                 <Pressable onPress={() => setShowMore((s) => !s)} style={{ marginTop: 8 }}>
                   <Text style={{ color: theme.teal.solid, fontSize: 12, fontWeight: '600' }}>
-                    {showMore ? 'Show less' : `View ${moreSymptoms.length} more`}
+                    {showMore ? 'Show less' : `View ${allSymptoms.length - 8} more`}
                   </Text>
                 </Pressable>
               )}
@@ -1251,21 +1263,26 @@ function CycleDayLogModal({
                 onChangeText={onMoodSearchChange}
               />
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-                {moods.slice(0, 12).map((m) => (
-                  <Pressable
-                    key={m.label}
-                    style={[
-                      cycleStyles.chip,
-                      {
-                        backgroundColor: moodLabel === m.label ? theme.violet?.solid ?? theme.purple?.solid ?? theme.teal.solid : theme.page,
-                        borderColor: theme.ink,
-                      },
-                    ]}
-                    onPress={() => setMoodLabel(moodLabel === m.label ? '' : m.label)}
-                  >
-                    <Text style={{ color: moodLabel === m.label ? '#fff' : theme.textSoft, fontSize: 13 }}>{m.label}</Text>
-                  </Pressable>
-                ))}
+                {moods.slice(0, 12).map((m) => {
+                  const selected = moodLabels.includes(m.label);
+                  return (
+                    <Pressable
+                      key={m.label}
+                      style={[
+                        cycleStyles.chip,
+                        {
+                          backgroundColor: selected ? theme.violet?.solid ?? theme.purple?.solid ?? theme.teal.solid : theme.page,
+                          borderColor: theme.ink,
+                        },
+                      ]}
+                      onPress={() => setMoodLabels((prev) =>
+                        prev.includes(m.label) ? prev.filter((x) => x !== m.label) : [...prev, m.label]
+                      )}
+                    >
+                      <Text style={{ color: selected ? '#fff' : theme.textSoft, fontSize: 13 }}>{m.label}</Text>
+                    </Pressable>
+                  );
+                })}
               </View>
             </View>
 
