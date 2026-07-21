@@ -30,7 +30,8 @@ export function DexcomSettingsScreen() {
       });
       setPassword("");
       setPasswordSet(true);
-      Alert.alert("Saved", "Dexcom credentials updated.");
+      api.glucoseSyncShare().catch(() => {});
+      Alert.alert("Saved", "Dexcom credentials updated. Readings will sync shortly.");
     } catch (e: any) {
       Alert.alert("Error", e?.message ?? "Failed to save.");
     } finally {

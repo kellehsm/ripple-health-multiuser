@@ -89,7 +89,7 @@ export const api = {
     return request("/auth/change-password", { method: "POST", body: JSON.stringify({ current_password, new_password }) });
   },
   markOnboardingComplete: function () {
-    return request("/auth/onboarding-complete", { method: "PATCH" });
+    return request("/auth/onboarding-complete", { method: "PATCH", body: JSON.stringify({}) });
   },
 
   // ── Summary ───────────────────────────────────────────────────────────────
@@ -171,6 +171,9 @@ export const api = {
   },
   glucoseStatus: function () {
     return request("/glucose/status");
+  },
+  glucoseSyncShare: function () {
+    return request("/glucose/sync-share", { method: "POST", body: JSON.stringify({}) });
   },
 
   // ── Food ──────────────────────────────────────────────────────────────────
