@@ -177,7 +177,7 @@ export function ExerciseDetailScreen() {
   return (
     <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content}>
       {/* Header stats */}
-      <View style={[styles.headerCard, { backgroundColor: theme.card, borderColor: ink }]}>
+      <View style={[styles.headerCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <View style={styles.statRow}>
           <View style={styles.stat}>
             <Text style={[styles.statValue, { color: ink }]}>
@@ -219,7 +219,7 @@ export function ExerciseDetailScreen() {
 
       {/* Zone bar */}
       {hasZones && (
-        <View style={[styles.card, { backgroundColor: theme.card, borderColor: ink }]}>
+        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <Text style={[styles.sectionLabel, { color: theme.textSoft }]}>TIME IN ZONE</Text>
           <ZoneBar summary={session.hr_summary!} theme={theme} />
         </View>
@@ -227,7 +227,7 @@ export function ExerciseDetailScreen() {
 
       {/* HR chart */}
       {session.hr_samples.length >= 2 && (
-        <View style={[styles.card, { backgroundColor: theme.card, borderColor: ink }]}>
+        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <Text style={[styles.sectionLabel, { color: theme.textSoft }]}>HEART RATE</Text>
           <HRChart samples={session.hr_samples} theme={theme} />
           {!hasZones && (
@@ -289,6 +289,11 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     borderWidth: 2,
     overflow: 'hidden',
+    shadowColor: "rgba(60,40,20,0.1)",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 4,
   },
   statRow: { flexDirection: 'row', padding: 16, gap: 0 },
   hrRow: { flexDirection: 'row', padding: 16, borderTopWidth: 1 },
@@ -301,6 +306,11 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     padding: 14,
     gap: 12,
+    shadowColor: "rgba(60,40,20,0.1)",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 4,
   },
   sectionLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2 },
   zoneBar: {

@@ -102,7 +102,7 @@ export function TrackingSettingsScreen() {
   return (
     <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content}>
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>ALWAYS-ON TRACKING</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <Text style={[styles.desc, { color: theme.textSoft }]}>
           Shows a persistent notification with live glucose and steps. Keeps syncing in the background.
         </Text>
@@ -137,8 +137,8 @@ export function TrackingSettingsScreen() {
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
   groupLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.2, marginTop: 4, marginBottom: -4 },
-  card: { borderRadius: 14, borderWidth: 2, padding: 16, gap: 8 },
+  card: { borderRadius: 22, borderWidth: 2, padding: 16, gap: 8 },
   desc: { fontSize: 12, marginBottom: 4 },
-  statusBox: { borderWidth: 2, borderRadius: 10, padding: 10, marginTop: 4, gap: 2 },
-  btn: { borderWidth: 2, borderRadius: 10, paddingVertical: 10, alignItems: "center", marginTop: 8 },
+  statusBox: { borderWidth: 2, borderRadius: 16, padding: 10, marginTop: 4, gap: 2 },
+  btn: { borderWidth: 2, borderRadius: 16, paddingVertical: 10, alignItems: "center", marginTop: 8 },
 });

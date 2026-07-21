@@ -146,7 +146,7 @@ export function ExportBackupSettingsScreen() {
     <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content}>
 
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>HEALTH REPORT</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <Text style={[styles.desc, { color: theme.textSoft }]}>PDF with glucose trends and meal timing — useful to bring to a doctor's appointment.</Text>
         <Text style={[styles.label, { color: theme.textSoft }]}>Start date</Text>
         <TextInput value={exportStart} onChangeText={setExportStart} placeholder="YYYY-MM-DD" placeholderTextColor={theme.textSoft}
@@ -163,7 +163,7 @@ export function ExportBackupSettingsScreen() {
       </View>
 
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>FULL DATA EXPORT</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <Text style={[styles.desc, { color: theme.textSoft }]}>Full backup of all your data as JSON.</Text>
         <Pressable onPress={handleExportAll} disabled={exportingAll}
           style={[styles.btn, { backgroundColor: theme.teal.bg, borderColor: theme.teal.sub, opacity: exportingAll ? 0.6 : 1 }]}>
@@ -172,7 +172,7 @@ export function ExportBackupSettingsScreen() {
       </View>
 
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>GOOGLE DRIVE</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <Text style={[styles.desc, { color: theme.textSoft }]}>Automatically backs up to Google Drive every night at 2 AM. Keeps the last 14 days.</Text>
         {driveStatus?.connected ? (
           <>
@@ -234,10 +234,10 @@ export function ExportBackupSettingsScreen() {
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
   groupLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.2, marginTop: 4, marginBottom: -4 },
-  card: { borderRadius: 14, borderWidth: 2, padding: 16, gap: 8 },
+  card: { borderRadius: 22, borderWidth: 2, padding: 16, gap: 8 },
   desc: { fontSize: 12, marginBottom: 4 },
   label: { fontSize: 12, marginTop: 8 },
-  input: { borderWidth: 2, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14, marginTop: 4 },
-  btn: { borderWidth: 2, borderRadius: 10, paddingVertical: 10, alignItems: "center", marginTop: 4 },
-  statusBox: { borderWidth: 2, borderRadius: 10, padding: 10, marginTop: 4 },
+  input: { borderWidth: 2, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14, marginTop: 4 },
+  btn: { borderWidth: 2, borderRadius: 16, paddingVertical: 10, alignItems: "center", marginTop: 4 },
+  statusBox: { borderWidth: 2, borderRadius: 16, padding: 10, marginTop: 4 },
 });

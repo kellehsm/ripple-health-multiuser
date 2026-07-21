@@ -335,7 +335,7 @@ export function FinanceScreen() {
         </View>
 
         {/* Total card */}
-        <View style={[s.card, { backgroundColor: theme.purple.tint, borderColor: ink }]}>
+        <View style={[s.card, { backgroundColor: theme.purple.tint, borderColor: theme.purple.solid }]}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
             <View>
               <Text style={[s.label, { color: theme.purple.sub }]}>
@@ -360,7 +360,7 @@ export function FinanceScreen() {
 
         {/* Category breakdown chart */}
         {categoryTotals.length > 0 && (
-          <View style={[s.card, { borderColor: ink }]}>
+          <View style={[s.card, { borderColor: theme.cardBorder }]}>
             <Text style={[s.cardTitle, { color: theme.textStrong }]}>Where it went</Text>
             <View style={{ gap: 11, marginTop: 6 }}>
               {categoryTotals.map(([cat, amt]) => {
@@ -394,7 +394,7 @@ export function FinanceScreen() {
           grouped.map(([day, dayEntries]) => (
             <View key={day}>
               <Text style={[s.dayHeader, { color: theme.textSoft }]}>{formatDayHeader(day)}</Text>
-              <View style={[s.card, { borderColor: ink }]}>
+              <View style={[s.card, { borderColor: theme.cardBorder }]}>
                 {dayEntries.map((e, i) => {
                   const cat = normalizeCategory(e.category);
                   const color = CAT_COLOR[cat] ?? "#999";
@@ -624,19 +624,19 @@ export function FinanceScreen() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function makeStyles(ink: string, card: string, border: string) {
-  const shadow = {
-    shadowColor: ink,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1 as const,
-    shadowRadius: 0,
+  const shadowCard = {
+    shadowColor: "rgba(60,40,20,0.1)",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12 as const,
+    shadowRadius: 14,
     elevation: 4,
   };
   return StyleSheet.create({
     content:     { padding: 16, gap: 12, paddingBottom: 40 },
-    toggle:      { flexDirection: "row", borderRadius: 22, borderWidth: 2, overflow: "hidden", ...shadow },
+    toggle:      { flexDirection: "row", borderRadius: 22, borderWidth: 2, overflow: "hidden", ...shadowCard },
     toggleBtn:   { flex: 1, paddingVertical: 10, alignItems: "center" },
     toggleText:  { fontSize: 13, fontWeight: "700" },
-    card:        { borderRadius: 26, borderWidth: 2, padding: 16, backgroundColor: card, ...shadow, gap: 4 },
+    card:        { borderRadius: 26, borderWidth: 2, padding: 16, backgroundColor: card, ...shadowCard, gap: 4 },
     cardTitle:   { fontSize: 15, fontWeight: "800", marginBottom: 2 },
     label:       { fontSize: 10, fontWeight: "800", letterSpacing: 0.8, marginBottom: 2 },
     totalAmt:    { fontSize: 38, fontWeight: "900", lineHeight: 44 },
@@ -644,7 +644,7 @@ function makeStyles(ink: string, card: string, border: string) {
     addBtn: {
       width: 38, height: 38, borderRadius: 19, borderWidth: 2,
       alignItems: "center", justifyContent: "center",
-      shadowColor: ink, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 3,
+      shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 2,
     },
     chartRow:    { flexDirection: "row", justifyContent: "space-between", marginBottom: 4 },
     chartCat:    { fontSize: 13, fontWeight: "600" },
@@ -667,20 +667,20 @@ function makeStyles(ink: string, card: string, border: string) {
     amountInput: {
       borderWidth: 2, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12,
       fontSize: 32, fontWeight: "800",
-      shadowColor: ink, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 2,
+      shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 2,
     },
     errorText:   { fontSize: 12, marginTop: -4 },
     textInput: {
       borderWidth: 2, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 10,
       fontSize: 15, fontWeight: "500",
-      shadowColor: ink, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 2,
+      shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 2,
     },
     chipWrap:    { flexDirection: "row", flexWrap: "wrap", gap: 7 },
     chip:        { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5 },
     chipText:    { fontSize: 12 },
     saveBtn: {
       borderRadius: 22, borderWidth: 2, paddingVertical: 14, alignItems: "center", marginTop: 6,
-      shadowColor: ink, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 3,
+      shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 2,
     },
     saveBtnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
     deleteBtn:   { borderRadius: 22, borderWidth: 2, paddingVertical: 12, alignItems: "center", backgroundColor: "transparent" },

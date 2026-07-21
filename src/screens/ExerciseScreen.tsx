@@ -182,7 +182,7 @@ export function ExerciseScreen() {
         {activeProgram && (
           <>
             <Text style={[styles.sectionLabel, { color: theme.textSoft }]}>YOUR PLAN</Text>
-            <View style={[styles.programCard, { backgroundColor: theme.card, borderColor: ink, shadowColor: "rgba(60,40,20,0.1)" }]}>
+            <View style={[styles.programCard, { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: "rgba(60,40,20,0.1)" }]}>
               <Text style={[styles.programName, { color: theme.textStrong }]}>{activeProgram.name}</Text>
               <Text style={{ color: theme.textSoft, fontSize: 12, marginBottom: 8 }}>
                 {activeProgram.preferred_minutes} min · {activeProgram.days_per_week} day{activeProgram.days_per_week !== 1 ? 's' : ''}/week
@@ -211,7 +211,7 @@ export function ExerciseScreen() {
 
         {/* Suggestion card */}
         {suggestion && (
-          <View style={[styles.suggestionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <View style={[styles.suggestionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: "rgba(60,40,20,0.1)" }]}>
             <View style={styles.suggestionHeader}>
               <Text style={styles.suggestionIcon}>{SUGGESTION_ICON[suggestion.type] ?? '💪'}</Text>
               <Text style={[styles.suggestionTitle, { color: theme.textStrong }]}>{suggestion.title}</Text>
@@ -245,7 +245,7 @@ export function ExerciseScreen() {
               <Pressable
                 key={session.id}
                 onPress={() => navigation.navigate('ExerciseDetail', { sessionId: session.id })}
-                style={[styles.sessionCard, { backgroundColor: theme.card, borderColor: ink, shadowColor: "rgba(60,40,20,0.1)" }]}
+                style={[styles.sessionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
               >
                 <View style={styles.sessionCardRow}>
                   <Text style={[styles.sessionDate, { color: theme.textStrong }]}>
@@ -308,9 +308,13 @@ const styles = StyleSheet.create({
   sectionLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2, marginTop: 4 },
   suggestionCard: {
     borderRadius: 26,
-    borderWidth: 1,
+    borderWidth: 2,
     padding: 14,
     gap: 8,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 4,
   },
   suggestionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   suggestionIcon: { fontSize: 20 },
@@ -330,8 +334,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     padding: 14,
     gap: 6,
+    shadowColor: "rgba(60,40,20,0.1)",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.10,
     shadowRadius: 12,
     elevation: 3,
   },
@@ -344,10 +349,11 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     borderWidth: 2,
     padding: 14,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowColor: "rgba(60,40,20,0.1)",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 4,
   },
   programName: { fontSize: 15, fontWeight: '900', marginBottom: 2 },
   programDay: { paddingTop: 8, marginTop: 6 },

@@ -73,7 +73,7 @@ export function SettingsScreen() {
 
       {/* Appearance */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>APPEARANCE</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <MenuRow title="Theme" subtitle={PALETTES[paletteId]?.name} onPress={() => nav("SettingsAppearance")} theme={theme} />
         <View style={[styles.divider, { backgroundColor: theme.cardBorder }]} />
         <MenuRow title="Customize Tabs" subtitle="Choose which tabs appear in the bottom bar" onPress={() => nav("SettingsCustomizeTabs")} theme={theme} />
@@ -81,7 +81,7 @@ export function SettingsScreen() {
 
       {/* Data Sources */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>DATA SOURCES</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <MenuRow title="Health Connect" subtitle="Sync, permissions & live tracking" onPress={() => nav("SettingsHealthConnect")} theme={theme} />
         <View style={[styles.divider, { backgroundColor: theme.cardBorder }]} />
         <MenuRow title="Dexcom" subtitle="CGM credentials" onPress={() => nav("SettingsDexcom")} theme={theme} />
@@ -91,13 +91,13 @@ export function SettingsScreen() {
 
       {/* Health */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>HEALTH</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <MenuRow title="Import Medications from CSV" onPress={() => nav("MedicationImport")} theme={theme} />
       </View>
 
       {/* Notifications */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>NOTIFICATIONS</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <MenuRow title="Notifications" subtitle="Smart reminders, mute & schedules" onPress={() => nav("SettingsNotifications")} theme={theme} />
         <View style={[styles.divider, { backgroundColor: theme.cardBorder }]} />
         <MenuRow title="Always-on Tracking" subtitle="Persistent notification & background sync" onPress={() => nav("SettingsTracking")} theme={theme} />
@@ -105,31 +105,31 @@ export function SettingsScreen() {
 
       {/* Security */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>SECURITY</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <MenuRow title="App Lock" subtitle="Biometric unlock" onPress={() => nav("SettingsSecurity")} theme={theme} />
       </View>
 
       {/* Preferences */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>PREFERENCES</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <MenuRow title="Preferences" subtitle="Week start day & home screen" onPress={() => nav("SettingsPreferences")} theme={theme} />
       </View>
 
       {/* Export & Backup */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>EXPORT & BACKUP</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <MenuRow title="Export & Backup" subtitle="PDF report, JSON export & Google Drive" onPress={() => nav("SettingsExportBackup")} theme={theme} />
       </View>
 
       {/* Help */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>HELP</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <MenuRow title="Help & FAQ" onPress={() => nav("Help")} theme={theme} />
       </View>
 
       {/* Account */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>ACCOUNT</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <MenuRow
           title="Sign out"
           onPress={() => {
@@ -149,7 +149,16 @@ export function SettingsScreen() {
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 12, paddingBottom: 40 },
   groupLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.2, marginTop: 4, marginBottom: -4 },
-  card: { borderRadius: 26, borderWidth: 2, overflow: "hidden" },
+  card: {
+    borderRadius: 26,
+    borderWidth: 2,
+    overflow: "hidden",
+    shadowColor: "rgba(60,40,20,0.1)",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 4,
+  },
   row: {
     flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14,
     borderBottomWidth: 0,

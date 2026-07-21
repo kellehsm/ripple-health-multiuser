@@ -13,7 +13,7 @@ export function AppearanceSettingsScreen() {
       <ThemePickerModal visible={pickerVisible} onClose={() => setPickerVisible(false)} />
 
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>THEME</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <Text style={[styles.sectionDesc, { color: theme.textSoft }]}>
           Choose a colour palette for the entire app.
         </Text>
@@ -39,11 +39,11 @@ export function AppearanceSettingsScreen() {
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
   groupLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.2, marginTop: 4, marginBottom: -4 },
-  card: { borderRadius: 14, borderWidth: 2, padding: 16, gap: 8 },
+  card: { borderRadius: 22, borderWidth: 2, padding: 16, gap: 8 },
   sectionDesc: { fontSize: 12, marginBottom: 4 },
   row: {
     flexDirection: "row", alignItems: "center", gap: 10,
-    borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginTop: 4,
+    borderWidth: 1, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 10, marginTop: 4,
   },
   swatches: { flexDirection: "row", gap: 3 },
   swatch: { width: 14, height: 14, borderRadius: 7 },

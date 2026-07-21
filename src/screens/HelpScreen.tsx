@@ -125,7 +125,7 @@ export function HelpScreen() {
     <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content}>
       {/* App tour replay */}
       <Pressable
-        style={[styles.tourCard, { backgroundColor: theme.card, borderColor: theme.ink }]}
+        style={[styles.tourCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
         onPress={() => navigation.navigate("OnboardingReplay")}
         accessibilityRole="button"
         accessibilityLabel="Replay the app tour"
@@ -146,7 +146,7 @@ export function HelpScreen() {
       {FAQ.map((section) => (
         <View key={section.title} style={{ marginBottom: 16 }}>
           <Text style={[styles.sectionLabel, { color: theme.textSoft }]}>{section.title.toUpperCase()}</Text>
-          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
             {section.items.map((item, idx) => {
               const key = section.title + idx;
               const open = !!expanded[key];
@@ -180,17 +180,25 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     padding: 16,
     marginBottom: 20,
-    shadowColor: "#111",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
+    shadowColor: "rgba(60,40,20,0.1)",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
     elevation: 4,
   },
   tourTitle: { fontSize: 15, fontWeight: "800" },
   tourSub: { fontSize: 12, marginTop: 2 },
   intro: { fontSize: 13, marginBottom: 16, lineHeight: 18 },
   sectionLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.2, marginBottom: 6 },
-  card: { borderRadius: 26, borderWidth: 2 },
+  card: {
+    borderRadius: 26,
+    borderWidth: 2,
+    shadowColor: "rgba(60,40,20,0.1)",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 4,
+  },
   divider: { height: 1, marginHorizontal: 14 },
   qRow: {
     flexDirection: "row",

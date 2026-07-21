@@ -289,9 +289,9 @@ export function StepsDetailScreen() {
 function makeStyles(ink: string, card: string) {
   const shadow = {
     shadowColor: "rgba(60,40,20,0.1)",
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1 as const,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12 as const,
+    shadowRadius: 14,
     elevation: 4,
   };
   return StyleSheet.create({

@@ -169,7 +169,7 @@ function Section({ title, children, theme }: { title: string; children: React.Re
   return (
     <View style={{ marginBottom: 16 }}>
       <Text style={[styles.sectionLabel, { color: theme.textSoft }]}>{title.toUpperCase()}</Text>
-      <View style={[styles.sectionCard, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.sectionCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         {children}
       </View>
     </View>
@@ -213,6 +213,11 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     borderWidth: 2,
     overflow: "hidden",
+    shadowColor: "rgba(60,40,20,0.1)",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 4,
   },
   row: {
     paddingHorizontal: 14,

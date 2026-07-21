@@ -44,7 +44,7 @@ export function PreferencesSettingsScreen() {
     <ScrollView style={{ backgroundColor: theme.page }} contentContainerStyle={styles.content}>
 
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>PROFILE</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <Text style={[styles.desc, { color: theme.textSoft }]}>
           Used to calculate heart rate zones during exercise sessions (Tanaka formula).
         </Text>
@@ -75,7 +75,7 @@ export function PreferencesSettingsScreen() {
       </View>
 
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>HOME SCREEN</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <Text style={[styles.desc, { color: theme.textSoft }]}>Reorder or hide cards on your Home screen.</Text>
         <Pressable
           onPress={() => navigation.navigate("CustomizeDashboard")}
@@ -86,7 +86,7 @@ export function PreferencesSettingsScreen() {
       </View>
 
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>WEEK START DAY</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <Text style={[styles.desc, { color: theme.textSoft }]}>
           Controls the "this week" calculation for each section.
         </Text>
@@ -122,9 +122,9 @@ export function PreferencesSettingsScreen() {
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
   groupLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.2, marginTop: 4, marginBottom: -4 },
-  card: { borderRadius: 14, borderWidth: 2, padding: 16, gap: 8 },
+  card: { borderRadius: 22, borderWidth: 2, padding: 16, gap: 8 },
   desc: { fontSize: 12, marginBottom: 4 },
-  btn: { borderWidth: 2, borderRadius: 10, paddingVertical: 10, alignItems: "center", marginTop: 4 },
-  birthdateInput: { flex: 1, borderWidth: 2, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
-  chip: { borderWidth: 2, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+  btn: { borderWidth: 2, borderRadius: 16, paddingVertical: 10, alignItems: "center", marginTop: 4 },
+  birthdateInput: { flex: 1, borderWidth: 2, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
+  chip: { borderWidth: 2, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5 },
 });

@@ -85,10 +85,10 @@ export function BanksSettingsScreen() {
   }
 
   const shadow = {
-    shadowColor: ink,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1 as const,
-    shadowRadius: 0,
+    shadowColor: "rgba(60,40,20,0.1)",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12 as const,
+    shadowRadius: 14,
     elevation: 4,
   };
 
@@ -129,7 +129,7 @@ export function BanksSettingsScreen() {
       ) : (
         <>
           <Text style={[s.sectionLabel, { color: theme.textSoft }]}>CONNECTED BANKS</Text>
-          <View style={[s.card, { borderColor: ink, backgroundColor: theme.card, ...shadow }]}>
+          <View style={[s.card, { borderColor: theme.cardBorder, backgroundColor: theme.card, ...shadow }]}>
             {items.map((item, i) => (
               <View
                 key={item.item_id}
@@ -188,11 +188,11 @@ const s = StyleSheet.create({
   sectionLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.2, marginTop: 4, marginBottom: -4 },
   connectBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 8, borderRadius: 12, borderWidth: 2, paddingVertical: 14,
+    gap: 8, borderRadius: 22, borderWidth: 2, paddingVertical: 14,
   },
   connectBtnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
   errorText: { fontSize: 13, textAlign: "center", marginTop: -4 },
-  card: { borderRadius: 14, borderWidth: 2, overflow: "hidden" },
+  card: { borderRadius: 22, borderWidth: 2, overflow: "hidden" },
   row: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
   bankIcon: {
     width: 36, height: 36, borderRadius: 10, borderWidth: 1.5,
@@ -204,7 +204,7 @@ const s = StyleSheet.create({
   disconnectText: { fontSize: 13, fontWeight: "700" },
   syncBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center",
-    borderRadius: 12, borderWidth: 2, paddingVertical: 12,
+    borderRadius: 22, borderWidth: 2, paddingVertical: 12,
   },
   syncBtnText: { fontSize: 15, fontWeight: "700" },
   disclaimer: { fontSize: 11, textAlign: "center", lineHeight: 16, marginTop: 4 },

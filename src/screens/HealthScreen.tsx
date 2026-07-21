@@ -598,7 +598,7 @@ export function HealthScreen() {
 
       {/* Glucose alert banner */}
       {status && status.alerts && status.alerts.length > 0 ? (
-        <View style={[styles.alertCard, { backgroundColor: theme.red.tint, borderColor: ink }]}>
+        <View style={[styles.alertCard, { backgroundColor: theme.red.tint, borderColor: theme.red.sub }]}>
           {status.alerts.map(function (alert: string, i: number) {
             return (
               <Text key={i} style={{ color: theme.red.fg, fontSize: 13, fontWeight: "700" }}>
@@ -610,7 +610,7 @@ export function HealthScreen() {
       ) : null}
 
       {/* Glucose chart card */}
-      <View style={[styles.card, { backgroundColor: theme.card }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <View style={styles.cardHeaderRow}>
           <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Glucose</Text>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1, justifyContent: "flex-end", flexWrap: "wrap" }}>
@@ -686,7 +686,7 @@ export function HealthScreen() {
         {loading ? (
           <LoadingIndicator style={{ marginVertical: 30 }} />
         ) : todayReadings.length === 0 && !status?.hasData ? (
-          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink, marginTop: 12 }]}>
+          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder, marginTop: 12 }]}>
             <Text style={{ color: theme.textStrong, fontWeight: '700', marginBottom: 4 }}>No glucose data</Text>
             <Text style={{ color: theme.textSoft, fontSize: 13 }}>Connect Dexcom to see your glucose readings here.</Text>
             <Pressable onPress={() => navigation.navigate('SettingsDexcom')} style={{ marginTop: 10 }}>
@@ -953,7 +953,7 @@ export function HealthScreen() {
         const peakBpm = hrValues.length ? Math.max(...hrValues) : null;
         const HR_RANGE_OPTIONS = [3, 6, 12, 24];
         return (
-          <View style={[styles.card, { backgroundColor: theme.card }]}>
+          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
             <View style={styles.cardHeaderRow}>
               <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Heart Rate</Text>
               {peakBpm !== null ? (
@@ -1018,7 +1018,6 @@ function makeStyles(ink: string, card: string) {
   card: {
     borderRadius: 22,
     borderWidth: 2,
-    borderColor: ink,
     padding: 14,
     shadowColor: "rgba(60,40,20,0.1)",
     shadowOffset: { width: 0, height: 10 },

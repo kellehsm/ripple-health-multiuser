@@ -238,7 +238,7 @@ function OverviewBlocks({
 
   if (loading) {
     return (
-      <View style={[obStyles.row, { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: "rgba(60,40,20,0.08)" }]}>
+      <View style={[obStyles.row, { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: "rgba(60,40,20,0.1)" }]}>
         <ActivityIndicator color={theme.teal.solid} style={{ flex: 1, paddingVertical: 24 }} />
       </View>
     );
@@ -246,7 +246,7 @@ function OverviewBlocks({
 
   return (
     <View style={{ gap: 10 }}>
-      <View style={[obStyles.row, { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: "rgba(60,40,20,0.08)" }]}>
+      <View style={[obStyles.row, { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: "rgba(60,40,20,0.1)" }]}>
         {/* Medication block */}
         <Pressable
           style={({ pressed }) => [obStyles.block, { backgroundColor: theme.teal.tint, opacity: pressed ? 0.75 : 1 }]}
@@ -324,6 +324,7 @@ const obStyles = StyleSheet.create({
     borderRadius: 26,
     borderWidth: 2,
     overflow: 'hidden',
+    shadowColor: "rgba(60,40,20,0.1)",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.12,
     shadowRadius: 14,
@@ -660,7 +661,7 @@ const modalStyles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 8,
-    shadowColor: '#000',
+    shadowColor: "rgba(60,40,20,0.1)",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.12,
     shadowRadius: 14,
@@ -787,7 +788,7 @@ function MedicationList({ theme, scrollEnabled = true }: { theme: any; scrollEna
           {Object.entries(buckets).map(([bucket, meds]) => {
             if (meds.length === 0) return null;
             return (
-              <View key={bucket} style={[medStyles.bucket, { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: "rgba(60,40,20,0.08)" }]}>
+              <View key={bucket} style={[medStyles.bucket, { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: "rgba(60,40,20,0.1)" }]}>
                 <View style={medStyles.bucketHeader}>
                   <Text style={[medStyles.bucketLabel, { color: theme.textStrong }]}>{BUCKET_LABELS[bucket]}</Text>
                   <Pressable onPress={() => markAllTaken(bucket)}>
@@ -838,7 +839,7 @@ function MedicationList({ theme, scrollEnabled = true }: { theme: any; scrollEna
 
           <Text style={[medStyles.sectionHead, { color: theme.textStrong, marginTop: 8 }]}>My Medications</Text>
           <Pressable
-            style={[medStyles.addBtn, { borderColor: theme.ink, backgroundColor: theme.teal.tint, shadowColor: theme.ink }]}
+            style={[medStyles.addBtn, { borderColor: theme.ink, backgroundColor: theme.teal.tint, shadowColor: "rgba(60,40,20,0.1)" }]}
             onPress={() => setShowAddModal(true)}
           >
             <Text style={{ color: theme.teal.fg, fontWeight: '700', fontSize: 14 }}>+ Add medication</Text>
@@ -872,7 +873,7 @@ function MedicationList({ theme, scrollEnabled = true }: { theme: any; scrollEna
                 ]}
               >
               <View
-                style={[medStyles.medCard, { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: "rgba(60,40,20,0.08)" }]}
+                style={[medStyles.medCard, { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: "rgba(60,40,20,0.1)" }]}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
                   <View style={[medStyles.colorDot, { backgroundColor: med.color_category?.color_hex ?? '#D1D5DB' }]} />
@@ -920,7 +921,7 @@ function MedicationList({ theme, scrollEnabled = true }: { theme: any; scrollEna
           </Pressable>
 
           {selectMode && selectedSlotIds.length > 0 && (
-            <View style={[medStyles.fab, { backgroundColor: theme.teal.solid, borderColor: theme.ink, shadowColor: theme.ink }]}>
+            <View style={[medStyles.fab, { backgroundColor: theme.teal.solid, borderColor: theme.ink, shadowColor: "rgba(60,40,20,0.1)" }]}>
               <Pressable onPress={markSelectedDone}>
                 <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>
                   Mark {selectedSlotIds.length} selected as taken
@@ -988,6 +989,7 @@ const medStyles = StyleSheet.create({
     borderRadius: 26,
     borderWidth: 2,
     overflow: 'hidden',
+    shadowColor: "rgba(60,40,20,0.1)",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.12,
     shadowRadius: 14,
@@ -1005,6 +1007,7 @@ const medStyles = StyleSheet.create({
     paddingVertical: 11,
     paddingHorizontal: 16,
     alignItems: 'center',
+    shadowColor: "rgba(60,40,20,0.1)",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
@@ -1015,6 +1018,7 @@ const medStyles = StyleSheet.create({
     borderWidth: 2,
     padding: 14,
     gap: 4,
+    shadowColor: "rgba(60,40,20,0.1)",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
@@ -1029,6 +1033,7 @@ const medStyles = StyleSheet.create({
     borderWidth: 2,
     paddingVertical: 16,
     alignItems: 'center',
+    shadowColor: "rgba(60,40,20,0.1)",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.12,
     shadowRadius: 14,
@@ -1391,7 +1396,7 @@ function MonthCalendar({
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
   return (
-    <View style={[calStyles.container, { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: "rgba(60,40,20,0.08)" }]}>
+    <View style={[calStyles.container, { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: "rgba(60,40,20,0.1)" }]}>
       <View style={calStyles.header}>
         <Pressable onPress={prevMonth} hitSlop={8}><Text style={{ color: theme.textStrong, fontSize: 20 }}>‹</Text></Pressable>
         <Text style={[calStyles.monthLabel, { color: theme.textStrong }]}>{monthLabel}</Text>
@@ -1495,6 +1500,7 @@ const calStyles = StyleSheet.create({
     borderRadius: 26,
     borderWidth: 2,
     padding: 14,
+    shadowColor: "rgba(60,40,20,0.1)",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.12,
     shadowRadius: 14,
@@ -1622,7 +1628,7 @@ function CycleView({ theme }: { theme: any }) {
     <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }}>
       {/* Instruction card */}
       {instructionDismissed === false && (
-        <View style={[insStyles.card, { backgroundColor: theme.teal.tint, borderColor: theme.teal.solid, shadowColor: theme.ink }]}>
+        <View style={[insStyles.card, { backgroundColor: theme.teal.tint, borderColor: theme.teal.solid, shadowColor: "rgba(60,40,20,0.1)" }]}>
           <Text style={[insStyles.cardTitle, { color: theme.teal.fg }]}>Getting started with Cycle Tracking</Text>
           <Text style={{ color: theme.teal.fg, fontSize: 13, lineHeight: 19, marginTop: 4 }}>
             Log your flow, symptoms, and mood each day to see predictions and patterns.
@@ -1654,7 +1660,7 @@ function CycleView({ theme }: { theme: any }) {
 
       {/* Selected day detail panel */}
       {selectedDate && (
-        <View style={[insStyles.panel, { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: "rgba(60,40,20,0.08)" }]}>
+        <View style={[insStyles.panel, { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: "rgba(60,40,20,0.1)" }]}>
           <Text style={[insStyles.panelTitle, { color: theme.textStrong }]}>
             {selectedDateLabel}{selectedPhase ? ` · ${selectedPhase} phase` : ''}
           </Text>
@@ -1711,7 +1717,7 @@ function CycleView({ theme }: { theme: any }) {
 
       {/* Cycle insights card */}
       {showInsightsCard && (
-        <View style={[insStyles.panel, { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: "rgba(60,40,20,0.08)" }]}>
+        <View style={[insStyles.panel, { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: "rgba(60,40,20,0.1)" }]}>
           <Text style={[insStyles.panelTitle, { color: theme.textStrong }]}>Cycle Insights</Text>
           <View style={{ gap: 6, marginTop: 6 }}>
             {prediction?.avgCycleLength != null && (
@@ -1748,7 +1754,7 @@ function CycleView({ theme }: { theme: any }) {
 
       {/* Cycle history */}
       {history.length > 0 && (
-        <View style={[insStyles.panel, { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: "rgba(60,40,20,0.08)" }]}>
+        <View style={[insStyles.panel, { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: "rgba(60,40,20,0.1)" }]}>
           <Text style={[insStyles.panelTitle, { color: theme.textStrong }]}>Cycle History</Text>
           {history.slice(0, 6).map((h, i) => (
             <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderTopWidth: i === 0 ? 0 : 1, borderTopColor: 'rgba(0,0,0,0.06)' }}>
@@ -1789,6 +1795,7 @@ const insStyles = StyleSheet.create({
     borderRadius: 26,
     borderWidth: 2,
     padding: 16,
+    shadowColor: "rgba(60,40,20,0.1)",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.12,
     shadowRadius: 14,
@@ -1806,6 +1813,7 @@ const insStyles = StyleSheet.create({
     borderWidth: 2,
     padding: 14,
     gap: 4,
+    shadowColor: "rgba(60,40,20,0.1)",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.12,
     shadowRadius: 14,
@@ -1827,6 +1835,7 @@ const insStyles = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 16,
     alignSelf: 'flex-start',
+    shadowColor: "rgba(60,40,20,0.1)",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.08,
     shadowRadius: 10,
@@ -1847,7 +1856,7 @@ function TabStrip({ active, onChange, theme }: { active: SubTab; onChange: (t: S
             {
               backgroundColor: active === tab ? theme.teal.solid : theme.card,
               borderColor: active === tab ? theme.teal.solid : theme.cardBorder,
-              shadowColor: "rgba(60,40,20,0.08)",
+              shadowColor: "rgba(60,40,20,0.1)",
             },
           ]}
           onPress={() => onChange(tab)}
@@ -1868,6 +1877,7 @@ const stripStyles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 20,
     borderWidth: 2,
+    shadowColor: "rgba(60,40,20,0.1)",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.08,
     shadowRadius: 10,

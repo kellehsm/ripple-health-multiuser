@@ -393,7 +393,7 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
               <Pressable
                 key={key}
                 onPress={() => startGrace(key)}
-                style={[styles.card, { backgroundColor: theme.teal.tint, borderColor: ink }]}
+                style={[styles.card, { backgroundColor: theme.teal.tint, borderColor: theme.teal.solid }]}
                 accessibilityRole="button"
               >
                 <View style={{ flex: 1 }}>
@@ -586,7 +586,7 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
             <Pressable
               key={t.key}
               onPress={() => selectTechnique(t.key)}
-              style={[styles.card, { backgroundColor: (theme.coral as any)?.tint, borderColor: ink }]}
+              style={[styles.card, { backgroundColor: (theme.coral as any)?.tint, borderColor: (theme.coral as any)?.solid }]}
               accessibilityRole="button"
             >
               <View style={{ flex: 1 }}>
@@ -971,7 +971,7 @@ function GratitudeSection({ theme, ink, onBack }: { theme: any; ink: string; onB
         </View>
       ) : (
         <>
-          <View style={[styles.card, { backgroundColor: (theme.berry as any)?.tint, borderColor: ink }]}>
+          <View style={[styles.card, { backgroundColor: (theme.berry as any)?.tint, borderColor: (theme.berry as any)?.solid }]}>
             <Text style={{ color: (theme.berry as any)?.sub, fontSize: 10, fontWeight: "800", letterSpacing: 0.8, marginBottom: 8 }}>TODAY'S PROMPT</Text>
             <Text style={{ color: (theme.berry as any)?.fg, fontSize: 16, lineHeight: 24, fontWeight: "600" }}>
               {GRATITUDE_PROMPTS[promptIdx]}
@@ -1016,10 +1016,11 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     borderWidth: 2,
     padding: 14,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowColor: "rgba(60,40,20,0.1)",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 4,
   },
   endBtn: {
     borderWidth: 2,
@@ -1027,6 +1028,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 24,
     alignItems: "center",
+    shadowColor: "rgba(60,40,20,0.1)",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.08,
     shadowRadius: 10,
@@ -1037,6 +1039,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 12,
     alignItems: "center",
+    shadowColor: "rgba(60,40,20,0.1)",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.08,
     shadowRadius: 10,
@@ -1047,8 +1050,9 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     paddingVertical: 16,
     alignItems: "center",
+    shadowColor: "rgba(60,40,20,0.1)",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.10,
     shadowRadius: 12,
     elevation: 3,
   },

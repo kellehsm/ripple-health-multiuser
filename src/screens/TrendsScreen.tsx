@@ -141,7 +141,7 @@ function CorrCard({ title, xLabel, yLabel, xs, ys, insight, dotColor, lineColor,
   const badge = badgeColors(r, theme);
 
   return (
-    <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+    <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
       <View style={s.cardHead}>
         <Text style={[s.cardTitle, { color: theme.textStrong }]}>{title}</Text>
         {!isNaN(r) && (
@@ -444,13 +444,13 @@ export function TrendsScreen() {
           )}
 
           {ctxObs.length > 0 && (
-            <View style={[s.card, { borderColor: ink }]}>
+            <View style={[s.card, { borderColor: theme.cardBorder }]}>
               <Text style={[s.cardTitle, { color: theme.textStrong }]}>Context Patterns</Text>
               <Text style={[s.cardSubtitle, { color: theme.textSoft }]}>
                 Based on energy, stress, and social battery you logged during check-ins.
               </Text>
               {ctxObs.map(({ key, label, observation, sample_days }) => (
-                <View key={key} style={[s.ctxBlock, { borderTopColor: ink }]}>
+                <View key={key} style={[s.ctxBlock, { borderTopColor: theme.cardBorder }]}>
                   <Text style={[s.ctxKeyLabel, { color: theme.textStrong }]}>{label}</Text>
                   <Text style={[s.ctxObsText, { color: theme.textSoft }]}>
                     {observation}
@@ -485,9 +485,9 @@ export function TrendsScreen() {
 function makeStyles(ink: string, card: string) {
   const shadow = {
     shadowColor: "rgba(60,40,20,0.1)",
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1 as const,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12 as const,
+    shadowRadius: 14,
     elevation: 4,
   };
   return StyleSheet.create({
@@ -498,7 +498,7 @@ function makeStyles(ink: string, card: string) {
     shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 2,
   },
   periodNote: { fontSize: 13, marginLeft: 2 },
-  card: { borderRadius: 26, borderWidth: 2, borderColor: ink, padding: 16, gap: 10, backgroundColor: card, ...shadow },
+  card: { borderRadius: 26, borderWidth: 2, padding: 16, gap: 10, backgroundColor: card, ...shadow },
   cardHead:   { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 8 },
   cardTitle:  { fontSize: 17, fontWeight: "800", flex: 1 },
   badge:      { borderRadius: 20, borderWidth: 2, borderColor: ink, paddingHorizontal: 10, paddingVertical: 4, flexShrink: 1 },
