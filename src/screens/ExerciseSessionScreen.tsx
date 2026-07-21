@@ -7,6 +7,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { api } from '../api/client';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { ExerciseSearchModal } from '../components/ExerciseSearchModal';
+import { PlanExercise } from '../components/WorkoutPlannerModal';
 
 const IMAGE_BASE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
 
@@ -75,11 +76,16 @@ function entryLabel(entry: LogEntry): string {
   return 'Logged';
 }
 
+const REST_OPTIONS = [30, 60, 90, 120];
+
 export function ExerciseSessionScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { sessionId } = route.params as { sessionId: string };
+  const { sessionId, plannedExercises: initialPlan } = route.params as {
+    sessionId: string;
+    plannedExercises?: PlanExercise[];
+  };
   const ink = theme.ink;
 
   const [entries, setEntries] = useState<LogEntry[]>([]);
@@ -87,14 +93,22 @@ export function ExerciseSessionScreen() {
   const [searchVisible, setSearchVisible] = useState(false);
   const [finishing, setFinishing] = useState(false);
 
+  // Planned exercises from pre-session planner
+  const [planned, setPlanned] = useState<PlanExercise[]>(initialPlan ?? []);
+  const [logTarget, setLogTarget] = useState<PlanExercise | null>(null);
+
   // Timer — only runs after user taps Start
   const [started, setStarted] = useState(false);
   const [elapsed, setElapsed] = useState('00:00');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startEpochRef = useRef<number | null>(null);
 
-  // Currently active exercise (most recently added)
+  // Currently active exercise (most recently logged)
   const [activeExercise, setActiveExercise] = useState<ActiveExercise | null>(null);
+
+  // Rest timer
+  const [restSeconds, setRestSeconds] = useState<number | null>(null);
+  const restTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadSession = useCallback(async () => {
     try {
@@ -113,6 +127,7 @@ export function ExerciseSessionScreen() {
 
   useEffect(() => () => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    if (restTimerRef.current) { clearInterval(restTimerRef.current); restTimerRef.current = null; }
   }, []);
 
   function handleStartWorkout() {
@@ -124,6 +139,26 @@ export function ExerciseSessionScreen() {
       const secs = Math.floor((Date.now() - startEpochRef.current) / 1000);
       setElapsed(formatSecs(secs));
     }, 1000);
+  }
+
+  function startRestTimer(secs: number) {
+    if (restTimerRef.current) clearInterval(restTimerRef.current);
+    setRestSeconds(secs);
+    restTimerRef.current = setInterval(() => {
+      setRestSeconds(prev => {
+        if (prev === null || prev <= 1) {
+          clearInterval(restTimerRef.current!);
+          restTimerRef.current = null;
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }
+
+  function dismissRest() {
+    if (restTimerRef.current) { clearInterval(restTimerRef.current); restTimerRef.current = null; }
+    setRestSeconds(null);
   }
 
   async function handleAdd(exercise: any, form: {
@@ -139,7 +174,16 @@ export function ExerciseSessionScreen() {
         primary_muscles: exercise.primary_muscles ?? [],
         category: exercise.category ?? '',
       });
+      // Remove from planned list if it was a planned exercise
+      setPlanned(prev => {
+        const idx = prev.findIndex(p => p.id === exercise.id);
+        if (idx === -1) return prev;
+        return prev.filter((_, i) => i !== idx);
+      });
+      setLogTarget(null);
       await loadSession();
+      // Start rest timer automatically (60s default)
+      startRestTimer(60);
     } catch {
       Alert.alert('Error', 'Could not log exercise.');
     }
@@ -180,6 +224,11 @@ export function ExerciseSessionScreen() {
     ]);
   }
 
+  function handleLogPlanned(exercise: PlanExercise) {
+    setLogTarget(exercise);
+    setSearchVisible(true);
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: theme.page }]}>
       {/* Timer bar */}
@@ -210,7 +259,7 @@ export function ExerciseSessionScreen() {
       </View>
 
       {/* Active exercise card */}
-      {activeExercise && (
+      {activeExercise && restSeconds === null && (
         <View style={[styles.activeCard, { backgroundColor: theme.card, borderColor: theme.teal.solid ?? ink }]}>
           <CyclingImage images={activeExercise.images} style={styles.activeImage} />
           <View style={styles.activeInfo}>
@@ -231,37 +280,102 @@ export function ExerciseSessionScreen() {
         </View>
       )}
 
-      {/* Entries */}
-      <ScrollView contentContainerStyle={styles.entries}>
+      {/* Rest timer banner */}
+      {restSeconds !== null && (
+        <View style={[styles.restBanner, { backgroundColor: theme.teal.tint, borderColor: theme.teal.solid }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.restLabel, { color: theme.teal.sub }]}>REST</Text>
+            <Text style={[styles.restTimer, { color: theme.teal.sub }]}>{formatSecs(restSeconds)}</Text>
+          </View>
+          <View style={{ gap: 6 }}>
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              {REST_OPTIONS.map(opt => (
+                <Pressable
+                  key={opt}
+                  onPress={() => startRestTimer(opt)}
+                  style={[styles.restOption, {
+                    backgroundColor: theme.teal.solid,
+                    borderColor: theme.teal.solid,
+                  }]}
+                >
+                  <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>{opt}s</Text>
+                </Pressable>
+              ))}
+            </View>
+            <Pressable onPress={dismissRest} style={[styles.restDismiss, { borderColor: theme.teal.solid }]}>
+              <Text style={{ color: theme.teal.sub, fontSize: 13, fontWeight: '700', textAlign: 'center' }}>
+                Done resting
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Planned exercises section */}
+        {planned.length > 0 && (
+          <>
+            <Text style={[styles.sectionLabel, { color: theme.textSoft }]}>YOUR PLAN</Text>
+            {planned.map((ex, i) => (
+              <Pressable
+                key={`${ex.id}-${i}`}
+                onPress={() => handleLogPlanned(ex)}
+                style={[styles.plannedCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+              >
+                <CyclingImage images={ex.images} style={styles.plannedImage} />
+                <View style={styles.plannedInfo}>
+                  <Text style={[styles.plannedName, { color: theme.textStrong }]} numberOfLines={2}>
+                    {ex.name}
+                  </Text>
+                  {ex.primary_muscles.length > 0 && (
+                    <Text style={[styles.plannedMuscles, { color: theme.textSoft }]} numberOfLines={1}>
+                      {ex.primary_muscles.slice(0, 3).join(', ')}
+                    </Text>
+                  )}
+                  <View style={[styles.logChip, { backgroundColor: theme.teal.tint, borderColor: theme.teal.solid }]}>
+                    <Text style={{ color: theme.teal.sub, fontSize: 12, fontWeight: '700' }}>Tap to log</Text>
+                  </View>
+                </View>
+              </Pressable>
+            ))}
+          </>
+        )}
+
+        {/* Logged entries */}
         {loadingEntries ? (
           <View style={styles.center}><LoadingIndicator /></View>
-        ) : entries.length === 0 ? (
+        ) : entries.length > 0 ? (
+          <>
+            {planned.length > 0 && (
+              <Text style={[styles.sectionLabel, { color: theme.textSoft, marginTop: 4 }]}>LOGGED</Text>
+            )}
+            {entries.map((entry) => (
+              <Pressable
+                key={entry.id}
+                onLongPress={() => handleDeleteEntry(entry.id)}
+                style={[styles.entryCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.entryName, { color: theme.textStrong }]}>{entry.exercise.name}</Text>
+                  <Text style={[styles.entryDetail, { color: theme.teal.fg }]}>{entryLabel(entry)}</Text>
+                </View>
+                <Text style={{ color: theme.textSoft, fontSize: 11 }}>hold to remove</Text>
+              </Pressable>
+            ))}
+          </>
+        ) : planned.length === 0 ? (
           <View style={styles.empty}>
             <Text style={[styles.emptyText, { color: theme.textSoft }]}>
-              Tap "Add exercise" below to log your first set.
+              Tap "+ Add exercise" below to log your first set.
             </Text>
           </View>
-        ) : (
-          entries.map((entry) => (
-            <Pressable
-              key={entry.id}
-              onLongPress={() => handleDeleteEntry(entry.id)}
-              style={[styles.entryCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.entryName, { color: theme.textStrong }]}>{entry.exercise.name}</Text>
-                <Text style={[styles.entryDetail, { color: theme.teal.fg }]}>{entryLabel(entry)}</Text>
-              </View>
-              <Text style={{ color: theme.textSoft, fontSize: 11 }}>hold to remove</Text>
-            </Pressable>
-          ))
-        )}
+        ) : null}
       </ScrollView>
 
       {/* Add button */}
       <View style={[styles.footer, { borderTopColor: theme.cardBorder }]}>
         <Pressable
-          onPress={() => setSearchVisible(true)}
+          onPress={() => { setLogTarget(null); setSearchVisible(true); }}
           style={[styles.addBtn, { backgroundColor: ink, borderColor: ink }]}
         >
           <Text style={[styles.addBtnText, { color: theme.page }]}>+ Add exercise</Text>
@@ -270,8 +384,9 @@ export function ExerciseSessionScreen() {
 
       <ExerciseSearchModal
         visible={searchVisible}
-        onClose={() => setSearchVisible(false)}
+        onClose={() => { setSearchVisible(false); setLogTarget(null); }}
         onAdd={handleAdd}
+        initialExercise={logTarget ?? undefined}
       />
     </View>
   );
@@ -319,7 +434,53 @@ const styles = StyleSheet.create({
   activeName: { fontSize: 16, fontWeight: '800', lineHeight: 20 },
   activeMuscles: { fontSize: 12, textTransform: 'capitalize' },
   activeCategory: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 2 },
-  entries: { padding: 14, gap: 10, paddingBottom: 24 },
+  restBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 14,
+    marginTop: 12,
+    borderRadius: 20,
+    borderWidth: 2,
+    padding: 14,
+    gap: 12,
+  },
+  restLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2 },
+  restTimer: { fontSize: 32, fontWeight: '800', fontVariant: ['tabular-nums'], marginTop: 2 },
+  restOption: {
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  restDismiss: {
+    borderRadius: 12,
+    borderWidth: 1.5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  scrollContent: { padding: 14, gap: 10, paddingBottom: 100 },
+  sectionLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2, marginBottom: 2 },
+  plannedCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 20,
+    borderWidth: 2,
+    overflow: 'hidden',
+    padding: 10,
+    gap: 12,
+  },
+  plannedImage: { width: 72, height: 72 },
+  plannedInfo: { flex: 1, gap: 4 },
+  plannedName: { fontSize: 15, fontWeight: '700', lineHeight: 19 },
+  plannedMuscles: { fontSize: 12, textTransform: 'capitalize', color: '#888' },
+  logChip: {
+    alignSelf: 'flex-start',
+    borderRadius: 10,
+    borderWidth: 1.5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginTop: 2,
+  },
   center: { paddingTop: 40, alignItems: 'center' },
   empty: { paddingTop: 48, alignItems: 'center', paddingHorizontal: 32 },
   emptyText: { fontSize: 14, textAlign: 'center', lineHeight: 22 },

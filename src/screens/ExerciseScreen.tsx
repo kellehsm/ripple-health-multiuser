@@ -9,6 +9,7 @@ import { WorkoutSetupWizard } from './WorkoutSetupWizard';
 import { useTabPreferences } from '../hooks/useTabPreferences';
 import { TooltipBubble } from '../components/TooltipBubble';
 import { hasSeenTooltip, markTooltipSeen } from '../utils/tooltipSeen';
+import { WorkoutPlannerModal, PlanExercise } from '../components/WorkoutPlannerModal';
 
 interface WorkoutSuggestion {
   type: string;
@@ -97,9 +98,10 @@ export function ExerciseScreen() {
   const [showTooltip, setShowTooltip] = useState(false);
   const [sessions, setSessions] = useState<ExerciseSession[]>([]);
   const [loading, setLoading] = useState(true);
-  const [starting, setStarting] = useState(false);
   const [suggestion, setSuggestion] = useState<WorkoutSuggestion | null>(null);
   const [activeProgram, setActiveProgram] = useState<ActiveProgram | null>(null);
+  const [plannerVisible, setPlannerVisible] = useState(false);
+  const [plannerInitialQueue, setPlannerInitialQueue] = useState<PlanExercise[]>([]);
 
   // Wizard gate — null = loading, false = show wizard, true = show main screen
   const [wizardDone, setWizardDone] = useState<boolean | null>(null);
@@ -146,16 +148,13 @@ export function ExerciseScreen() {
     }).finally(() => setLoading(false));
   }, [prefsLoading, preferences.selectedModules]));
 
-  async function handleStart() {
-    setStarting(true);
-    try {
-      const session = await api.startExerciseSession();
-      navigation.navigate('ExerciseSession', { sessionId: session.id });
-    } catch {
-      Alert.alert('Error', 'Could not start session. Try again.');
-    } finally {
-      setStarting(false);
-    }
+  async function handleBeginWorkout(queue: PlanExercise[]) {
+    const session = await api.startExerciseSession();
+    setPlannerVisible(false);
+    navigation.navigate('ExerciseSession', {
+      sessionId: session.id,
+      plannedExercises: queue,
+    });
   }
 
   async function handleSelectDay(day: ActiveProgram['days'][0]) {
@@ -237,14 +236,10 @@ export function ExerciseScreen() {
         {/* Start new session button */}
         {!openSession && (
           <Pressable
-            onPress={handleStart}
-            disabled={starting}
+            onPress={() => { setPlannerInitialQueue([]); setPlannerVisible(true); }}
             style={[styles.startBtn, { backgroundColor: ink, borderColor: ink, shadowColor: "rgba(60,40,20,0.1)" }]}
           >
-            {starting
-              ? <LoadingIndicator color="#fff" />
-              : <Text style={[styles.startBtnText, { color: theme.page }]}>🏃 Start workout session</Text>
-            }
+            <Text style={[styles.startBtnText, { color: theme.page }]}>🏃 Start workout session</Text>
           </Pressable>
         )}
 
@@ -291,8 +286,7 @@ export function ExerciseScreen() {
             <Text style={[styles.suggestionBody, { color: theme.textSoft }]}>{suggestion.body}</Text>
             {suggestion.cta && (
               <Pressable
-                onPress={handleStart}
-                disabled={starting}
+                onPress={() => { setPlannerInitialQueue([]); setPlannerVisible(true); }}
                 style={[styles.suggestionCta, { borderColor: ink }]}
               >
                 <Text style={[styles.suggestionCtaText, { color: ink }]}>{suggestion.cta}</Text>
@@ -344,6 +338,13 @@ export function ExerciseScreen() {
           </>
         )}
       </ScrollView>
+
+      <WorkoutPlannerModal
+        visible={plannerVisible}
+        onClose={() => setPlannerVisible(false)}
+        onBegin={handleBeginWorkout}
+        initialQueue={plannerInitialQueue}
+      />
 
       <Modal
         visible={!!selectedDay}
@@ -399,14 +400,22 @@ export function ExerciseScreen() {
           {/* Start button pinned to bottom */}
           <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, paddingBottom: 28, backgroundColor: theme.page, borderTopWidth: 1, borderTopColor: theme.cardBorder }}>
             <Pressable
-              onPress={() => { setSelectedDay(null); handleStart(); }}
-              disabled={starting}
+              onPress={() => {
+                const dayExercises: PlanExercise[] = (selectedDay?.exercises ?? []).map(e => ({
+                  id: e.exercise_id,
+                  name: e.name,
+                  category: '',
+                  equipment: null,
+                  primary_muscles: e.primary_muscles,
+                  images: e.images,
+                }));
+                setSelectedDay(null);
+                setPlannerInitialQueue(dayExercises);
+                setPlannerVisible(true);
+              }}
               style={{ backgroundColor: ink, borderRadius: 26, borderWidth: 2, borderColor: ink, paddingVertical: 16, alignItems: 'center', shadowColor: 'rgba(60,40,20,0.1)', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.12, shadowRadius: 14, elevation: 4 }}
             >
-              {starting
-                ? <LoadingIndicator color="#fff" />
-                : <Text style={{ color: theme.page, fontSize: 16, fontWeight: '800' }}>🏃 Start this workout</Text>
-              }
+              <Text style={{ color: theme.page, fontSize: 16, fontWeight: '800' }}>🏃 Start this workout</Text>
             </Pressable>
           </View>
         </SafeAreaView>
