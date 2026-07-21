@@ -485,9 +485,14 @@ export function LifeScreen() {
                           width: `${Math.min(pct ?? 0, 100)}%` as any,
                         }]} />
                       </View>
-                      <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 4 }}>
-                        {pagesTotal} of {totalPages} pages · {pct ?? 0}%
-                      </Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
+                        <Text style={{ color: theme.textSoft, fontSize: 11 }}>
+                          {pagesTotal} of {totalPages} pages
+                        </Text>
+                        <Text style={{ color: theme.teal.fg, fontSize: 14, fontWeight: "800" }}>
+                          {pct ?? 0}%
+                        </Text>
+                      </View>
                     </>
                   ) : pagesTotal > 0 ? (
                     <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 4 }}>{pagesTotal} pages read</Text>
@@ -748,7 +753,7 @@ function makeStyles(ink: string, card: string, border: string) {
     shadowRadius: 10,
     elevation: 2,
   },
-  coverThumb: { width: 36, height: 52, borderRadius: 4 },
+  coverThumb: { width: 54, height: 78, borderRadius: 6 },
 
   bookRow: { flexDirection: "row", gap: 12 },
   bookTitle: { fontSize: 15, fontWeight: "800", marginBottom: 2 },
