@@ -149,7 +149,7 @@ function OptionCard({ label, desc, selected, onPress, theme, ink }: {
         {
           borderColor: selected ? ink : theme.cardBorder ?? '#E5E7EB',
           backgroundColor: selected ? (theme.teal?.tint ?? '#E8F9F4') : theme.card,
-          shadowColor: ink,
+          shadowColor: "rgba(60,40,20,0.1)",
         },
       ]}
     >
@@ -184,7 +184,7 @@ function ChipButton({ label, selected, onPress, theme, ink }: {
         {
           backgroundColor: selected ? (theme.teal?.solid ?? ink) : theme.card,
           borderColor: selected ? ink : theme.cardBorder ?? '#D1D5DB',
-          shadowColor: ink,
+          shadowColor: "rgba(60,40,20,0.1)",
         },
       ]}
     >
@@ -365,7 +365,7 @@ export function WorkoutSetupWizard({ onComplete }: Props) {
         {generatedDays.map((day) => (
           <View
             key={day.day_number}
-            style={[styles.dayCard, { backgroundColor: theme.card, borderColor: ink, shadowColor: ink }]}
+            style={[styles.dayCard, { backgroundColor: theme.card, borderColor: ink, shadowColor: "rgba(60,40,20,0.1)" }]}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 }}>
               <View style={[styles.dayBadge, { backgroundColor: theme.teal?.solid ?? ink }]}>
@@ -537,7 +537,7 @@ export function WorkoutSetupWizard({ onComplete }: Props) {
                   {
                     borderColor: duration === d.value ? ink : (theme.cardBorder ?? '#D1D5DB'),
                     backgroundColor: duration === d.value ? (theme.teal?.tint ?? '#E8F9F4') : theme.card,
-                    shadowColor: ink,
+                    shadowColor: "rgba(60,40,20,0.1)",
                   },
                 ]}
               >
@@ -570,7 +570,7 @@ export function WorkoutSetupWizard({ onComplete }: Props) {
                   {
                     borderColor: daysPerWeek === d ? ink : (theme.cardBorder ?? '#D1D5DB'),
                     backgroundColor: daysPerWeek === d ? ink : theme.card,
-                    shadowColor: ink,
+                    shadowColor: "rgba(60,40,20,0.1)",
                   },
                 ]}
               >
@@ -673,17 +673,17 @@ const styles = StyleSheet.create({
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 14,
+    borderRadius: 26,
     borderWidth: 2,
     padding: 14,
     gap: 12,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 3,
   },
   radioOuter: {
-    width: 20, height: 20, borderRadius: 10, borderWidth: 2,
+    width: 20, height: 20, borderRadius: 16, borderWidth: 2,
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
   radioInner: { width: 10, height: 10, borderRadius: 5 },
@@ -692,62 +692,62 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     paddingVertical: 8,
     paddingHorizontal: 14,
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     elevation: 2,
   },
   durationChip: {
-    borderRadius: 14,
+    borderRadius: 26,
     borderWidth: 2,
     padding: 16,
     alignItems: 'center',
     width: '30%',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     elevation: 2,
   },
   daysChip: {
-    borderRadius: 14,
+    borderRadius: 26,
     borderWidth: 2,
     padding: 16,
     alignItems: 'center',
     width: 76,
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     elevation: 2,
   },
   backBtn: {
-    borderRadius: 12,
+    borderRadius: 22,
     borderWidth: 2,
     paddingVertical: 14,
     paddingHorizontal: 18,
     alignItems: 'center',
   },
   nextBtn: {
-    borderRadius: 12,
+    borderRadius: 22,
     borderWidth: 2,
     paddingVertical: 14,
     alignItems: 'center',
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 3,
   },
   dayCard: {
-    borderRadius: 14,
+    borderRadius: 26,
     borderWidth: 2,
     padding: 14,
     marginBottom: 10,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 3,
   },
   dayBadge: {
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
@@ -758,23 +758,23 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   acceptBtn: {
-    borderRadius: 14,
+    borderRadius: 26,
     borderWidth: 2,
     paddingVertical: 16,
     alignItems: 'center',
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
     elevation: 4,
   },
   outlineBtn: {
-    borderRadius: 12,
+    borderRadius: 22,
     borderWidth: 2,
     paddingVertical: 14,
     alignItems: 'center',
   },
   disclaimer: {
-    borderRadius: 10,
+    borderRadius: 16,
     borderWidth: 1,
     padding: 12,
     marginTop: 4,

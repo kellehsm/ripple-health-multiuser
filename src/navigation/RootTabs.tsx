@@ -101,10 +101,10 @@ function TabNavigator() {
               borderColor: theme.ink,
               borderRadius: 12,
               backgroundColor: theme.card,
-              shadowColor: theme.ink,
-              shadowOffset: { width: 4, height: 4 },
-              shadowOpacity: 1,
-              shadowRadius: 0,
+              shadowColor: "rgba(60,40,20,0.12)",
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: 0.12,
+              shadowRadius: 14,
               elevation: 4,
             }}
           >

@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   line: { width: 2, flex: 1, minHeight: 16, marginTop: 4, marginBottom: 4 },
   entryCard: {
     flex: 1,
-    borderRadius: 12,
+    borderRadius: 22,
     borderWidth: 1,
     padding: 12,
     marginBottom: 12,

@@ -149,13 +149,13 @@ export function SettingsScreen() {
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 12, paddingBottom: 40 },
   groupLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.2, marginTop: 4, marginBottom: -4 },
-  card: { borderRadius: 14, borderWidth: 2, overflow: "hidden" },
+  card: { borderRadius: 26, borderWidth: 2, overflow: "hidden" },
   row: {
     flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14,
     borderBottomWidth: 0,
   },
   divider: { height: 1, marginHorizontal: 16 },
-  journeyCard: { borderRadius: 14, borderWidth: 2, padding: 16, gap: 4, alignItems: "flex-start" },
+  journeyCard: { borderRadius: 26, borderWidth: 2, padding: 16, gap: 4, alignItems: "flex-start" },
   journeyTitle: { fontSize: 14, fontWeight: "700", marginBottom: 4 },
-  statChip: { flex: 1, borderWidth: 1.5, borderRadius: 10, padding: 10, alignItems: "center", gap: 2 },
+  statChip: { flex: 1, borderWidth: 1.5, borderRadius: 16, padding: 10, alignItems: "center", gap: 2 },
 });

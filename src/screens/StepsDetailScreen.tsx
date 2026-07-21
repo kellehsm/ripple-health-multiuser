@@ -288,7 +288,7 @@ export function StepsDetailScreen() {
 
 function makeStyles(ink: string, card: string) {
   const shadow = {
-    shadowColor: ink,
+    shadowColor: "rgba(60,40,20,0.1)",
     shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 1 as const,
     shadowRadius: 0,
@@ -297,7 +297,7 @@ function makeStyles(ink: string, card: string) {
   return StyleSheet.create({
   content: { padding: 16, gap: 12, paddingBottom: 32 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  card: { borderRadius: 14, borderWidth: 2, borderColor: ink, padding: 16, backgroundColor: card, ...shadow },
+  card: { borderRadius: 26, borderWidth: 2, borderColor: ink, padding: 16, backgroundColor: card, ...shadow },
   sectionTitle: { fontSize: 16, fontWeight: "800", marginBottom: 12 },
 
   statsRow: { flexDirection: "row", flexWrap: "wrap", gap: 12 },

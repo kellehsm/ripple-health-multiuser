@@ -169,7 +169,7 @@ export function ExerciseScreen() {
           <Pressable
             onPress={handleStart}
             disabled={starting}
-            style={[styles.startBtn, { backgroundColor: ink, borderColor: ink, shadowColor: ink }]}
+            style={[styles.startBtn, { backgroundColor: ink, borderColor: ink, shadowColor: "rgba(60,40,20,0.1)" }]}
           >
             {starting
               ? <LoadingIndicator color="#fff" />
@@ -182,7 +182,7 @@ export function ExerciseScreen() {
         {activeProgram && (
           <>
             <Text style={[styles.sectionLabel, { color: theme.textSoft }]}>YOUR PLAN</Text>
-            <View style={[styles.programCard, { backgroundColor: theme.card, borderColor: ink, shadowColor: ink }]}>
+            <View style={[styles.programCard, { backgroundColor: theme.card, borderColor: ink, shadowColor: "rgba(60,40,20,0.1)" }]}>
               <Text style={[styles.programName, { color: theme.textStrong }]}>{activeProgram.name}</Text>
               <Text style={{ color: theme.textSoft, fontSize: 12, marginBottom: 8 }}>
                 {activeProgram.preferred_minutes} min · {activeProgram.days_per_week} day{activeProgram.days_per_week !== 1 ? 's' : ''}/week
@@ -245,7 +245,7 @@ export function ExerciseScreen() {
               <Pressable
                 key={session.id}
                 onPress={() => navigation.navigate('ExerciseDetail', { sessionId: session.id })}
-                style={[styles.sessionCard, { backgroundColor: theme.card, borderColor: ink, shadowColor: ink }]}
+                style={[styles.sessionCard, { backgroundColor: theme.card, borderColor: ink, shadowColor: "rgba(60,40,20,0.1)" }]}
               >
                 <View style={styles.sessionCardRow}>
                   <Text style={[styles.sessionDate, { color: theme.textStrong }]}>
@@ -284,20 +284,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 14,
-    borderRadius: 14,
+    borderRadius: 26,
     borderWidth: 2,
   },
   activeDot: { width: 10, height: 10, borderRadius: 5 },
   activeBannerTitle: { fontSize: 14, fontWeight: '700' },
   activeBannerSub: { fontSize: 12, marginTop: 2 },
   startBtn: {
-    borderRadius: 14,
+    borderRadius: 26,
     borderWidth: 2,
     paddingVertical: 16,
     alignItems: 'center',
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
     elevation: 4,
   },
   startBtnText: { fontSize: 16, fontWeight: '800' },
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   emptySub: { fontSize: 14, textAlign: 'center' },
   sectionLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2, marginTop: 4 },
   suggestionCard: {
-    borderRadius: 14,
+    borderRadius: 26,
     borderWidth: 1,
     padding: 14,
     gap: 8,
@@ -319,20 +319,20 @@ const styles = StyleSheet.create({
   suggestionCta: {
     alignSelf: 'flex-start',
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
     marginTop: 2,
   },
   suggestionCtaText: { fontSize: 13, fontWeight: '700' },
   sessionCard: {
-    borderRadius: 14,
+    borderRadius: 26,
     borderWidth: 2,
     padding: 14,
     gap: 6,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 3,
   },
   sessionCardRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -341,15 +341,15 @@ const styles = StyleSheet.create({
   sessionExercises: { fontSize: 13 },
   sessionCount: { fontSize: 12, fontWeight: '700' },
   programCard: {
-    borderRadius: 14,
+    borderRadius: 26,
     borderWidth: 2,
     padding: 14,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 3,
   },
   programName: { fontSize: 15, fontWeight: '900', marginBottom: 2 },
   programDay: { paddingTop: 8, marginTop: 6 },
-  dayBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  dayBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
 });

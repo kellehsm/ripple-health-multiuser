@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     margin: 16,
-    borderRadius: 12,
+    borderRadius: 22,
     borderWidth: 2,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingBottom: 32 },
   sectionLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.2, marginBottom: 6 },
   sectionCard: {
-    borderRadius: 12,
+    borderRadius: 22,
     borderWidth: 2,
     overflow: "hidden",
   },

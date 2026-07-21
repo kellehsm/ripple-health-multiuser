@@ -29,8 +29,14 @@ export function MetricCard({ label, value, icon, colorKey, sublabel, onAction, v
   const subColor = variant === "solid" ? solidSub : c.sub;
   const iconColor = variant === "solid" ? solidText : c.fg;
 
+  // Stat chip: border uses saturated accent color on light bg; white/transparent on solid fill
+  const chipBorder = variant === "solid"
+    ? (solidText === "#ffffff" ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.15)")
+    : c.solid;
+  const shadowTone = variant === "solid" ? c.solid : "rgba(60,40,20,0.1)";
+
   return (
-    <View style={[styles.tile, { backgroundColor: bg, borderColor: ink, shadowColor: ink }]}>
+    <View style={[styles.tile, { backgroundColor: bg, borderColor: chipBorder, shadowColor: shadowTone }]}>
       <View style={styles.labelRow}>
         <Ionicons name={icon} size={11} color={iconColor} />
         <Text style={[styles.label, { color: subColor }]}>{label.toUpperCase()}</Text>
@@ -44,8 +50,8 @@ export function MetricCard({ label, value, icon, colorKey, sublabel, onAction, v
             styles.actionButton,
             {
               backgroundColor: variant === "solid" ? (solidText === "#ffffff" ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.12)") : theme.card,
-              borderColor: variant === "solid" ? (solidText === "#ffffff" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.3)") : ink,
-              shadowColor: ink,
+              borderColor: variant === "solid" ? (solidText === "#ffffff" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.3)") : c.solid,
+              shadowColor: "rgba(60,40,20,0.08)",
             },
           ]}
         >
@@ -59,14 +65,14 @@ export function MetricCard({ label, value, icon, colorKey, sublabel, onAction, v
 
 const styles = StyleSheet.create({
   tile: {
-    borderRadius: 12,
+    borderRadius: 22,
     borderWidth: 2,
     padding: 10,
     flexGrow: 1,
     minWidth: 130,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 3,
   },
   labelRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 6 },
@@ -75,7 +81,7 @@ const styles = StyleSheet.create({
   sublabel: { fontSize: 11, marginTop: 4 },
   actionButton: {
     marginTop: 8,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 2,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -83,9 +89,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 2,
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     elevation: 2,
   },
   actionLabel: { fontSize: 10, fontWeight: "800" },

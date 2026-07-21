@@ -484,7 +484,7 @@ export function TrendsScreen() {
 
 function makeStyles(ink: string, card: string) {
   const shadow = {
-    shadowColor: ink,
+    shadowColor: "rgba(60,40,20,0.1)",
     shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 1 as const,
     shadowRadius: 0,
@@ -495,10 +495,10 @@ function makeStyles(ink: string, card: string) {
   periodRow:  { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 2 },
   chip: {
     paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 2,
-    shadowColor: ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2,
+    shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 2,
   },
   periodNote: { fontSize: 13, marginLeft: 2 },
-  card: { borderRadius: 14, borderWidth: 2, borderColor: ink, padding: 16, gap: 10, backgroundColor: card, ...shadow },
+  card: { borderRadius: 26, borderWidth: 2, borderColor: ink, padding: 16, gap: 10, backgroundColor: card, ...shadow },
   cardHead:   { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 8 },
   cardTitle:  { fontSize: 17, fontWeight: "800", flex: 1 },
   badge:      { borderRadius: 20, borderWidth: 2, borderColor: ink, paddingHorizontal: 10, paddingVertical: 4, flexShrink: 1 },

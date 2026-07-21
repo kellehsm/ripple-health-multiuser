@@ -261,7 +261,7 @@ export function HistoryScreen() {
 
 function makeStyles(ink: string, card: string) {
   const shadow = {
-    shadowColor: ink,
+    shadowColor: "rgba(60,40,20,0.1)",
     shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 1 as const,
     shadowRadius: 0,
@@ -271,20 +271,20 @@ function makeStyles(ink: string, card: string) {
   content: { padding: 16, gap: 12 },
   modeRow: { flexDirection: "row", gap: 8 },
   modeChip: {
-    flex: 1, borderWidth: 2, borderRadius: 10, paddingVertical: 8, alignItems: "center",
-    shadowColor: ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2,
+    flex: 1, borderWidth: 2, borderRadius: 16, paddingVertical: 8, alignItems: "center",
+    shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 2,
   },
-  card: { borderRadius: 14, borderWidth: 2, borderColor: ink, padding: 16, gap: 10, backgroundColor: card, ...shadow },
+  card: { borderRadius: 26, borderWidth: 2, borderColor: ink, padding: 16, gap: 10, backgroundColor: card, ...shadow },
   fieldLabel: { fontSize: 12 },
   input: {
-    borderWidth: 2, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14,
-    shadowColor: ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2,
+    borderWidth: 2, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14,
+    shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 2,
   },
   bucketRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  bucketChip: { borderWidth: 2, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+  bucketChip: { borderWidth: 2, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5 },
   searchBtn: {
-    borderRadius: 10, borderWidth: 2, borderColor: ink, paddingVertical: 12, alignItems: "center", marginTop: 4,
-    shadowColor: ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2,
+    borderRadius: 16, borderWidth: 2, borderColor: ink, paddingVertical: 12, alignItems: "center", marginTop: 4,
+    shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 2,
   },
   resultsHeader: { fontSize: 12, marginBottom: 4 },
   resultRow: { paddingVertical: 10, gap: 2 },
