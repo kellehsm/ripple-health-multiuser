@@ -170,6 +170,7 @@ export function OnboardingFlow({ onComplete, replayMode }: { onComplete: () => v
         : { username, password: pw, region: dexcomRegion };
       const result = await api.dexcomVerifyShare(params);
       if (result.ok) {
+        api.glucoseSyncShare().catch(() => {});
         advance();
       } else if (result.needs_account_id) {
         setDexcomNeedsAccountId(true);
