@@ -1,5 +1,6 @@
-import React, { useCallback, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Alert } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, Pressable, ScrollView, StyleSheet, Alert, Image, Modal } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
 import { api } from '../api/client';
@@ -70,6 +71,21 @@ const FOCUS_LABEL: Record<string, string> = {
   upper: 'Upper Body', lower: 'Lower Body', full_body: 'Full Body',
 };
 
+const IMAGE_BASE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
+
+function CyclingImage({ images, style }: { images: string[]; style: any }) {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    if (images.length <= 1) return;
+    const t = setInterval(() => setIdx(i => (i + 1) % images.length), 2000);
+    return () => clearInterval(t);
+  }, [images.length]);
+  if (!images.length) {
+    return <View style={[style, { backgroundColor: '#D8F5EB', opacity: 0.5 }]} />;
+  }
+  return <Image source={{ uri: IMAGE_BASE + images[idx] }} style={style} resizeMode="cover" />;
+}
+
 export function ExerciseScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<any>();
@@ -84,6 +100,22 @@ export function ExerciseScreen() {
 
   // Wizard gate — null = loading, false = show wizard, true = show main screen
   const [wizardDone, setWizardDone] = useState<boolean | null>(null);
+
+  interface DayExercise {
+    exercise_id: string;
+    name: string;
+    sets: number;
+    rep_range_min: number;
+    rep_range_max: number;
+    images: string[];
+    primary_muscles: string[];
+  }
+  interface SelectedDay {
+    day: ActiveProgram['days'][0];
+    exercises: DayExercise[];
+  }
+  const [selectedDay, setSelectedDay] = useState<SelectedDay | null>(null);
+  const [dayLoading, setDayLoading] = useState(false);
 
   useFocusEffect(useCallback(() => {
     if (prefsLoading) return;
@@ -114,6 +146,29 @@ export function ExerciseScreen() {
       Alert.alert('Error', 'Could not start session. Try again.');
     } finally {
       setStarting(false);
+    }
+  }
+
+  async function handleSelectDay(day: ActiveProgram['days'][0]) {
+    setSelectedDay({
+      day,
+      exercises: day.exercises.map(e => ({ ...e, images: [], primary_muscles: [] })),
+    });
+    setDayLoading(true);
+    try {
+      const details = await Promise.all(
+        day.exercises.map(e => api.getExerciseDetail(e.exercise_id).catch(() => null))
+      );
+      setSelectedDay({
+        day,
+        exercises: day.exercises.map((e, i) => ({
+          ...e,
+          images: details[i]?.images ?? [],
+          primary_muscles: details[i]?.primary_muscles ?? [],
+        })),
+      });
+    } finally {
+      setDayLoading(false);
     }
   }
 
@@ -188,8 +243,9 @@ export function ExerciseScreen() {
                 {activeProgram.preferred_minutes} min · {activeProgram.days_per_week} day{activeProgram.days_per_week !== 1 ? 's' : ''}/week
               </Text>
               {(activeProgram.days ?? []).map((day, i) => (
-                <View
+                <Pressable
                   key={day.id}
+                  onPress={() => handleSelectDay(day)}
                   style={[styles.programDay, { borderTopColor: theme.cardBorder ?? '#E5E7EB', borderTopWidth: i === 0 ? 0 : 1 }]}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 3 }}>
@@ -203,7 +259,8 @@ export function ExerciseScreen() {
                   <Text style={{ color: theme.textSoft, fontSize: 12, lineHeight: 17 }} numberOfLines={2}>
                     {(day.exercises ?? []).map((e) => e.name).join(' · ')}
                   </Text>
-                </View>
+                  <Text style={{ color: theme.teal.sub, fontSize: 11, fontWeight: '700', marginTop: 4 }}>Tap to preview ›</Text>
+                </Pressable>
               ))}
             </View>
           </>
@@ -272,6 +329,73 @@ export function ExerciseScreen() {
           </>
         )}
       </ScrollView>
+
+      <Modal
+        visible={!!selectedDay}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setSelectedDay(null)}
+      >
+        <SafeAreaView style={{ flex: 1, backgroundColor: theme.page }}>
+          {/* Header */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: theme.cardBorder }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 22, fontWeight: '900', color: theme.textStrong }}>
+                {FOCUS_LABEL[selectedDay?.day.focus ?? ''] ?? selectedDay?.day.focus ?? ''}
+              </Text>
+              <Text style={{ fontSize: 13, color: theme.textSoft, marginTop: 2 }}>
+                Day {selectedDay?.day.day_number} · {selectedDay?.exercises.length} exercise{selectedDay?.exercises.length !== 1 ? 's' : ''}
+              </Text>
+            </View>
+            <Pressable onPress={() => setSelectedDay(null)} hitSlop={12}>
+              <Text style={{ fontSize: 20, color: theme.textSoft }}>✕</Text>
+            </Pressable>
+          </View>
+
+          {dayLoading && !selectedDay?.exercises.some(e => e.images.length > 0) ? (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><LoadingIndicator /></View>
+          ) : (
+            <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
+              {selectedDay?.exercises.map((ex, i) => (
+                <View key={ex.exercise_id} style={{ backgroundColor: theme.card, borderRadius: 22, borderWidth: 2, borderColor: theme.cardBorder, overflow: 'hidden', shadowColor: 'rgba(60,40,20,0.1)', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.10, shadowRadius: 12, elevation: 3 }}>
+                  {ex.images.length > 0 ? (
+                    <CyclingImage images={ex.images} style={{ width: '100%', height: 220 }} />
+                  ) : (
+                    <View style={{ width: '100%', height: 220, backgroundColor: theme.teal.tint, alignItems: 'center', justifyContent: 'center' }}>
+                      {dayLoading ? <LoadingIndicator /> : <Text style={{ fontSize: 48 }}>🏋️</Text>}
+                    </View>
+                  )}
+                  <View style={{ padding: 14, gap: 4 }}>
+                    <Text style={{ fontSize: 17, fontWeight: '800', color: theme.textStrong }}>{ex.name}</Text>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: theme.teal.solid }}>
+                      {ex.sets} sets · {ex.rep_range_min}–{ex.rep_range_max} reps
+                    </Text>
+                    {ex.primary_muscles.length > 0 && (
+                      <Text style={{ fontSize: 13, color: theme.textSoft, textTransform: 'capitalize' }}>
+                        {ex.primary_muscles.slice(0, 3).join(', ')}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+
+          {/* Start button pinned to bottom */}
+          <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, paddingBottom: 28, backgroundColor: theme.page, borderTopWidth: 1, borderTopColor: theme.cardBorder }}>
+            <Pressable
+              onPress={() => { setSelectedDay(null); handleStart(); }}
+              disabled={starting}
+              style={{ backgroundColor: ink, borderRadius: 26, borderWidth: 2, borderColor: ink, paddingVertical: 16, alignItems: 'center', shadowColor: 'rgba(60,40,20,0.1)', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.12, shadowRadius: 14, elevation: 4 }}
+            >
+              {starting
+                ? <LoadingIndicator color="#fff" />
+                : <Text style={{ color: theme.page, fontSize: 16, fontWeight: '800' }}>🏃 Start this workout</Text>
+              }
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </View>
   );
 }

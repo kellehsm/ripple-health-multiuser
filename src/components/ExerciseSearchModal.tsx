@@ -9,6 +9,19 @@ import { LoadingIndicator } from './LoadingIndicator';
 
 const IMAGE_BASE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
 
+function CyclingImage({ images, style }: { images: string[]; style: any }) {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    if (images.length <= 1) return;
+    const t = setInterval(() => setIdx(i => (i + 1) % images.length), 2000);
+    return () => clearInterval(t);
+  }, [images.length]);
+  if (!images.length) {
+    return <View style={[style, { backgroundColor: '#D8F5EB', opacity: 0.5 }]} />;
+  }
+  return <Image source={{ uri: IMAGE_BASE + images[idx] }} style={style} resizeMode="cover" />;
+}
+
 interface ExerciseResult {
   id: string;
   name: string;
@@ -158,17 +171,13 @@ export function ExerciseSearchModal({ visible, onClose, onAdd }: Props) {
           <ScrollView contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
             <View style={[styles.exerciseChip, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
               {selected.images.length > 0 ? (
-                <Image
-                  source={{ uri: IMAGE_BASE + selected.images[0] }}
-                  style={styles.chipImage}
-                  resizeMode="cover"
-                />
+                <CyclingImage images={selected.images} style={styles.chipImage} />
               ) : (
                 <View style={[styles.chipImagePlaceholder, { backgroundColor: theme.teal.tint }]}>
-                  <Text style={{ fontSize: 22 }}>🏋️</Text>
+                  <Text style={{ fontSize: 40 }}>🏋️</Text>
                 </View>
               )}
-              <View style={{ flex: 1 }}>
+              <View style={{ padding: 14 }}>
                 <Text style={[styles.chipName, { color: theme.textStrong }]}>{selected.name}</Text>
                 {selected.primary_muscles.length > 0 && (
                   <Text style={[styles.chipMuscles, { color: theme.textSoft }]}>
@@ -369,8 +378,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   resultThumb: {
-    width: 48,
-    height: 48,
+    width: 64,
+    height: 64,
     borderRadius: 12,
   },
   resultThumbPlaceholder: {
@@ -381,22 +390,17 @@ const styles = StyleSheet.create({
   emptyMsg: { textAlign: 'center', marginTop: 40, fontSize: 14 },
   formContainer: { padding: 16, gap: 12, paddingBottom: 40 },
   exerciseChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 12,
     borderRadius: 22,
     borderWidth: 1,
+    overflow: 'hidden',
   },
   chipImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 12,
+    width: '100%',
+    height: 200,
   },
   chipImagePlaceholder: {
-    width: 64,
-    height: 64,
-    borderRadius: 12,
+    width: '100%',
+    height: 200,
     alignItems: 'center',
     justifyContent: 'center',
   },

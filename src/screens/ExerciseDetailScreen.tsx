@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, Image } from 'react-native';
 import Svg, { Polyline, Line, Text as SvgText, Rect } from 'react-native-svg';
 import { useFocusEffect } from '@react-navigation/native';
@@ -8,6 +8,19 @@ import { api } from '../api/client';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 
 const IMAGE_BASE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
+
+function CyclingImage({ images, style }: { images: string[]; style: any }) {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    if (images.length <= 1) return;
+    const t = setInterval(() => setIdx(i => (i + 1) % images.length), 2000);
+    return () => clearInterval(t);
+  }, [images.length]);
+  if (!images.length) {
+    return <View style={[style, { backgroundColor: '#D8F5EB', opacity: 0.5 }]} />;
+  }
+  return <Image source={{ uri: IMAGE_BASE + images[idx] }} style={style} resizeMode="cover" />;
+}
 
 const ZONES = [
   { name: 'very_light', label: 'Very light', color: '#8ED4D8' }, // teal
@@ -248,15 +261,10 @@ export function ExerciseDetailScreen() {
             <View key={entry.id}>
               {i > 0 && <View style={[styles.divider, { backgroundColor: theme.cardBorder }]} />}
               <View style={styles.exerciseRow}>
-                {entry.exercise.images?.length > 0 ? (
-                  <Image
-                    source={{ uri: IMAGE_BASE + entry.exercise.images[0] }}
-                    style={styles.exerciseThumb}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View style={[styles.exerciseThumb, styles.exerciseThumbPlaceholder, { backgroundColor: theme.teal.tint }]} />
-                )}
+                <CyclingImage
+                  images={entry.exercise.images ?? []}
+                  style={styles.exerciseThumb}
+                />
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.exerciseName, { color: theme.textStrong }]}>{entry.exercise.name}</Text>
                   {entry.exercise.primary_muscles.length > 0 && (
@@ -325,7 +333,7 @@ const styles = StyleSheet.create({
   zoneLegendText: { fontSize: 11 },
   noZoneHint: { fontSize: 11, lineHeight: 17 },
   exerciseRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 6 },
-  exerciseThumb: { width: 52, height: 52, borderRadius: 12, marginTop: 2 },
+  exerciseThumb: { width: 80, height: 80, borderRadius: 12, marginTop: 2 },
   exerciseThumbPlaceholder: { opacity: 0.3 },
   progressionBadge: {
     alignSelf: 'flex-start',
