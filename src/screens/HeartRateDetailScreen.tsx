@@ -252,10 +252,10 @@ export function HeartRateDetailScreen() {
 
 function makeStyles(ink: string, card: string) {
   const shadow = {
-    shadowColor: ink,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1 as const,
-    shadowRadius: 0,
+    shadowColor: "rgba(60,40,20,0.1)",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12 as const,
+    shadowRadius: 14,
     elevation: 4,
   };
   return StyleSheet.create({
@@ -276,7 +276,7 @@ function makeStyles(ink: string, card: string) {
     borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 5,
-    shadowColor: ink,
+    shadowColor: "rgba(60,40,20,0.1)",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.08,
     shadowRadius: 10,

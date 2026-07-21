@@ -116,7 +116,7 @@ export function NotificationsSettingsScreen() {
 
       {/* Mute */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>SILENCE ALL</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         {muteUntilMs ? (
           <View style={{ gap: 8 }}>
             <Text style={{ color: theme.textSoft, fontSize: 12 }}>
@@ -149,7 +149,7 @@ export function NotificationsSettingsScreen() {
 
       {/* Meal reminders */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>MEAL REMINDERS</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <ToggleRow label="Remind me to log meals" value={sn.meal_reminders?.enabled === true}
           onChange={(v) => patchMeals({ enabled: v })} theme={theme} />
         {sn.meal_reminders?.enabled === true && (
@@ -178,7 +178,7 @@ export function NotificationsSettingsScreen() {
 
       {/* Glucose spike */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>GLUCOSE SPIKE</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <Text style={[styles.desc, { color: theme.textSoft }]}>Asks if you ate something when glucose rises 30+ mg/dL in an hour.</Text>
         <ToggleRow label="Prompt on glucose spike" value={sn.glucose_spike?.enabled === true}
           onChange={(v) => save({ glucose_spike: { ...sn.glucose_spike, enabled: v } })} theme={theme} />
@@ -186,7 +186,7 @@ export function NotificationsSettingsScreen() {
 
       {/* Evening check-in */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>EVENING CHECK-IN</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <ToggleRow label="Daily end-of-day summary" value={sn.evening_checkin?.enabled === true}
           onChange={(v) => save({ evening_checkin: { ...sn.evening_checkin, enabled: v } })} theme={theme} />
         {sn.evening_checkin?.enabled === true && (
@@ -198,7 +198,7 @@ export function NotificationsSettingsScreen() {
 
       {/* Water reminder */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>WATER REMINDER</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <Text style={[styles.desc, { color: theme.textSoft }]}>Nudges every 2 hours if you haven't hit your daily glass goal.</Text>
         <ToggleRow label="Remind me to drink water" value={sn.water_reminder?.enabled === true}
           onChange={(v) => save({ water_reminder: { ...sn.water_reminder, enabled: v } })} theme={theme} />
@@ -218,7 +218,7 @@ export function NotificationsSettingsScreen() {
 
       {/* Streak protection */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>STREAK PROTECTION</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <Text style={[styles.desc, { color: theme.textSoft }]}>Warns you before midnight if you haven't logged today and have an active streak.</Text>
         <ToggleRow label="Protect my streak" value={sn.streak_protection?.enabled === true}
           onChange={(v) => save({ streak_protection: { ...sn.streak_protection, enabled: v } })} theme={theme} />
@@ -231,7 +231,7 @@ export function NotificationsSettingsScreen() {
 
       {/* Mood check-in */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>MOOD CHECK-IN</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <Text style={[styles.desc, { color: theme.textSoft }]}>Nudges around 2pm and 7pm if you haven't logged a mood check-in.</Text>
         <ToggleRow label="Remind me to check in" value={sn.mood_checkin?.enabled === true}
           onChange={(v) => save({ mood_checkin: { ...sn.mood_checkin, enabled: v } })} theme={theme} />
@@ -239,7 +239,7 @@ export function NotificationsSettingsScreen() {
 
       {/* Book reminder */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>READING REMINDER</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <Text style={[styles.desc, { color: theme.textSoft }]}>Reminds you to log reading time if you have a book in progress.</Text>
         <ToggleRow label="Remind me to read" value={sn.book_reminder?.enabled === true}
           onChange={(v) => save({ book_reminder: { ...sn.book_reminder, enabled: v } })} theme={theme} />
@@ -247,7 +247,7 @@ export function NotificationsSettingsScreen() {
 
       {/* Medication reminders */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>MEDICATION REMINDERS</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <Text style={[styles.desc, { color: theme.textSoft }]}>Reminds you when each time-of-day medication slot is due and hasn't been logged.</Text>
         <ToggleRow label="Medication reminders" value={hn.medication_reminders_enabled === true}
           onChange={(v) => saveHealth({ medication_reminders_enabled: v })} theme={theme} />
@@ -271,7 +271,7 @@ export function NotificationsSettingsScreen() {
 
       {/* Cycle reminders */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>CYCLE REMINDERS</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         {cycleEnabled ? (
           <>
             <ToggleRow label="Period approaching reminder"
@@ -305,7 +305,7 @@ export function NotificationsSettingsScreen() {
 
       {/* Activity reminder */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>ACTIVITY REMINDER</Text>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.ink }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <Text style={[styles.desc, { color: theme.textSoft }]}>Reminds you to log a hobby or activity if you have any set up.</Text>
         <ToggleRow label="Remind me to log activities" value={sn.hobby_reminder?.enabled === true}
           onChange={(v) => save({ hobby_reminder: { ...sn.hobby_reminder, enabled: v } })} theme={theme} />
@@ -317,9 +317,9 @@ export function NotificationsSettingsScreen() {
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
   groupLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.2, marginTop: 4, marginBottom: -4 },
-  card: { borderRadius: 14, borderWidth: 2, padding: 16, gap: 8 },
+  card: { borderRadius: 22, borderWidth: 2, padding: 16, gap: 8 },
   desc: { fontSize: 12, marginBottom: 4 },
   subLabel: { fontSize: 13, marginTop: 8 },
-  btn: { borderWidth: 2, borderRadius: 10, paddingVertical: 10, alignItems: "center" },
-  chip: { borderWidth: 2, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+  btn: { borderWidth: 2, borderRadius: 16, paddingVertical: 10, alignItems: "center" },
+  chip: { borderWidth: 2, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5 },
 });
