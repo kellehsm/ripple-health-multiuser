@@ -103,6 +103,35 @@ function GraceCountdown({ count, accentColor, theme, ink }: {
   );
 }
 
+// ─── Shared: large circle start button ───────────────────────────────────────
+
+function StartCircleButton({ onPress, accentColor, ink, sublabel }: {
+  onPress: () => void; accentColor: string; ink: string; sublabel?: string;
+}) {
+  return (
+    <View style={{ alignItems: "center", paddingVertical: 28, gap: 14 }}>
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel="Start"
+        style={{
+          width: 160, height: 160, borderRadius: 80,
+          backgroundColor: accentColor,
+          borderWidth: 3, borderColor: ink,
+          alignItems: "center", justifyContent: "center",
+          shadowColor: "rgba(60,40,20,0.1)",
+          shadowOffset: { width: 0, height: 14 },
+          shadowOpacity: 0.18, shadowRadius: 20, elevation: 8,
+        }}
+      >
+        <Text style={{ color: "#fff", fontSize: 28, fontWeight: "900" }}>▶</Text>
+        <Text style={{ color: "#fff", fontSize: 13, fontWeight: "800", letterSpacing: 2, marginTop: 6 }}>START</Text>
+      </Pressable>
+      {sublabel ? <Text style={{ color: ink, fontSize: 14, fontWeight: "700" }}>{sublabel}</Text> : null}
+    </View>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function MindfulnessScreen() {
@@ -246,6 +275,7 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
   const [running, setRunning] = useState(false);
   const [phase, setPhase] = useState(0);
   const [cycles, setCycles] = useState(0);
+  const [breathWaiting, setBreathWaiting] = useState<BreathPattern | null>(null);
   const [gracePending, setGracePending] = useState<BreathPattern | null>(null);
   const [graceCount, setGraceCount] = useState<number | null>(null);
 
@@ -351,7 +381,20 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
     clearGraceInterval();
     setGraceCount(null);
     setGracePending(null);
+    setBreathWaiting(null);
     stopBreathing();
+  }
+
+  function handlePatternSelect(key: BreathPattern) {
+    fullStop();
+    setBreathWaiting(key);
+  }
+
+  function handleBreathStart() {
+    if (!breathWaiting) return;
+    const key = breathWaiting;
+    setBreathWaiting(null);
+    startGrace(key);
   }
 
   function handleEndSession() {
@@ -384,6 +427,25 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
 
       {inGrace ? (
         <GraceCountdown count={graceCount} accentColor={tealSolid} theme={theme} ink={ink} />
+      ) : breathWaiting ? (
+        <>
+          <Text style={{ color: theme.textSoft, fontSize: 13, marginBottom: 2 }}>
+            {BREATH_PATTERNS[breathWaiting].label} · {BREATH_PATTERNS[breathWaiting].desc}
+          </Text>
+          <StartCircleButton
+            onPress={handleBreathStart}
+            accentColor={tealSolid}
+            ink={ink}
+            sublabel="Tap to begin"
+          />
+          <Pressable
+            onPress={() => setBreathWaiting(null)}
+            style={{ alignItems: "center", paddingVertical: 4 }}
+            accessibilityRole="button"
+          >
+            <Text style={{ color: theme.textSoft, fontSize: 13 }}>← Choose a different pattern</Text>
+          </Pressable>
+        </>
       ) : !running ? (
         <>
           <Text style={{ color: theme.textSoft, fontSize: 13, marginBottom: 10 }}>Choose a pattern to begin.</Text>
@@ -392,7 +454,7 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
             return (
               <Pressable
                 key={key}
-                onPress={() => startGrace(key)}
+                onPress={() => handlePatternSelect(key)}
                 style={[styles.card, { backgroundColor: theme.teal.tint, borderColor: theme.teal.solid }]}
                 accessibilityRole="button"
               >
@@ -400,7 +462,7 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
                   <Text style={{ color: theme.teal.fg, fontSize: 16, fontWeight: "800" }}>{p.label}</Text>
                   <Text style={{ color: theme.teal.sub, fontSize: 12, marginTop: 2 }}>{p.desc}</Text>
                 </View>
-                <Text style={{ color: theme.teal.fg, fontSize: 20 }}>▶</Text>
+                <Text style={{ color: theme.teal.fg, fontSize: 20 }}>›</Text>
               </Pressable>
             );
           })}
@@ -701,28 +763,22 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
       ) : technique === "pmr" ? (
         <View style={{ gap: 14 }}>
           {pmrReadyToStart ? (
-            // "Are you ready?" prompt before starting
-            <View style={{ alignItems: "center", gap: 18, paddingVertical: 24 }}>
-              <Text style={{ color: (theme.coral as any)?.fg, fontSize: 21, fontWeight: "900", textAlign: "center" }}>
-                Progressive Muscle Relaxation
-              </Text>
-              <View style={[styles.card, { backgroundColor: (theme.coral as any)?.tint, borderColor: (theme.coral as any)?.solid, width: "100%" }]}>
+            // "Ready?" prompt — large circle start button
+            <View style={{ gap: 12 }}>
+              <View style={[styles.card, { backgroundColor: (theme.coral as any)?.tint, borderColor: (theme.coral as any)?.solid }]}>
                 <Text style={{ color: (theme.coral as any)?.fg, fontSize: 14, lineHeight: 22, textAlign: "center" }}>
-                  {`We'll work through ${PMR_STEPS.length} muscle groups — tensing each for ${PMR_DURATION}s, then releasing for ${PMR_DURATION}s.`}
+                  {`${PMR_STEPS.length} muscle groups — ${PMR_DURATION}s tense, ${PMR_DURATION}s release each.`}
                 </Text>
-                <Text style={{ color: (theme.coral as any)?.sub, fontSize: 13, marginTop: 8, textAlign: "center" }}>
-                  Find a comfortable position — lying down or seated works best.
+                <Text style={{ color: (theme.coral as any)?.sub, fontSize: 13, marginTop: 6, textAlign: "center" }}>
+                  Find a comfortable position — lying down or seated.
                 </Text>
               </View>
-              <Pressable
+              <StartCircleButton
                 onPress={handlePmrBegin}
-                style={[styles.nextBtn, { backgroundColor: (theme.coral as any)?.solid, borderColor: ink, width: "100%", paddingVertical: 16 }]}
-                accessibilityRole="button"
-              >
-                <Text style={{ color: "#fff", fontSize: 15, fontWeight: "900", letterSpacing: 0.5 }}>
-                  I'm ready — begin →
-                </Text>
-              </Pressable>
+                accentColor={coralSolid}
+                ink={ink}
+                sublabel="Tap to begin"
+              />
             </View>
           ) : inPmrGrace ? (
             <GraceCountdown count={pmrGraceCount} accentColor={coralSolid} theme={theme} ink={ink} />
@@ -848,6 +904,7 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
   const [duration, setDuration] = useState<number | null>(null);
   const [remaining, setRemaining] = useState(0);
   const [running, setRunning] = useState(false);
+  const [meditationWaiting, setMeditationWaiting] = useState<number | null>(null);
   const [graceCount, setGraceCount] = useState<number | null>(null);
   const [gracePendingDuration, setGracePendingDuration] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -932,7 +989,7 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
     setRunning(false);
     setDuration(null);
     setRemaining(0);
-    startGrace(savedDuration);
+    setMeditationWaiting(savedDuration);
   }
 
   function fullStop() {
@@ -940,7 +997,19 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
     clearGraceInterval();
     setGraceCount(null);
     setGracePendingDuration(null);
+    setMeditationWaiting(null);
     stopSession();
+  }
+
+  function handleDurationSelect(mins: number) {
+    setMeditationWaiting(mins);
+  }
+
+  function handleMeditationStart() {
+    if (!meditationWaiting) return;
+    const mins = meditationWaiting;
+    setMeditationWaiting(null);
+    startGrace(mins);
   }
 
   useEffect(() => () => {
@@ -963,6 +1032,22 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
 
       {inGrace ? (
         <GraceCountdown count={graceCount} accentColor={purpleSolid} theme={theme} ink={ink} />
+      ) : meditationWaiting !== null ? (
+        <>
+          <StartCircleButton
+            onPress={handleMeditationStart}
+            accentColor={purpleSolid}
+            ink={ink}
+            sublabel={`${meditationWaiting} min session`}
+          />
+          <Pressable
+            onPress={() => setMeditationWaiting(null)}
+            style={{ alignItems: "center", paddingVertical: 4 }}
+            accessibilityRole="button"
+          >
+            <Text style={{ color: theme.textSoft, fontSize: 13 }}>← Choose a different duration</Text>
+          </Pressable>
+        </>
       ) : !running && !done ? (
         <>
           <Text style={{ color: theme.textSoft, fontSize: 13, marginBottom: 10 }}>Choose a duration.</Text>
@@ -970,7 +1055,7 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
             {DURATIONS.map((d) => (
               <Pressable
                 key={d}
-                onPress={() => startGrace(d)}
+                onPress={() => handleDurationSelect(d)}
                 style={{
                   borderWidth: 2, borderColor: ink, borderRadius: 22,
                   paddingVertical: 14, paddingHorizontal: 18,
