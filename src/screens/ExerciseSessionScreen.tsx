@@ -8,6 +8,7 @@ import { api } from '../api/client';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { ExerciseSearchModal } from '../components/ExerciseSearchModal';
 import { PlanExercise } from '../components/WorkoutPlannerModal';
+import { fireRestTimerDone } from '../lib/smartNotifications';
 
 const IMAGE_BASE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
 
@@ -149,6 +150,7 @@ export function ExerciseSessionScreen() {
         if (prev === null || prev <= 1) {
           clearInterval(restTimerRef.current!);
           restTimerRef.current = null;
+          fireRestTimerDone().catch(() => {});
           return null;
         }
         return prev - 1;
