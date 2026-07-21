@@ -270,6 +270,8 @@ type FrequentMeal = {
   carbs_g: number | null;
   sugar_g: number | null;
   calories: number | null;
+  caffeine_mg: number | null;
+  sodium_mg: number | null;
   frequency: number;
 };
 
@@ -279,6 +281,8 @@ type FoodResult = {
   carbs_g: number | null;
   sugar_g: number | null;
   calories: number | null;
+  caffeine_mg?: number | null;
+  sodium_mg?: number | null;
   source_db?: string;
   barcode?: string;
 };
@@ -290,6 +294,8 @@ type Meal = {
   carbs_g: number | null;
   sugar_g: number | null;
   calories: number | null;
+  caffeine_mg: number | null;
+  sodium_mg: number | null;
   logged_at?: string;
 };
 
@@ -298,6 +304,8 @@ type PendingFood = {
   carbs_g: number | null;
   sugar_g: number | null;
   calories: number | null;
+  caffeine_mg: number | null;
+  sodium_mg: number | null;
   source_food_id?: string;
   source_db?: string;
   barcode?: string;
@@ -308,7 +316,33 @@ type MacroValues = {
   carbs_g: number | null;
   sugar_g: number | null;
   calories: number | null;
+  caffeine_mg: number | null;
+  sodium_mg: number | null;
 };
+
+type QuickDrink = {
+  name: string;
+  calories: number | null;
+  caffeine_mg: number | null;
+  carbs_g: number | null;
+  sugar_g: number | null;
+  sodium_mg: number | null;
+};
+
+const QUICK_DRINKS: QuickDrink[] = [
+  { name: "Water", calories: 0, caffeine_mg: null, carbs_g: 0, sugar_g: 0, sodium_mg: null },
+  { name: "Black Coffee", calories: 5, caffeine_mg: 95, carbs_g: 0, sugar_g: 0, sodium_mg: 5 },
+  { name: "Espresso", calories: 3, caffeine_mg: 63, carbs_g: 0, sugar_g: 0, sodium_mg: 5 },
+  { name: "Latte", calories: 120, caffeine_mg: 64, carbs_g: 12, sugar_g: 12, sodium_mg: 115 },
+  { name: "Green Tea", calories: 2, caffeine_mg: 28, carbs_g: 0, sugar_g: 0, sodium_mg: null },
+  { name: "Black Tea", calories: 2, caffeine_mg: 47, carbs_g: 0, sugar_g: 0, sodium_mg: null },
+  { name: "Energy Drink", calories: 110, caffeine_mg: 80, carbs_g: 27, sugar_g: 27, sodium_mg: 105 },
+  { name: "Diet Soda", calories: 0, caffeine_mg: 46, carbs_g: 0, sugar_g: 0, sodium_mg: 40 },
+  { name: "Orange Juice", calories: 112, caffeine_mg: null, carbs_g: 26, sugar_g: 21, sodium_mg: 2 },
+  { name: "Whole Milk", calories: 149, caffeine_mg: null, carbs_g: 12, sugar_g: 12, sodium_mg: 105 },
+  { name: "Kombucha", calories: 30, caffeine_mg: 14, carbs_g: 7, sugar_g: 4, sodium_mg: 10 },
+  { name: "Protein Shake", calories: 160, caffeine_mg: null, carbs_g: 6, sugar_g: 3, sodium_mg: 180 },
+];
 
 type GlucoseReading = {
   recorded_at: string;
@@ -381,12 +415,16 @@ function buildMiniPoints(
 function formatNutrition(
   carbs_g: number | null,
   sugar_g: number | null,
-  calories: number | null
+  calories: number | null,
+  caffeine_mg?: number | null,
+  sodium_mg?: number | null,
 ): string {
   const parts: string[] = [];
+  if (calories != null) parts.push(calories + " cal");
   if (carbs_g != null) parts.push(carbs_g + "g carbs");
   if (sugar_g != null) parts.push(sugar_g + "g sugar");
-  if (calories != null) parts.push(calories + " cal");
+  if (sodium_mg != null) parts.push(sodium_mg + "mg sodium");
+  if (caffeine_mg != null) parts.push(caffeine_mg + "mg caffeine");
   return parts.join(" · ");
 }
 
@@ -409,6 +447,8 @@ function MacroEditForm({
   const [carbs, setCarbs] = useState(initial.carbs_g != null ? String(initial.carbs_g) : "");
   const [sugar, setSugar] = useState(initial.sugar_g != null ? String(initial.sugar_g) : "");
   const [cals, setCals] = useState(initial.calories != null ? String(initial.calories) : "");
+  const [caffeine, setCaffeine] = useState(initial.caffeine_mg != null ? String(initial.caffeine_mg) : "");
+  const [sodium, setSodium] = useState(initial.sodium_mg != null ? String(initial.sodium_mg) : "");
   const [nameErr, setNameErr] = useState("");
   const [macroErr, setMacroErr] = useState("");
 
@@ -420,7 +460,14 @@ function MacroEditForm({
   }
 
   function doSaveMacro() {
-    onSave({ name: name.trim(), carbs_g: parseNum(carbs), sugar_g: parseNum(sugar), calories: parseNum(cals) });
+    onSave({
+      name: name.trim(),
+      carbs_g: parseNum(carbs),
+      sugar_g: parseNum(sugar),
+      calories: parseNum(cals),
+      caffeine_mg: parseNum(caffeine),
+      sodium_mg: parseNum(sodium),
+    });
   }
 
   function handleSave() {
@@ -428,16 +475,21 @@ function MacroEditForm({
     if (!name.trim()) { setNameErr("Please enter a meal name."); valid = false; } else setNameErr("");
     const badMacro = (carbs.trim() && isNaN(parseFloat(carbs))) ||
       (sugar.trim() && isNaN(parseFloat(sugar))) ||
-      (cals.trim() && isNaN(parseFloat(cals)));
-    if (badMacro) { setMacroErr("Carbs, sugar, and calories must be numbers or left blank."); valid = false; } else setMacroErr("");
+      (cals.trim() && isNaN(parseFloat(cals))) ||
+      (caffeine.trim() && isNaN(parseFloat(caffeine))) ||
+      (sodium.trim() && isNaN(parseFloat(sodium)));
+    if (badMacro) { setMacroErr("All fields must be numbers or left blank."); valid = false; } else setMacroErr("");
     if (!valid) return;
     const carbsVal = parseNum(carbs);
     const sugarVal = parseNum(sugar);
     const calsVal = parseNum(cals);
+    const caffeineVal = parseNum(caffeine);
+    const sodiumVal = parseNum(sodium);
     const unusual: string[] = [];
     if (carbsVal !== null && carbsVal > 500) unusual.push(`${carbsVal}g carbs`);
     if (sugarVal !== null && sugarVal > 200) unusual.push(`${sugarVal}g sugar`);
     if (calsVal !== null && (calsVal > 5000 || calsVal < 0)) unusual.push(`${calsVal} cal`);
+    if (caffeineVal !== null && caffeineVal > 1000) unusual.push(`${caffeineVal}mg caffeine`);
     if (unusual.length > 0) {
       Alert.alert(
         "Does this look right?",
@@ -465,6 +517,15 @@ function MacroEditForm({
       {nameErr ? <Text style={{ color: theme.coral.solid, fontSize: 11, marginTop: -4 }}>{nameErr}</Text> : null}
       <View style={styles.macroInputRow}>
         <TextInput
+          value={cals}
+          onChangeText={v => { setCals(v); setMacroErr(""); }}
+          placeholder="kcal"
+          placeholderTextColor={theme.textSoft}
+          keyboardType="decimal-pad"
+          style={[styles.macroInput, { color: theme.textStrong }]}
+          accessibilityLabel="Calories"
+        />
+        <TextInput
           value={carbs}
           onChangeText={v => { setCarbs(v); setMacroErr(""); }}
           placeholder="g"
@@ -482,20 +543,35 @@ function MacroEditForm({
           style={[styles.macroInput, { color: theme.textStrong }]}
           accessibilityLabel="Sugar in grams"
         />
+      </View>
+      <View style={styles.macroInputRow}>
+        <Text style={[styles.macroLabel, { color: ink }]}>CALORIES</Text>
+        <Text style={[styles.macroLabel, { color: ink }]}>CARBS</Text>
+        <Text style={[styles.macroLabel, { color: ink }]}>SUGAR</Text>
+      </View>
+      <View style={styles.macroInputRow}>
         <TextInput
-          value={cals}
-          onChangeText={v => { setCals(v); setMacroErr(""); }}
-          placeholder="kcal"
+          value={caffeine}
+          onChangeText={v => { setCaffeine(v); setMacroErr(""); }}
+          placeholder="mg"
           placeholderTextColor={theme.textSoft}
           keyboardType="decimal-pad"
           style={[styles.macroInput, { color: theme.textStrong }]}
-          accessibilityLabel="Calories in kcal"
+          accessibilityLabel="Caffeine in mg"
+        />
+        <TextInput
+          value={sodium}
+          onChangeText={v => { setSodium(v); setMacroErr(""); }}
+          placeholder="mg"
+          placeholderTextColor={theme.textSoft}
+          keyboardType="decimal-pad"
+          style={[styles.macroInput, { color: theme.textStrong }]}
+          accessibilityLabel="Sodium in mg"
         />
       </View>
       <View style={styles.macroInputRow}>
-        <Text style={[styles.macroLabel, { color: ink }]}>CARBS</Text>
-        <Text style={[styles.macroLabel, { color: ink }]}>SUGAR</Text>
-        <Text style={[styles.macroLabel, { color: ink }]}>CALORIES</Text>
+        <Text style={[styles.macroLabel, { color: ink }]}>CAFFEINE</Text>
+        <Text style={[styles.macroLabel, { color: ink }]}>SODIUM</Text>
       </View>
       {macroErr ? <Text style={{ color: theme.coral.solid, fontSize: 11 }}>{macroErr}</Text> : null}
       <View style={styles.editFormButtons}>
@@ -608,8 +684,7 @@ export function MealsScreen() {
   const [loadingGlucose, setLoadingGlucose] = useState<Record<string, boolean>>({});
   const [glucoseErrors, setGlucoseErrors] = useState<Record<string, string>>({});
 
-  // ── Substance state ───────────────────────────────────────────────────────
-  const [subType, setSubType] = useState<SubstanceType>("caffeine");
+  // ── Substance state (alcohol only) ───────────────────────────────────────
   const [subQuery, setSubQuery] = useState("");
   const [subResults, setSubResults] = useState<SubstanceResult[]>([]);
   const [subSearching, setSubSearching] = useState(false);
@@ -695,6 +770,8 @@ export function MealsScreen() {
       carbs_g: food.carbs_g,
       sugar_g: food.sugar_g,
       calories: food.calories,
+      caffeine_mg: food.caffeine_mg ?? null,
+      sodium_mg: food.sodium_mg ?? null,
       source_food_id: food.source_food_id,
       source_db: food.source_db,
       barcode: food.barcode,
@@ -709,9 +786,31 @@ export function MealsScreen() {
       carbs_g: meal.carbs_g,
       sugar_g: meal.sugar_g,
       calories: meal.calories,
+      caffeine_mg: meal.caffeine_mg ?? null,
+      sodium_mg: meal.sodium_mg ?? null,
       source_food_id: meal.source_food_id ?? undefined,
       source_db: meal.source_db ?? "manual",
     });
+  }
+
+  function handleQuickDrink(drink: QuickDrink) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    api.addMeal({
+      meal_type: mealType,
+      name: drink.name,
+      carbs_g: drink.carbs_g,
+      sugar_g: drink.sugar_g,
+      calories: drink.calories,
+      caffeine_mg: drink.caffeine_mg,
+      sodium_mg: drink.sodium_mg,
+      source_db: "manual",
+    })
+      .then(function () {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        toast(drink.name + " logged.");
+        loadMeals();
+      })
+      .catch(function () { toast("Couldn't log that drink. Try again.", "error"); });
   }
 
   async function handleRefresh() {
@@ -736,6 +835,8 @@ export function MealsScreen() {
       carbs_g: recipe.carbs_g,
       sugar_g: recipe.sugar_g,
       calories: recipe.calories,
+      caffeine_mg: null,
+      sodium_mg: null,
       source_db: "recipe",
     })
       .then(function () {
@@ -763,7 +864,8 @@ export function MealsScreen() {
         values.name !== pendingFood.name ||
         values.carbs_g !== pendingFood.carbs_g ||
         values.calories !== pendingFood.calories ||
-        values.sugar_g !== pendingFood.sugar_g;
+        values.sugar_g !== pendingFood.sugar_g ||
+        values.caffeine_mg !== pendingFood.caffeine_mg;
       if (changed) {
         invalidateBarcodeCache(barcode);
         api.saveBarcodeCorrection(barcode, {
@@ -771,6 +873,7 @@ export function MealsScreen() {
           carbs_g: values.carbs_g,
           calories: values.calories,
           sugar_g: values.sugar_g,
+          caffeine_mg: values.caffeine_mg,
         }).catch(function () {});
       }
     }
@@ -798,7 +901,12 @@ export function MealsScreen() {
       meal_type: mealType,
       source_food_id: pendingFood.source_food_id,
       source_db: pendingFood.source_db ?? "manual",
-      ...values,
+      name: values.name,
+      carbs_g: values.carbs_g,
+      sugar_g: values.sugar_g,
+      calories: values.calories,
+      caffeine_mg: values.caffeine_mg,
+      sodium_mg: values.sodium_mg,
     })
       .then(function () {
         setPendingFood(null);
@@ -850,7 +958,7 @@ export function MealsScreen() {
     setSubSearching(true);
     setSubSearchError(null);
     setPendingSub(null);
-    api.searchSubstances(q, subType)
+    api.searchSubstances(q, "alcohol")
       .then(function (data: SubstanceResult[]) {
         if (seq !== subSearchSeqRef.current) return;
         setSubResults(Array.isArray(data) ? data : []);
@@ -875,7 +983,7 @@ export function MealsScreen() {
     setSubResults([]);
     setPendingSub({
       name: result.name,
-      substance_type: subType,
+      substance_type: "alcohol",
       caffeine_mg: result.caffeine_mg ?? null,
       abv_percent: result.abv_percent ?? null,
       volume_ml: null,
@@ -966,12 +1074,16 @@ export function MealsScreen() {
   }
 
   const totals = meals.length > 0 ? {
+    calories: meals.some(function (m) { return m.calories != null; })
+      ? Math.round(meals.reduce(function (s, m) { return s + (Number(m.calories) || 0); }, 0)) : null,
     carbs: meals.some(function (m) { return m.carbs_g != null; })
       ? Math.round(meals.reduce(function (s, m) { return s + (Number(m.carbs_g) || 0); }, 0)) : null,
     sugar: meals.some(function (m) { return m.sugar_g != null; })
       ? Math.round(meals.reduce(function (s, m) { return s + (Number(m.sugar_g) || 0); }, 0)) : null,
-    calories: meals.some(function (m) { return m.calories != null; })
-      ? Math.round(meals.reduce(function (s, m) { return s + (Number(m.calories) || 0); }, 0)) : null,
+    caffeine: meals.some(function (m) { return m.caffeine_mg != null; })
+      ? Math.round(meals.reduce(function (s, m) { return s + (Number(m.caffeine_mg) || 0); }, 0)) : null,
+    sodium: meals.some(function (m) { return m.sodium_mg != null; })
+      ? Math.round(meals.reduce(function (s, m) { return s + (Number(m.sodium_mg) || 0); }, 0)) : null,
   } : null;
 
   return (
@@ -981,25 +1093,37 @@ export function MealsScreen() {
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
     >
-      {/* Totals strip — 3 solid-color blocks */}
+      {/* Totals strip */}
       {totals !== null && (
         <View style={styles.totalsRow}>
+          {totals.calories !== null ? (
+            <View style={[styles.totalBlock, { backgroundColor: theme.berry.solid }]}>
+              <Text style={[styles.totalBlockLabel, { color: onSolid(theme.berry.solid) }]}>CAL</Text>
+              <Text style={[styles.totalBlockValue, { color: onSolid(theme.berry.solid) }]} numberOfLines={1} adjustsFontSizeToFit>{totals.calories}</Text>
+            </View>
+          ) : null}
           {totals.carbs !== null ? (
             <View style={[styles.totalBlock, { backgroundColor: theme.teal.solid }]}>
               <Text style={[styles.totalBlockLabel, { color: onSolid(theme.teal.solid) }]}>CARBS</Text>
-              <Text style={[styles.totalBlockValue, { color: onSolid(theme.teal.solid) }]}>{totals.carbs}g</Text>
+              <Text style={[styles.totalBlockValue, { color: onSolid(theme.teal.solid) }]} numberOfLines={1} adjustsFontSizeToFit>{totals.carbs}g</Text>
             </View>
           ) : null}
           {totals.sugar !== null ? (
             <View style={[styles.totalBlock, { backgroundColor: theme.coral.solid }]}>
               <Text style={[styles.totalBlockLabel, { color: onSolid(theme.coral.solid) }]}>SUGAR</Text>
-              <Text style={[styles.totalBlockValue, { color: onSolid(theme.coral.solid) }]}>{totals.sugar}g</Text>
+              <Text style={[styles.totalBlockValue, { color: onSolid(theme.coral.solid) }]} numberOfLines={1} adjustsFontSizeToFit>{totals.sugar}g</Text>
             </View>
           ) : null}
-          {totals.calories !== null ? (
-            <View style={[styles.totalBlock, { backgroundColor: theme.berry.solid }]}>
-              <Text style={[styles.totalBlockLabel, { color: onSolid(theme.berry.solid) }]}>CALORIES</Text>
-              <Text style={[styles.totalBlockValue, { color: onSolid(theme.berry.solid) }]}>{totals.calories}</Text>
+          {totals.sodium !== null ? (
+            <View style={[styles.totalBlock, { backgroundColor: theme.amber.solid }]}>
+              <Text style={[styles.totalBlockLabel, { color: onSolid(theme.amber.solid) }]}>SODIUM</Text>
+              <Text style={[styles.totalBlockValue, { color: onSolid(theme.amber.solid) }]} numberOfLines={1} adjustsFontSizeToFit>{totals.sodium}mg</Text>
+            </View>
+          ) : null}
+          {totals.caffeine !== null ? (
+            <View style={[styles.totalBlock, { backgroundColor: theme.violet.solid }]}>
+              <Text style={[styles.totalBlockLabel, { color: onSolid(theme.violet.solid) }]}>CAFFEINE</Text>
+              <Text style={[styles.totalBlockValue, { color: onSolid(theme.violet.solid) }]} numberOfLines={1} adjustsFontSizeToFit>{totals.caffeine}mg</Text>
             </View>
           ) : null}
         </View>
@@ -1010,6 +1134,29 @@ export function MealsScreen() {
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Log a meal</Text>
 
         {/* Frequent meals + recipes */}
+        {/* Quick drinks row — always visible */}
+        <View style={styles.frequentSection}>
+          <Text style={[styles.sectionLabel, { color: theme.textSoft }]}>DRINKS</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.frequentRow}>
+            {QUICK_DRINKS.map(function (drink) {
+              return (
+                <Pressable
+                  key={drink.name}
+                  onPress={function () { handleQuickDrink(drink); }}
+                  style={[styles.frequentChip, { backgroundColor: theme.teal.tint }]}
+                >
+                  <Text style={{ color: theme.teal.fg, fontSize: 13, fontWeight: "700" }} numberOfLines={1}>{drink.name}</Text>
+                  {(drink.calories != null && drink.calories > 0) || drink.caffeine_mg != null ? (
+                    <Text style={{ color: theme.teal.sub, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
+                      {[drink.calories != null && drink.calories > 0 ? drink.calories + " cal" : null, drink.caffeine_mg != null ? drink.caffeine_mg + "mg caf" : null].filter(Boolean).join(" · ")}
+                    </Text>
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+
         {(frequentMeals.length > 0 || recipes.length > 0) ? (
           <View style={styles.frequentSection}>
             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
@@ -1122,7 +1269,7 @@ export function MealsScreen() {
           </Pressable>
           <Pressable
             onPress={function () {
-              setPendingFood({ name: "", carbs_g: null, sugar_g: null, calories: null, source_db: "manual" });
+              setPendingFood({ name: "", carbs_g: null, sugar_g: null, calories: null, caffeine_mg: null, sodium_mg: null, source_db: "manual" });
               setSearchResults([]);
             }}
             style={styles.secondaryBtn}
@@ -1146,7 +1293,7 @@ export function MealsScreen() {
         ) : searchResults.length > 0 ? (
           <View style={{ marginTop: 12, gap: 8 }}>
             {searchResults.map(function (food, i) {
-              const nutrition = formatNutrition(food.carbs_g, food.sugar_g, food.calories);
+              const nutrition = formatNutrition(food.carbs_g, food.sugar_g, food.calories, food.caffeine_mg, food.sodium_mg);
               return (
                 <Pressable
                   key={food.source_food_id ?? String(i)}
@@ -1165,59 +1312,20 @@ export function MealsScreen() {
         ) : null}
       </View>
 
-      {/* Caffeine & Alcohol */}
-      <View style={[styles.card, { backgroundColor: theme.coral.tint }]}>
-        <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Caffeine & Alcohol</Text>
+      {/* Booze */}
+      <View style={[styles.card, { backgroundColor: theme.purple.tint, borderColor: theme.cardBorder }]}>
+        <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Booze</Text>
 
-        {/* Totals strip */}
-        {(subTotals.caffeine_mg > 0 || subTotals.standard_drinks > 0) && (
-          <View style={{ flexDirection: "row", gap: 8, marginBottom: 10 }}>
-            {subTotals.caffeine_mg > 0 && (
-              <View style={[styles.totalBlock, { backgroundColor: theme.coral.sub, flex: 1 }]}>
-                <Text style={[styles.totalBlockLabel, { color: onSolid(theme.coral.sub) }]}>CAFFEINE TODAY</Text>
-                <Text style={[styles.totalBlockValue, { color: onSolid(theme.coral.sub) }]}>{subTotals.caffeine_mg}mg</Text>
-              </View>
-            )}
-            {subTotals.standard_drinks > 0 && (
-              <View style={[styles.totalBlock, { backgroundColor: theme.purple.solid, flex: 1 }]}>
-                <Text style={[styles.totalBlockLabel, { color: onSolid(theme.purple.solid) }]}>STD DRINKS TODAY</Text>
-                <Text style={[styles.totalBlockValue, { color: onSolid(theme.purple.solid) }]}>{subTotals.standard_drinks}</Text>
-              </View>
-            )}
+        {subTotals.standard_drinks > 0 && (
+          <View style={[styles.totalBlock, { backgroundColor: theme.purple.solid, marginBottom: 10 }]}>
+            <Text style={[styles.totalBlockLabel, { color: onSolid(theme.purple.solid) }]}>STD DRINKS TODAY</Text>
+            <Text style={[styles.totalBlockValue, { color: onSolid(theme.purple.solid) }]}>{subTotals.standard_drinks}</Text>
           </View>
         )}
 
-        {/* Type toggle */}
-        <View style={[styles.chipRow, { marginBottom: 10 }]}>
-          {(["caffeine", "alcohol"] as SubstanceType[]).map(function (t) {
-            const selected = subType === t;
-            const activeColor = t === "caffeine" ? theme.coral.sub : theme.purple.solid;
-            return (
-              <Pressable
-                key={t}
-                onPress={function () {
-                  setSubType(t);
-                  setSubResults([]);
-                  setPendingSub(null);
-                  setSubQuery("");
-                }}
-                style={[
-                  styles.typeChip,
-                  { backgroundColor: selected ? activeColor : card, borderColor: selected ? activeColor : ink },
-                ]}
-              >
-                <Text style={{ color: selected ? "#ffffff" : ink, fontSize: 11, fontWeight: "800", letterSpacing: 0.3 }}>
-                  {t === "caffeine" ? "CAFFEINE" : "ALCOHOL"}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {/* Search */}
         <View style={styles.searchRow}>
           <TextInput
-            placeholder={subType === "caffeine" ? "search coffee, tea, energy drinks..." : "search beer, wine, spirits..."}
+            placeholder="search beer, wine, spirits..."
             value={subQuery}
             onChangeText={handleSubQueryChange}
             onSubmitEditing={() => handleSubSearch()}
@@ -1225,35 +1333,25 @@ export function MealsScreen() {
             placeholderTextColor={theme.textSoft}
           />
           <Pressable
-            style={[styles.actionBtn, { backgroundColor: subType === "caffeine" ? theme.coral.sub : theme.purple.solid }]}
+            style={[styles.actionBtn, { backgroundColor: theme.purple.solid }]}
             onPress={() => handleSubSearch()}
           >
             {subSearching ? (
-              <LoadingIndicator color={onSolid(subType === "caffeine" ? theme.coral.sub : theme.purple.solid)} size="small" />
+              <LoadingIndicator color={onSolid(theme.purple.solid)} size="small" />
             ) : (
-              <Text style={[styles.actionBtnText, { color: onSolid(subType === "caffeine" ? theme.coral.sub : theme.purple.solid) }]}>SEARCH</Text>
+              <Text style={[styles.actionBtnText, { color: onSolid(theme.purple.solid) }]}>SEARCH</Text>
             )}
           </Pressable>
         </View>
 
         <View style={[styles.belowSearchRow, { marginBottom: 4 }]}>
-          <Pressable
-            onPress={function () { setSubScannerVisible(true); }}
-            style={styles.secondaryBtn}
-          >
+          <Pressable onPress={function () { setSubScannerVisible(true); }} style={styles.secondaryBtn}>
             <Ionicons name="barcode-outline" size={15} color={ink} />
             <Text style={styles.secondaryBtnText}>SCAN BARCODE</Text>
           </Pressable>
           <Pressable
             onPress={function () {
-              setPendingSub({
-                name: "",
-                substance_type: subType,
-                caffeine_mg: null,
-                abv_percent: null,
-                volume_ml: null,
-                source_db: "manual",
-              });
+              setPendingSub({ name: "", substance_type: "alcohol", caffeine_mg: null, abv_percent: null, volume_ml: null, source_db: "manual" });
               setSubResults([]);
             }}
             style={styles.secondaryBtn}
@@ -1262,17 +1360,11 @@ export function MealsScreen() {
           </Pressable>
         </View>
 
-        {subSearchError ? (
-          <Text style={{ color: theme.coral.sub, fontSize: 12, marginTop: 4 }}>{subSearchError}</Text>
-        ) : null}
+        {subSearchError ? <Text style={{ color: theme.purple.sub, fontSize: 12, marginTop: 4 }}>{subSearchError}</Text> : null}
 
-        {/* Search results */}
         {!pendingSub && subResults.length > 0 && (
           <View style={{ marginTop: 8, gap: 8 }}>
             {subResults.map(function (r, i) {
-              const detail = subType === "caffeine"
-                ? (r.caffeine_mg != null ? r.caffeine_mg + "mg per 100g" : null)
-                : (r.abv_percent != null ? r.abv_percent + "% ABV" : null);
               return (
                 <Pressable
                   key={r.source_food_id ?? String(i)}
@@ -1281,24 +1373,16 @@ export function MealsScreen() {
                 >
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: theme.textStrong, fontSize: 13, fontWeight: "600" }} numberOfLines={1}>{r.name}</Text>
-                    {detail ? <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 2 }}>{detail}</Text> : null}
+                    {r.abv_percent != null ? <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 2 }}>{r.abv_percent}% ABV</Text> : null}
                   </View>
-                  <Ionicons name="create-outline" size={18} color={subType === "caffeine" ? theme.coral.sub : theme.purple.solid} />
+                  <Ionicons name="create-outline" size={18} color={theme.purple.solid} />
                 </Pressable>
               );
             })}
           </View>
         )}
 
-        {/* Edit forms */}
-        {pendingSub && pendingSub.substance_type === "caffeine" ? (
-          <CaffeineForm
-            initial={pendingSub}
-            onSave={handleLogSubstance}
-            onCancel={function () { setPendingSub(null); }}
-            theme={theme}
-          />
-        ) : pendingSub && pendingSub.substance_type === "alcohol" ? (
+        {pendingSub ? (
           <AlcoholForm
             initial={pendingSub}
             onSave={handleLogSubstance}
@@ -1307,32 +1391,22 @@ export function MealsScreen() {
           />
         ) : null}
 
-        {/* Today's logged substances */}
         {subLoading ? (
           <LoadingIndicator style={{ marginTop: 8 }} />
-        ) : subEntries.length > 0 ? (
+        ) : subEntries.filter(e => e.substance_type === "alcohol").length > 0 ? (
           <View style={{ marginTop: 10, gap: 6 }}>
             <Text style={[styles.sectionLabel, { color: theme.textSoft }]}>TODAY</Text>
-            {subEntries.map(function (entry) {
-              const detail = entry.substance_type === "caffeine"
-                ? (entry.caffeine_mg != null ? entry.caffeine_mg + "mg caffeine" : "caffeine")
-                : (entry.abv_percent != null && entry.volume_ml != null
-                  ? entry.abv_percent + "% · " + entry.volume_ml + "mL"
-                  : "alcohol");
-              const iconColor = entry.substance_type === "caffeine" ? theme.coral.sub : theme.purple.solid;
+            {subEntries.filter(e => e.substance_type === "alcohol").map(function (entry) {
+              const detail = entry.abv_percent != null && entry.volume_ml != null
+                ? entry.abv_percent + "% · " + entry.volume_ml + "mL"
+                : "alcohol";
               return (
                 <View key={entry.id} style={[styles.resultRow, { borderColor: ink }]}>
-                  <View style={[styles.mealIconTile, { backgroundColor: iconColor, width: 32, height: 32 }]}>
-                    <Ionicons
-                      name={entry.substance_type === "caffeine" ? "cafe-outline" : "wine-outline"}
-                      size={14}
-                      color={onSolid(iconColor)}
-                    />
+                  <View style={[styles.mealIconTile, { backgroundColor: theme.purple.solid, width: 32, height: 32 }]}>
+                    <Ionicons name="wine-outline" size={14} color={onSolid(theme.purple.solid)} />
                   </View>
                   <View style={{ flex: 1, marginLeft: 8 }}>
-                    <Text style={{ color: theme.textStrong, fontSize: 13, fontWeight: "600" }} numberOfLines={1}>
-                      {entry.name || (entry.substance_type === "caffeine" ? "Caffeine" : "Alcohol")}
-                    </Text>
+                    <Text style={{ color: theme.textStrong, fontSize: 13, fontWeight: "600" }} numberOfLines={1}>{entry.name || "Alcohol"}</Text>
                     <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 1 }}>{detail}</Text>
                   </View>
                   <Pressable onPress={function () { handleDeleteSubstance(entry); }} hitSlop={8}>
@@ -1359,7 +1433,7 @@ export function MealsScreen() {
           <Text style={{ color: theme.textSoft, fontSize: 12, marginTop: 10 }}>No meals logged yet today.</Text>
         ) : (
           meals.map(function (meal) {
-            const nutrition = formatNutrition(meal.carbs_g, meal.sugar_g, meal.calories);
+            const nutrition = formatNutrition(meal.carbs_g, meal.sugar_g, meal.calories, meal.caffeine_mg, meal.sodium_mg);
             const isExpanded = expandedMealId === meal.id;
             const isEditing = editingMealId === meal.id;
             const readings = glucoseData[meal.id] ?? [];
@@ -1409,7 +1483,7 @@ export function MealsScreen() {
                 {isEditing ? (
                   <View style={[styles.glucosePanel, { borderTopColor: theme.cardBorder }]}>
                     <MacroEditForm
-                      initial={{ name: meal.name, carbs_g: meal.carbs_g, sugar_g: meal.sugar_g, calories: meal.calories }}
+                      initial={{ name: meal.name, carbs_g: meal.carbs_g, sugar_g: meal.sugar_g, calories: meal.calories, caffeine_mg: meal.caffeine_mg, sodium_mg: meal.sodium_mg }}
                       saveLabel="Save"
                       onSave={function (values) { handleSaveEdit(meal.id, values); }}
                       onCancel={function () { setEditingMealId(null); }}
@@ -1440,17 +1514,10 @@ export function MealsScreen() {
       <BarcodeScannerModal
         visible={subScannerVisible}
         onClose={function () { setSubScannerVisible(false); }}
-        mode={subType}
+        mode="alcohol"
         onSubstanceResult={function (substance) { handleSelectSubResult(substance); }}
         onManual={function () {
-          setPendingSub({
-            name: "",
-            substance_type: subType,
-            caffeine_mg: null,
-            abv_percent: null,
-            volume_ml: null,
-            source_db: "manual",
-          });
+          setPendingSub({ name: "", substance_type: "alcohol", caffeine_mg: null, abv_percent: null, volume_ml: null, source_db: "manual" });
         }}
       />
       <RecipeBuilderModal
