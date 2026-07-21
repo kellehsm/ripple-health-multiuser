@@ -307,6 +307,7 @@ export default function App() {
           )}
           {biometricLocked && (
             <View style={lockStyles.overlay}>
+              <RippleLoader size="large" style={lockStyles.loader} />
               <Text style={lockStyles.appName}>Ripple</Text>
               <Text style={lockStyles.subtitle}>Your data is private</Text>
               <Pressable onPress={handleBiometricUnlock} style={lockStyles.unlockBtn}>
@@ -338,6 +339,7 @@ const lockStyles = StyleSheet.create({
     justifyContent: "center",
     zIndex: 9999,
   },
+  loader: { marginBottom: 24 },
   appName: { color: "#FFFFFF", fontSize: 32, fontWeight: "800", marginBottom: 8 },
   subtitle: { color: "#9BA3AF", fontSize: 14, marginBottom: 40 },
   unlockBtn: {
