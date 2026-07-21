@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { useTabPreferences } from "../hooks/useTabPreferences";
 import {
@@ -20,6 +20,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { UndoBanner } from "../components/UndoBanner";
+import { HOBBY_LIST } from "../lib/hobbyList";
 
 
 type Book = {
@@ -306,12 +307,28 @@ export function LifeScreen() {
     setUndoInfo(null);
   }
 
-  function handleCreateHobby() {
-    if (!hobbyName.trim()) return;
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const suggestions = useMemo(() => {
+    const q = hobbyName.trim().toLowerCase();
+    if (!q) return [];
+    return HOBBY_LIST.filter(h => h.toLowerCase().includes(q)).slice(0, 8);
+  }, [hobbyName]);
+
+  const exactMatch = useMemo(
+    () => HOBBY_LIST.some(h => h.toLowerCase() === hobbyName.trim().toLowerCase()),
+    [hobbyName]
+  );
+
+  function handleCreateHobby(nameOverride?: string) {
+    const name = (nameOverride ?? hobbyName).trim();
+    if (!name) return;
+    setShowSuggestions(false);
     setCreatingHobby(true);
     setCreateHobbyError(null);
     api.createHobby({
-      name: hobbyName.trim(),
+      name,
       unit_label: "minutes",
       icon: "star",
       color_key: "coral",
@@ -319,6 +336,11 @@ export function LifeScreen() {
       .then(function () { setHobbyName(""); loadHobbies(); })
       .catch(function (e: Error) { setCreateHobbyError(e.message || "Failed to create hobby"); })
       .finally(function () { setCreatingHobby(false); });
+  }
+
+  function handleSelectSuggestion(name: string) {
+    if (blurTimer.current) clearTimeout(blurTimer.current);
+    handleCreateHobby(name);
   }
 
   async function handleLogHobby(hobbyId: string, amount: number) {
@@ -494,17 +516,54 @@ export function LifeScreen() {
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Hobbies</Text>
         <View style={styles.searchRow}>
           <TextInput
-            placeholder="add a hobby..."
+            placeholder="search hobbies..."
             value={hobbyName}
-            onChangeText={setHobbyName}
-            onSubmitEditing={handleCreateHobby}
+            onChangeText={(v) => { setHobbyName(v); setShowSuggestions(true); }}
+            onSubmitEditing={() => handleCreateHobby()}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => {
+              blurTimer.current = setTimeout(() => setShowSuggestions(false), 150);
+            }}
             style={[styles.textInput, { color: theme.textStrong, flex: 1 }]}
             placeholderTextColor={theme.textSoft}
           />
-          <Pressable style={[styles.actionBtn, { backgroundColor: theme.teal.solid }]} onPress={handleCreateHobby}>
+          <Pressable style={[styles.actionBtn, { backgroundColor: theme.teal.solid }]} onPress={() => handleCreateHobby()}>
             {creatingHobby ? <LoadingIndicator color="#fff" /> : <Text style={styles.actionBtnText}>ADD</Text>}
           </Pressable>
         </View>
+
+        {/* Autocomplete dropdown */}
+        {showSuggestions && hobbyName.trim().length > 0 && (suggestions.length > 0 || !exactMatch) && (
+          <View style={[styles.suggestionsBox, { borderColor: ink, backgroundColor: theme.card }]}>
+            {suggestions.map((s, i) => (
+              <Pressable
+                key={s}
+                onPress={() => handleSelectSuggestion(s)}
+                style={[styles.suggestionRow, i > 0 && { borderTopWidth: 1, borderTopColor: theme.cardBorder }]}
+              >
+                <Ionicons name="star-outline" size={14} color={theme.coral.solid} style={{ marginRight: 8 }} />
+                <Text style={{ color: theme.textStrong, fontSize: 14, flex: 1 }}>{s}</Text>
+                <Ionicons name="add-circle-outline" size={18} color={theme.teal.solid} />
+              </Pressable>
+            ))}
+            {!exactMatch && hobbyName.trim().length > 0 && (
+              <Pressable
+                onPress={() => handleCreateHobby()}
+                style={[
+                  styles.suggestionRow,
+                  suggestions.length > 0 && { borderTopWidth: 1, borderTopColor: theme.cardBorder },
+                  { backgroundColor: theme.teal.tint },
+                ]}
+              >
+                <Ionicons name="add-circle" size={14} color={theme.teal.solid} style={{ marginRight: 8 }} />
+                <Text style={{ color: theme.teal.fg, fontSize: 14, fontWeight: "700", flex: 1 }}>
+                  Add "{hobbyName.trim()}"
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+
         {createHobbyError ? <Text style={{ color: theme.teal.sub, fontSize: 12, marginTop: 6 }}>{createHobbyError}</Text> : null}
         {logHobbyError ? <Text style={{ color: theme.teal.sub, fontSize: 12, marginTop: 6 }}>{logHobbyError}</Text> : null}
         {hobbyListError ? <Text style={{ color: theme.teal.sub, fontSize: 12, marginTop: 6 }}>{hobbyListError}</Text> : null}
@@ -720,6 +779,24 @@ function makeStyles(ink: string, card: string, border: string) {
     shadowOpacity: 0.08,
     shadowRadius: 10,
     elevation: 2,
+  },
+
+  suggestionsBox: {
+    marginTop: 8,
+    borderRadius: 16,
+    borderWidth: 2,
+    overflow: "hidden",
+    shadowColor: "rgba(60,40,20,0.1)",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.10,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  suggestionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 11,
   },
 
   hobbyIconTile: {
