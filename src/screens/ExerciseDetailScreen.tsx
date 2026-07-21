@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Pressable, Image } from 'react-native';
 import Svg, { Polyline, Line, Text as SvgText, Rect } from 'react-native-svg';
 import { useFocusEffect } from '@react-navigation/native';
@@ -8,6 +8,19 @@ import { api } from '../api/client';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 
 const IMAGE_BASE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
+
+function CyclingImage({ images, style }: { images: string[]; style: any }) {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    if (images.length <= 1) return;
+    const t = setInterval(() => setIdx(i => (i + 1) % images.length), 2000);
+    return () => clearInterval(t);
+  }, [images.length]);
+  if (!images.length) {
+    return <View style={[style, { backgroundColor: '#D8F5EB', opacity: 0.5 }]} />;
+  }
+  return <Image source={{ uri: IMAGE_BASE + images[idx] }} style={style} resizeMode="cover" />;
+}
 
 const ZONES = [
   { name: 'very_light', label: 'Very light', color: '#8ED4D8' }, // teal
@@ -239,45 +252,41 @@ export function ExerciseDetailScreen() {
       )}
 
       {/* Exercise list */}
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: ink }]}>
-        <Text style={[styles.sectionLabel, { color: theme.textSoft }]}>EXERCISES LOGGED</Text>
-        {session.entries.length === 0 ? (
+      <Text style={[styles.sectionLabel, { color: theme.textSoft, marginTop: 4 }]}>EXERCISES LOGGED</Text>
+      {session.entries.length === 0 ? (
+        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <Text style={{ color: theme.textSoft, fontSize: 13 }}>No exercises logged in this session.</Text>
-        ) : (
-          session.entries.map((entry, i) => (
-            <View key={entry.id}>
-              {i > 0 && <View style={[styles.divider, { backgroundColor: theme.cardBorder }]} />}
-              <View style={styles.exerciseRow}>
-                {entry.exercise.images?.length > 0 ? (
-                  <Image
-                    source={{ uri: IMAGE_BASE + entry.exercise.images[0] }}
-                    style={styles.exerciseThumb}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View style={[styles.exerciseThumb, styles.exerciseThumbPlaceholder, { backgroundColor: theme.teal.tint }]} />
+        </View>
+      ) : (
+        session.entries.map((entry) => (
+          <View key={entry.id} style={[styles.exerciseCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+            <CyclingImage
+              images={entry.exercise.images ?? []}
+              style={styles.exerciseImage}
+            />
+            <View style={styles.exerciseCardBody}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.exerciseName, { color: theme.textStrong }]}>{entry.exercise.name}</Text>
+                {entry.exercise.primary_muscles.length > 0 && (
+                  <Text style={[styles.exerciseMuscles, { color: theme.textSoft }]}>
+                    {entry.exercise.primary_muscles.slice(0, 3).join(', ')}
+                  </Text>
                 )}
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.exerciseName, { color: theme.textStrong }]}>{entry.exercise.name}</Text>
-                  {entry.exercise.primary_muscles.length > 0 && (
-                    <Text style={[styles.exerciseMuscles, { color: theme.textSoft }]}>
-                      {entry.exercise.primary_muscles.slice(0, 2).join(', ')}
+                {entry.all_sets_maxed === true && entry.weight_used != null && (
+                  <View style={[styles.progressionBadge, { backgroundColor: theme.teal.tint, borderColor: theme.teal.solid }]}>
+                    <Text style={[styles.progressionText, { color: theme.teal.sub }]}>
+                      All sets maxed — add weight next time
                     </Text>
-                  )}
-                  {entry.all_sets_maxed === true && entry.weight_used != null && (
-                    <View style={[styles.progressionBadge, { backgroundColor: theme.teal.tint, borderColor: theme.teal.solid }]}>
-                      <Text style={[styles.progressionText, { color: theme.teal.sub }]}>
-                        All sets maxed — add weight next time
-                      </Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={[styles.exerciseDetail, { color: theme.teal.fg }]}>{entryLabel(entry)}</Text>
+                  </View>
+                )}
+              </View>
+              <View style={[styles.exerciseDetailChip, { backgroundColor: theme.teal.tint, borderColor: theme.teal.solid }]}>
+                <Text style={[styles.exerciseDetail, { color: theme.teal.sub }]}>{entryLabel(entry)}</Text>
               </View>
             </View>
-          ))
-        )}
-      </View>
+          </View>
+        ))
+      )}
     </ScrollView>
   );
 }
@@ -324,9 +333,26 @@ const styles = StyleSheet.create({
   zoneSwatch: { width: 10, height: 10, borderRadius: 5 },
   zoneLegendText: { fontSize: 11 },
   noZoneHint: { fontSize: 11, lineHeight: 17 },
-  exerciseRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 6 },
-  exerciseThumb: { width: 52, height: 52, borderRadius: 12, marginTop: 2 },
-  exerciseThumbPlaceholder: { opacity: 0.3 },
+  exerciseCard: {
+    borderRadius: 22,
+    borderWidth: 2,
+    overflow: 'hidden',
+    shadowColor: 'rgba(60,40,20,0.1)',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.10,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  exerciseImage: { width: '100%', height: 220 },
+  exerciseCardBody: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 14 },
+  exerciseDetailChip: {
+    borderRadius: 12,
+    borderWidth: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    alignSelf: 'flex-start',
+    marginTop: 2,
+  },
   progressionBadge: {
     alignSelf: 'flex-start',
     marginTop: 4,
