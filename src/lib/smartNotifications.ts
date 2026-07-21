@@ -194,15 +194,15 @@ export async function checkGlucoseSpike(settings: any, now: Date) {
     await notifee.displayNotification({
       id: "glucose-spike",
       title: "Glucose rising \u{1F4C8}",
-      body: `Up ${rise} mg/dL in the last hour (${earliest} → ${latest} mg/dL${rangeNote}). Worth logging if you ate recently.`,
+      body: `Up ${rise} mg/dL in the last hour (${earliest} → ${latest} mg/dL${rangeNote}). Worth logging if you ate or drank something recently.`,
       data: { target: "meals", action: "add" },
       android: {
         channelId: CH_GLUCOSE,
         smallIcon: "ic_launcher",
         pressAction: { id: "default", launchActivity: "default" },
         actions: [
-          { title: "Log a Meal",  pressAction: { id: "log-meal",     launchActivity: "default" } },
-          { title: "Dismiss",     pressAction: { id: "dismiss-spike" } },
+          { title: "Log Meal / Drink", pressAction: { id: "log-meal", launchActivity: "default" } },
+          { title: "Dismiss",          pressAction: { id: "dismiss-spike" } },
         ],
       },
     });
