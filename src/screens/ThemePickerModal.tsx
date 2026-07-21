@@ -14,16 +14,16 @@ import { PALETTES, PALETTE_GROUPS } from "../theme/palettes";
 import type { Theme } from "../theme/theme";
 
 const BEST_FOR: Record<string, string> = {
-  "morning-mist":   "Warm & calm — the classic default",
-  "pale-sage":      "Outdoor athletes, botanical vibes",
-  "blush-hour":     "Wellness journaling, warm pastels",
-  "jewel-light":    "Vibrant jewel tones, crisp contrast",
-  "clean-slate":    "Minimal & modern, bold accents",
-  "midnight-steel": "Professional dark, data-focused",
-  "deep-navy":      "Tech aesthetic, AMOLED screens",
-  "velvet-dusk":    "Evening reflection, plum ambiance",
-  "forest-night":   "Earthy dark, warm forest glow",
-  "espresso":       "Coffee-shop comfort, warm dark",
+  "morning-mist":   "Warm cream & soft greens — the classic default",
+  "pale-sage":      "Botanical greens, terracotta & ochre — earthy calm",
+  "blush-hour":     "Copper, tangerine & mauve — cozy warm pastels",
+  "jewel-light":    "Sapphire, ruby & amethyst — crisp jewel contrast",
+  "clean-slate":    "Pure grays & bold saturated accents — clean & modern",
+  "midnight-steel": "Steel blue darks, bright teal & lavender — focused",
+  "deep-navy":      "Deep navy, neon cyan & electric purple — AMOLED",
+  "velvet-dusk":    "Deep plum, vivid rose & bright mint — evening glow",
+  "forest-night":   "Dark forest, lime & sky blue — earthy night mode",
+  "espresso":       "Rich espresso, terracotta & sage — warm dark comfort",
 };
 
 type Props = {
