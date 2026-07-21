@@ -378,9 +378,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   resultThumb: {
-    width: 64,
-    height: 64,
-    borderRadius: 12,
+    width: 88,
+    height: 88,
+    borderRadius: 14,
   },
   resultThumbPlaceholder: {
     opacity: 0.4,
@@ -396,11 +396,11 @@ const styles = StyleSheet.create({
   },
   chipImage: {
     width: '100%',
-    height: 200,
+    height: 260,
   },
   chipImagePlaceholder: {
     width: '100%',
-    height: 200,
+    height: 260,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -252,40 +252,41 @@ export function ExerciseDetailScreen() {
       )}
 
       {/* Exercise list */}
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: ink }]}>
-        <Text style={[styles.sectionLabel, { color: theme.textSoft }]}>EXERCISES LOGGED</Text>
-        {session.entries.length === 0 ? (
+      <Text style={[styles.sectionLabel, { color: theme.textSoft, marginTop: 4 }]}>EXERCISES LOGGED</Text>
+      {session.entries.length === 0 ? (
+        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <Text style={{ color: theme.textSoft, fontSize: 13 }}>No exercises logged in this session.</Text>
-        ) : (
-          session.entries.map((entry, i) => (
-            <View key={entry.id}>
-              {i > 0 && <View style={[styles.divider, { backgroundColor: theme.cardBorder }]} />}
-              <View style={styles.exerciseRow}>
-                <CyclingImage
-                  images={entry.exercise.images ?? []}
-                  style={styles.exerciseThumb}
-                />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.exerciseName, { color: theme.textStrong }]}>{entry.exercise.name}</Text>
-                  {entry.exercise.primary_muscles.length > 0 && (
-                    <Text style={[styles.exerciseMuscles, { color: theme.textSoft }]}>
-                      {entry.exercise.primary_muscles.slice(0, 2).join(', ')}
+        </View>
+      ) : (
+        session.entries.map((entry) => (
+          <View key={entry.id} style={[styles.exerciseCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+            <CyclingImage
+              images={entry.exercise.images ?? []}
+              style={styles.exerciseImage}
+            />
+            <View style={styles.exerciseCardBody}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.exerciseName, { color: theme.textStrong }]}>{entry.exercise.name}</Text>
+                {entry.exercise.primary_muscles.length > 0 && (
+                  <Text style={[styles.exerciseMuscles, { color: theme.textSoft }]}>
+                    {entry.exercise.primary_muscles.slice(0, 3).join(', ')}
+                  </Text>
+                )}
+                {entry.all_sets_maxed === true && entry.weight_used != null && (
+                  <View style={[styles.progressionBadge, { backgroundColor: theme.teal.tint, borderColor: theme.teal.solid }]}>
+                    <Text style={[styles.progressionText, { color: theme.teal.sub }]}>
+                      All sets maxed — add weight next time
                     </Text>
-                  )}
-                  {entry.all_sets_maxed === true && entry.weight_used != null && (
-                    <View style={[styles.progressionBadge, { backgroundColor: theme.teal.tint, borderColor: theme.teal.solid }]}>
-                      <Text style={[styles.progressionText, { color: theme.teal.sub }]}>
-                        All sets maxed — add weight next time
-                      </Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={[styles.exerciseDetail, { color: theme.teal.fg }]}>{entryLabel(entry)}</Text>
+                  </View>
+                )}
+              </View>
+              <View style={[styles.exerciseDetailChip, { backgroundColor: theme.teal.tint, borderColor: theme.teal.solid }]}>
+                <Text style={[styles.exerciseDetail, { color: theme.teal.sub }]}>{entryLabel(entry)}</Text>
               </View>
             </View>
-          ))
-        )}
-      </View>
+          </View>
+        ))
+      )}
     </ScrollView>
   );
 }
@@ -332,9 +333,26 @@ const styles = StyleSheet.create({
   zoneSwatch: { width: 10, height: 10, borderRadius: 5 },
   zoneLegendText: { fontSize: 11 },
   noZoneHint: { fontSize: 11, lineHeight: 17 },
-  exerciseRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 6 },
-  exerciseThumb: { width: 80, height: 80, borderRadius: 12, marginTop: 2 },
-  exerciseThumbPlaceholder: { opacity: 0.3 },
+  exerciseCard: {
+    borderRadius: 22,
+    borderWidth: 2,
+    overflow: 'hidden',
+    shadowColor: 'rgba(60,40,20,0.1)',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.10,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  exerciseImage: { width: '100%', height: 220 },
+  exerciseCardBody: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 14 },
+  exerciseDetailChip: {
+    borderRadius: 12,
+    borderWidth: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    alignSelf: 'flex-start',
+    marginTop: 2,
+  },
   progressionBadge: {
     alignSelf: 'flex-start',
     marginTop: 4,
