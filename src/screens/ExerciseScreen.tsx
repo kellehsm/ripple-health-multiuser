@@ -7,6 +7,8 @@ import { api } from '../api/client';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { WorkoutSetupWizard } from './WorkoutSetupWizard';
 import { useTabPreferences } from '../hooks/useTabPreferences';
+import { TooltipBubble } from '../components/TooltipBubble';
+import { hasSeenTooltip, markTooltipSeen } from '../utils/tooltipSeen';
 
 interface WorkoutSuggestion {
   type: string;
@@ -92,6 +94,7 @@ export function ExerciseScreen() {
   const { preferences, loading: prefsLoading } = useTabPreferences();
   const ink = theme.ink;
 
+  const [showTooltip, setShowTooltip] = useState(false);
   const [sessions, setSessions] = useState<ExerciseSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
@@ -118,6 +121,12 @@ export function ExerciseScreen() {
   const [dayLoading, setDayLoading] = useState(false);
 
   useFocusEffect(useCallback(() => {
+    hasSeenTooltip("exercise").then(seen => {
+      if (!seen) {
+        setShowTooltip(true);
+        markTooltipSeen("exercise");
+      }
+    });
     if (prefsLoading) return;
     if (!preferences.selectedModules.includes('exercise')) {
       navigation.navigate('Home');
@@ -202,6 +211,12 @@ export function ExerciseScreen() {
     <View style={[styles.container, { backgroundColor: theme.page }]}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
+        {showTooltip && (
+          <TooltipBubble
+            message="Your workout hub — start a session, follow your program, or review past workouts. Use the wizard to build a program and get daily split suggestions."
+            onDismiss={() => setShowTooltip(false)}
+          />
+        )}
         {/* Active session banner */}
         {openSession && (
           <Pressable

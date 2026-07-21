@@ -21,6 +21,8 @@ import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { UndoBanner } from "../components/UndoBanner";
 import { HOBBY_LIST } from "../lib/hobbyList";
+import { TooltipBubble } from "../components/TooltipBubble";
+import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
 
 
 type Book = {
@@ -85,11 +87,19 @@ export function LifeScreen() {
   const navigation = useNavigation<any>();
   const { preferences, loading: prefsLoading } = useTabPreferences();
 
+  const [showTooltip, setShowTooltip] = useState(false);
+
   useFocusEffect(useCallback(() => {
     if (prefsLoading) return;
     if (!preferences.selectedModules.includes('hobbies')) {
       navigation.navigate('Home');
     }
+    hasSeenTooltip("life").then(seen => {
+      if (!seen) {
+        setShowTooltip(true);
+        markTooltipSeen("life");
+      }
+    });
   }, [prefsLoading, preferences.selectedModules]));
 
   const [books, setBooks] = useState<Book[]>([]);
@@ -372,6 +382,12 @@ export function LifeScreen() {
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
     >
+      {showTooltip && (
+        <TooltipBubble
+          message="Track hobbies, books, journal entries, and mood here. Log time on the things you love to discover patterns in what recharges you."
+          onDismiss={() => setShowTooltip(false)}
+        />
+      )}
       {/* Completed banner */}
       <Pressable
         onPress={() => navigation.navigate("Completed")}

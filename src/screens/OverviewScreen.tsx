@@ -26,6 +26,9 @@ import { MoodPageSheet } from "../components/MoodPageSheet";
 import { MilestoneBanner } from "../components/MilestoneBanner";
 import { checkMilestone, milestoneCopy } from "../utils/milestones";
 import { resolveLayout, type DashboardLayout, type CardId } from "../constants/dashboardCards";
+import { TooltipBubble } from "../components/TooltipBubble";
+import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
+import { useFocusEffect } from "@react-navigation/native";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -323,6 +326,7 @@ export function OverviewScreen() {
 
   const [milestoneMessage, setMilestoneMessage] = useState<string | null>(null);
   const [dashboardLayout, setDashboardLayout] = useState<DashboardLayout>({ order: ["metric_chips","trends_nav","daily_summary","top_insight","timeline","insights","weekly_review","mood_pattern"], hidden: [] });
+  const [showTooltip, setShowTooltip] = useState(false);
 
   // Correlation toggle
   const [correlation, setCorrelation] = useState<"sleep" | "spend">("sleep");
@@ -436,6 +440,15 @@ export function OverviewScreen() {
       .then(function (s: any) { setDashboardLayout(resolveLayout(s?.dashboard_layout)); })
       .catch(function () {});
   }, []);
+
+  useFocusEffect(useCallback(() => {
+    hasSeenTooltip("overview").then(seen => {
+      if (!seen) {
+        setShowTooltip(true);
+        markTooltipSeen("overview");
+      }
+    });
+  }, []));
 
   // Mood period helpers
   const entryPerPeriod: Partial<Record<Bucket, JournalEntry>> = {};
@@ -960,6 +973,12 @@ export function OverviewScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
       accessibilityLabel="Today dashboard"
     >
+      {showTooltip && (
+        <TooltipBubble
+          message="Your daily wellness snapshot — mood, glucose, sleep, steps, and spending at a glance. Tap any section to log or explore. The score at the top reflects your overall day."
+          onDismiss={() => setShowTooltip(false)}
+        />
+      )}
       {/* ── 1. Header ── */}
       <View style={styles.headerBlock}>
         <Text style={[styles.greeting, { color: theme.textStrong }]} accessibilityRole="header">

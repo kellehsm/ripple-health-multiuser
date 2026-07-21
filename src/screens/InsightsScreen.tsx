@@ -8,6 +8,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { InsightCard, Insight } from "../components/InsightCard";
+import { TooltipBubble } from "../components/TooltipBubble";
+import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
 
 const TYPE_GROUPS: { label: string; types: string[]; emoji: string }[] = [
   { label: "All",          types: [],                                              emoji: "✨" },
@@ -26,6 +28,7 @@ export function InsightsScreen() {
   const ink = theme.ink;
   const card = theme.card;
 
+  const [showTooltip, setShowTooltip] = useState(false);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [dismissed, setDismissed] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +59,15 @@ export function InsightsScreen() {
     }
   }
 
-  useFocusEffect(useCallback(() => { load(); }, []));
+  useFocusEffect(useCallback(() => {
+    hasSeenTooltip("insights").then(seen => {
+      if (!seen) {
+        setShowTooltip(true);
+        markTooltipSeen("insights");
+      }
+    });
+    load();
+  }, []));
 
   async function handleDismiss(id: string) {
     try {
@@ -101,6 +112,12 @@ export function InsightsScreen() {
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={theme.teal.bar} />}
     >
+      {showTooltip && (
+        <TooltipBubble
+          message="Long-term patterns detected from your data, updated nightly. Each insight shows a confidence level based on how strong the pattern is. Dismiss ones that don't apply to you."
+          onDismiss={() => setShowTooltip(false)}
+        />
+      )}
       {/* Header */}
       <View style={styles.headerBlock}>
         <Text style={[styles.heading, { color: theme.textStrong }]}>Your Insights</Text>

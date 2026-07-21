@@ -12,6 +12,8 @@ import { api } from "../api/client";
 import { LoadingIndicator } from "../components/LoadingIndicator";
 import { EmptyState } from "../components/EmptyState";
 import { toast } from "../lib/toast";
+import { TooltipBubble } from "../components/TooltipBubble";
+import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
 
 type SpendingEntry = {
   id: string;
@@ -128,6 +130,7 @@ export function FinanceScreen() {
   const { theme } = useTheme();
   const ink = theme.ink;
 
+  const [showTooltip, setShowTooltip] = useState(false);
   const [entries, setEntries] = useState<SpendingEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -177,6 +180,12 @@ export function FinanceScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      hasSeenTooltip("finance").then(seen => {
+        if (!seen) {
+          setShowTooltip(true);
+          markTooltipSeen("finance");
+        }
+      });
       load();
       syncPlaid();
     }, [])
@@ -318,6 +327,12 @@ export function FinanceScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={theme.purple.solid} />
         }
       >
+        {showTooltip && (
+          <TooltipBubble
+            message="Track spending by category — connect Plaid to auto-sync transactions, or log manually. Tap any entry to add notes or change the category."
+            onDismiss={() => setShowTooltip(false)}
+          />
+        )}
         {/* Day / Week toggle */}
         <View style={[s.toggle, { backgroundColor: theme.card, borderColor: ink }]}>
           {(["day", "week"] as const).map((v) => (

@@ -17,6 +17,8 @@ import { DefinedTerm } from "../components/DefinedTerm";
 import { api } from "../api/client";
 
 import { requestHealthPermissions, syncHealthData } from "../lib/healthConnect";
+import { TooltipBubble } from "../components/TooltipBubble";
+import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
 import {
   startForegroundService,
   stopForegroundService,
@@ -132,6 +134,7 @@ export function HealthScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [staleBannerMessage, setStaleBannerMessage] = useState<string | null>(null);
   const [waterGoal, setWaterGoal] = useState(DEFAULT_WATER_GOAL);
+  const [showTooltip, setShowTooltip] = useState(false);
 
   // Annotations
   type Annotation = { id: string; annotated_at: string; label: string };
@@ -415,6 +418,12 @@ export function HealthScreen() {
   );
 
   useFocusEffect(useCallback(function () {
+    hasSeenTooltip("health").then(seen => {
+      if (!seen) {
+        setShowTooltip(true);
+        markTooltipSeen("health");
+      }
+    });
     api.syncStatus()
       .then(async function (s: any) {
         const now = Date.now();
@@ -517,6 +526,12 @@ export function HealthScreen() {
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
     >
+      {showTooltip && (
+        <TooltipBubble
+          message="Your health hub — glucose chart, heart rate, steps, and sleep in one place. Connect Dexcom for glucose and Health Connect for the rest. Tap any chart to explore your data."
+          onDismiss={() => setShowTooltip(false)}
+        />
+      )}
       {/* Mindfulness button */}
       <Pressable
         onPress={() => navigation.getParent()?.navigate("Mindfulness")}
