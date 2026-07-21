@@ -23,17 +23,38 @@ export function DexcomSettingsScreen() {
   }, []);
 
   async function handleSave() {
+    if (!accountId.trim()) {
+      Alert.alert("Missing Info", "Please enter your Dexcom Account ID.");
+      return;
+    }
+    if (!password && !passwordSet) {
+      Alert.alert("Missing Info", "Please enter your Dexcom password.");
+      return;
+    }
+
     setSaving(true);
     try {
-      await api.patchSettings({
-        dexcom: { share_account_id: accountId.trim(), share_password: password, share_region: region },
-      });
+      if (password) {
+        // Verify credentials against Dexcom before saving — surfaces wrong password/ID errors
+        await api.dexcomVerifyShare({ account_id: accountId.trim(), password, region });
+      } else {
+        // No new password — just update account_id and region (password preserved server-side)
+        await api.patchSettings({
+          dexcom: { share_account_id: accountId.trim(), share_password: "", share_region: region },
+        });
+      }
       setPassword("");
       setPasswordSet(true);
       api.glucoseSyncShare().catch(() => {});
-      Alert.alert("Saved", "Dexcom credentials updated. Readings will sync shortly.");
+      Alert.alert(
+        "Connected",
+        password ? "Dexcom credentials verified and saved. Syncing now…" : "Dexcom settings updated."
+      );
     } catch (e: any) {
-      Alert.alert("Error", e?.message ?? "Failed to save.");
+      const raw = e?.message ?? "Failed to save.";
+      // Strip "API error 4xx: " prefix Fastify adds before showing to user
+      const msg = raw.replace(/^API error \d+: /, "");
+      Alert.alert("Connection Failed", msg);
     } finally {
       setSaving(false);
     }
