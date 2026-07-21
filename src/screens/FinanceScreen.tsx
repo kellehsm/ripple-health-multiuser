@@ -298,7 +298,7 @@ export function FinanceScreen() {
     ]);
   }
 
-  const s = useMemo(() => makeStyles(ink, theme.card), [ink, theme.card]);
+  const s = useMemo(() => makeStyles(ink, theme.card, theme.cardBorder), [ink, theme.card, theme.cardBorder]);
 
   if (loading) {
     return (
@@ -623,7 +623,7 @@ export function FinanceScreen() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function makeStyles(ink: string, card: string) {
+function makeStyles(ink: string, card: string, border: string) {
   const shadow = {
     shadowColor: ink,
     shadowOffset: { width: 4, height: 4 },
@@ -633,10 +633,10 @@ function makeStyles(ink: string, card: string) {
   };
   return StyleSheet.create({
     content:     { padding: 16, gap: 12, paddingBottom: 40 },
-    toggle:      { flexDirection: "row", borderRadius: 12, borderWidth: 2, overflow: "hidden", ...shadow },
+    toggle:      { flexDirection: "row", borderRadius: 22, borderWidth: 2, overflow: "hidden", ...shadow },
     toggleBtn:   { flex: 1, paddingVertical: 10, alignItems: "center" },
     toggleText:  { fontSize: 13, fontWeight: "700" },
-    card:        { borderRadius: 14, borderWidth: 2, padding: 16, backgroundColor: card, ...shadow, gap: 4 },
+    card:        { borderRadius: 26, borderWidth: 2, padding: 16, backgroundColor: card, ...shadow, gap: 4 },
     cardTitle:   { fontSize: 15, fontWeight: "800", marginBottom: 2 },
     label:       { fontSize: 10, fontWeight: "800", letterSpacing: 0.8, marginBottom: 2 },
     totalAmt:    { fontSize: 38, fontWeight: "900", lineHeight: 44 },
@@ -644,7 +644,7 @@ function makeStyles(ink: string, card: string) {
     addBtn: {
       width: 38, height: 38, borderRadius: 19, borderWidth: 2,
       alignItems: "center", justifyContent: "center",
-      shadowColor: ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 3,
+      shadowColor: ink, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 3,
     },
     chartRow:    { flexDirection: "row", justifyContent: "space-between", marginBottom: 4 },
     chartCat:    { fontSize: 13, fontWeight: "600" },
@@ -654,7 +654,7 @@ function makeStyles(ink: string, card: string) {
     dayHeader:   { fontSize: 11, fontWeight: "800", letterSpacing: 0.6, marginBottom: -4, marginLeft: 4 },
     txRow:       { flexDirection: "row", alignItems: "center", paddingVertical: 12, gap: 12 },
     merchant:    { fontSize: 14, fontWeight: "700" },
-    catBadge:    { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
+    catBadge:    { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 },
     catBadgeText:{ fontSize: 10, fontWeight: "700" },
     txTime:      { fontSize: 11 },
     txNotes:     { fontSize: 11, fontStyle: "italic" },
@@ -665,25 +665,25 @@ function makeStyles(ink: string, card: string) {
     editMeta:    { fontSize: 12, marginTop: 2 },
     fieldLabel:  { fontSize: 12, fontWeight: "600", marginBottom: -2 },
     amountInput: {
-      borderWidth: 2, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
+      borderWidth: 2, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12,
       fontSize: 32, fontWeight: "800",
-      shadowColor: ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2,
+      shadowColor: ink, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 2,
     },
     errorText:   { fontSize: 12, marginTop: -4 },
     textInput: {
-      borderWidth: 2, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10,
+      borderWidth: 2, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 10,
       fontSize: 15, fontWeight: "500",
-      shadowColor: ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2,
+      shadowColor: ink, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 2,
     },
     chipWrap:    { flexDirection: "row", flexWrap: "wrap", gap: 7 },
-    chip:        { borderWidth: 1.5, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+    chip:        { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5 },
     chipText:    { fontSize: 12 },
     saveBtn: {
-      borderRadius: 12, borderWidth: 2, paddingVertical: 14, alignItems: "center", marginTop: 6,
-      shadowColor: ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 3,
+      borderRadius: 22, borderWidth: 2, paddingVertical: 14, alignItems: "center", marginTop: 6,
+      shadowColor: ink, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 3,
     },
     saveBtnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
-    deleteBtn:   { borderRadius: 12, borderWidth: 2, paddingVertical: 12, alignItems: "center", backgroundColor: "transparent" },
+    deleteBtn:   { borderRadius: 22, borderWidth: 2, paddingVertical: 12, alignItems: "center", backgroundColor: "transparent" },
     deleteBtnText:{ fontWeight: "700", fontSize: 15 },
   });
 }

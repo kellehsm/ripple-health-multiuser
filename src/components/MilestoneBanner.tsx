@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 16,
     right: 16,
-    borderRadius: 14,
+    borderRadius: 26,
     borderWidth: 2,
     shadowColor: "#000",
     shadowOffset: { width: 2, height: 2 },

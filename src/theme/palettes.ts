@@ -14,24 +14,32 @@ function cfn(solid: string, sub: string, bg: string, fg: string, tint: string): 
 
 // ─── LIGHT THEMES ─────────────────────────────────────────────────────────────
 
-// 1. Warm cream + earthy teal/coral/berry accents — the classic default
+// 1. Bright Companion — warm cream + OKLCH-based accent hues
 const morningMist: Theme = {
   id: "morning-mist", name: "Morning Mist", group: "Light", isDark: false,
-  ink: "#1A2E2C", cream: "#F5FAF8", page: "#EBF2EF", card: "#FFFFFF", cardBorder: "#C8DCD5",
-  textStrong: "#1A2E2C", textSoft: "#5A7A70",
-  primary: "#5B9B8A", success: "#3D7A68", warning: "#C4735A", danger: "#C04040",
-  glucoseHigh: "#C4735A", glucoseLow: "#4A8AB0",
-  teal:   cf("#4A7A68", "#2A5A48", "#C0DACE", "#0A2A1C", "#CCE5D8"),          // steps — deep teal
-  coral:  cfn("#C4735A", "#A05040", "#F2DACE", "#5A2510", "#F5E4D5"),         // meals — earthy coral
-  blue:   cfn("#4A8AB0", "#2A6A90", "#C0DAF0", "#0A2E50", "#CCE2F4"),         // water — soft blue
-  amber:  cfn("#9B7040", "#7A5020", "#F0DEC0", "#3A2008", "#F5E8CC"),         // sleep — warm ochre
-  purple: cfn("#7A5AA0", "#5A3A80", "#E0D0F0", "#3A1870", "#E8DFF5"),         // finance — dusty purple
-  berry:  cf("#A05070", "#80304A", "#F2C8D8", "#5A0E28", "#F5D5E2"),          // glucose — rose berry
-  violet: cfn("#9070C8", "#7050B0", "#E0D0F8", "#3A1870", "#E8E0F8"),         // mood — soft violet
-  red:    cfn("#C04040", "#A03030", "#FBDADA", "#6A0808", "#FBDADA"),
-  pink:   cfn("#A05070", "#80304A", "#F2C8D8", "#5A0E28", "#F5D5E2"),
-  green:  cfn("#4A7A68", "#2A5A48", "#C0DACE", "#0A2A1C", "#CCE5D8"),
-  brown:  { solid: "#8B5E3C", sub: "#6A4018", tint: "#F0E8E0" },
+  // Warm near-black for text/icon ink; neutral warm for card borders
+  ink: "#1C2B3A", cream: "#FAF5EE", page: "#F5ECDF", card: "#FEFCF8", cardBorder: "#C4B5A5",
+  textStrong: "#1C2B3A", textSoft: "#5C6D7E",
+  primary: "#2870C8", success: "#1A9870", warning: "#B88820", danger: "#C02840",
+  glucoseHigh: "#C02840", glucoseLow: "#2870C8",
+  // hue 165 green  — steps / activity / hobbies / books
+  teal:   cf("#1A9870", "#0E6848", "#D8F5EB", "#1C2B3A", "#D8F5EB", "#1A9870"),
+  // hue 38 orange  — food / meals
+  coral:  cfn("#C85C28", "#A04018", "#FBEACC", "#1C2B3A", "#FBEACC"),
+  // hue 228 blue   — water
+  blue:   cfn("#2870C8", "#1858A8", "#DAE8FA", "#1C2B3A", "#DAE8FA"),
+  // hue 82 amber   — sleep
+  amber:  cfn("#B88820", "#906808", "#F8EEC8", "#1C2B3A", "#F8EEC8"),
+  // hue 302 purple — finance / spending
+  purple: cfn("#7830B8", "#581898", "#ECD8FA", "#1C2B3A", "#ECD8FA"),
+  // hue 356 red    — glucose / heart rate (in-range)
+  berry:  cf("#C02840", "#901828", "#FAE0E4", "#1C2B3A", "#FAE0E4", "#C02840"),
+  // hue 296 violet — mood
+  violet: cfn("#7838B8", "#581898", "#ECD8FA", "#1C2B3A", "#ECD8FA"),
+  red:    cfn("#C02840", "#901828", "#FAE0E4", "#1C2B3A", "#FAE0E4"),
+  pink:   cfn("#C02840", "#901828", "#FAE0E4", "#1C2B3A", "#FAE0E4"),
+  green:  cfn("#1A9870", "#0E6848", "#D8F5EB", "#1C2B3A", "#D8F5EB"),
+  brown:  { solid: "#8B5E3C", sub: "#6A4018", tint: "#F5EDE0" },
 };
 
 // 2. Pale sage + botanical greens, terracotta, ochre

@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   domainChip: {
     width: "22%",
     flexGrow: 1,
-    borderRadius: 10,
+    borderRadius: 16,
     borderWidth: 1,
     paddingVertical: 8,
     paddingHorizontal: 6,

@@ -729,7 +729,7 @@ export function OnboardingFlow({ onComplete, replayMode }: { onComplete: () => v
 
 function makeStyles(ink: string, card: string, cardBorder: string, _width: number) {
   const shadow = {
-    shadowColor: ink,
+    shadowColor: "rgba(60,40,20,0.1)",
     shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 1 as const,
     shadowRadius: 0,
@@ -755,13 +755,13 @@ function makeStyles(ink: string, card: string, cardBorder: string, _width: numbe
     preview: { width: "100%", gap: 10 },
 
     // ── Preview: Home glance chips ──
-    glanceChip: { flex: 1, borderRadius: 12, borderWidth: 1.5, padding: 10, alignItems: "center", gap: 3 },
-    miniChip: { flex: 1, flexDirection: "row", alignItems: "center", borderRadius: 10, borderWidth: 1.5, padding: 10, gap: 8 },
+    glanceChip: { flex: 1, borderRadius: 22, borderWidth: 1.5, padding: 10, alignItems: "center", gap: 3 },
+    miniChip: { flex: 1, flexDirection: "row", alignItems: "center", borderRadius: 16, borderWidth: 1.5, padding: 10, gap: 8 },
     miniChipDot: { width: 8, height: 8, borderRadius: 4 },
     miniChipValue: { fontSize: 14, fontWeight: "800", flex: 1 },
 
     // ── Preview: Health stat chips ──
-    statChip: { flex: 1, minWidth: "45%", borderRadius: 12, borderWidth: 2, padding: 12, gap: 2 },
+    statChip: { flex: 1, minWidth: "45%", borderRadius: 22, borderWidth: 2, padding: 12, gap: 2 },
     statChipDot: { width: 8, height: 8, borderRadius: 4, marginBottom: 4 },
     statChipLabel: { fontSize: 12, fontWeight: "700" },
     statChipValue: { fontSize: 18, fontWeight: "800" },
@@ -769,35 +769,35 @@ function makeStyles(ink: string, card: string, cardBorder: string, _width: numbe
     statChipSub: { fontSize: 11 },
 
     // ── Preview: Meal rows ──
-    mealRow: { flexDirection: "row", alignItems: "center", borderRadius: 10, borderWidth: 1, padding: 12, gap: 12 },
+    mealRow: { flexDirection: "row", alignItems: "center", borderRadius: 16, borderWidth: 1, padding: 12, gap: 12 },
     mealDot: { width: 10, height: 10, borderRadius: 5, flexShrink: 0 },
     mealName: { fontSize: 14, fontWeight: "700" },
     mealMeta: { fontSize: 12, marginTop: 2 },
-    macroChip: { flex: 1, borderRadius: 8, borderWidth: 1.5, padding: 8, alignItems: "center", gap: 2 },
+    macroChip: { flex: 1, borderRadius: 12, borderWidth: 1.5, padding: 8, alignItems: "center", gap: 2 },
     substanceBadge: { alignSelf: "flex-start", borderRadius: 20, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 6 },
     substanceBadgeText: { fontSize: 13, fontWeight: "700" },
 
     // ── Preview: Hobbies / Books ──
-    bookCard: { borderRadius: 12, borderWidth: 1, padding: 14, gap: 4 },
+    bookCard: { borderRadius: 22, borderWidth: 1, padding: 14, gap: 4 },
     bookTitle: { fontSize: 14, fontWeight: "800" },
     bookAuthor: { fontSize: 12, marginBottom: 8 },
     progressTrack: { height: 6, borderRadius: 3, overflow: "hidden" },
     progressFill: { height: 6, borderRadius: 3 },
     progressLabel: { fontSize: 11, marginTop: 4 },
-    hobbyRow: { flexDirection: "row", alignItems: "center", borderRadius: 10, borderWidth: 1, padding: 12, gap: 12 },
+    hobbyRow: { flexDirection: "row", alignItems: "center", borderRadius: 16, borderWidth: 1, padding: 12, gap: 12 },
     hobbyIcon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
     hobbyName: { fontSize: 14, fontWeight: "700" },
     hobbyMeta: { fontSize: 12, marginTop: 2 },
 
     // ── Preview: Insights ──
-    insightCard: { flexDirection: "row", alignItems: "flex-start", borderRadius: 12, borderWidth: 1.5, padding: 12, gap: 10 },
+    insightCard: { flexDirection: "row", alignItems: "flex-start", borderRadius: 22, borderWidth: 1.5, padding: 12, gap: 10 },
     insightTitle: { fontSize: 13, fontWeight: "800", marginBottom: 2 },
     insightText: { fontSize: 12, lineHeight: 18 },
-    weekBadge: { flexDirection: "row", alignItems: "center", borderRadius: 10, borderWidth: 1, padding: 10, gap: 10 },
+    weekBadge: { flexDirection: "row", alignItems: "center", borderRadius: 16, borderWidth: 1, padding: 10, gap: 10 },
     weekBadgeText: { fontSize: 12, fontWeight: "600", flex: 1 },
 
     // ── Preview: Finance ──
-    categoryDot: { width: 12, height: 12, borderRadius: 6, flexShrink: 0 },
+    categoryDot: { width: 12, height: 12, borderRadius: 8, flexShrink: 0 },
 
     // ── Theme picker ──
     themeHeader: { paddingHorizontal: 24, paddingBottom: 16 },
@@ -805,21 +805,21 @@ function makeStyles(ink: string, card: string, cardBorder: string, _width: numbe
     themeGrid: { paddingHorizontal: 20, paddingBottom: 24, gap: 20 },
     themeGroupLabel: { fontSize: 11, fontWeight: "800", letterSpacing: 1.2, marginBottom: 10 },
     themeRow: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-    themeCard: { width: "46%", borderRadius: 12, borderWidth: 2, padding: 12, gap: 8 },
+    themeCard: { width: "46%", borderRadius: 22, borderWidth: 2, padding: 12, gap: 8 },
     swatchRow: { flexDirection: "row", gap: 4 },
     swatch: { flex: 1, height: 14, borderRadius: 4 },
     themeCardName: { fontSize: 13, fontWeight: "700" },
 
     // ── Shared bottom ──
     bottom: { padding: 20, gap: 12, borderTopWidth: 1 },
-    primaryBtn: { borderRadius: 14, borderWidth: 2, paddingVertical: 15, alignItems: "center", shadowColor: ink, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4 },
+    primaryBtn: { borderRadius: 26, borderWidth: 2, paddingVertical: 15, alignItems: "center", shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 4 },
     primaryBtnText: { color: "#fff", fontWeight: "800", fontSize: 15, letterSpacing: 0.2 },
-    secondaryBtn: { borderRadius: 14, borderWidth: 2, paddingVertical: 13, alignItems: "center", shadowColor: ink, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4 },
+    secondaryBtn: { borderRadius: 26, borderWidth: 2, paddingVertical: 13, alignItems: "center", shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 4 },
     secondaryBtnText: { fontWeight: "800", fontSize: 15, letterSpacing: 0.2 },
 
     // ── Integration step card ──
     stepCard: { margin: 20, borderRadius: 16, borderWidth: 2, padding: 24, ...shadow },
-    stepEmojiBlock: { width: 88, height: 88, borderRadius: 22, borderWidth: 2, alignItems: "center", justifyContent: "center", marginBottom: 20, alignSelf: "center", shadowColor: ink, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, shadowRadius: 0, elevation: 4 },
+    stepEmojiBlock: { width: 88, height: 88, borderRadius: 22, borderWidth: 2, alignItems: "center", justifyContent: "center", marginBottom: 20, alignSelf: "center", shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 4 },
     stepEmoji: { fontSize: 40 },
     stepTitle: { fontSize: 24, fontWeight: "800", textAlign: "center", marginBottom: 16 },
     stepDesc: { fontSize: 15, lineHeight: 24 },
@@ -827,13 +827,13 @@ function makeStyles(ink: string, card: string, cardBorder: string, _width: numbe
 
     // ── Dexcom inputs ──
     inputLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase", marginTop: 14, marginBottom: 6 },
-    input: { borderWidth: 2, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
+    input: { borderWidth: 2, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
     regionToggle: { flexDirection: "row", gap: 10, marginTop: 14 },
-    regionBtn: { flex: 1, borderRadius: 10, borderWidth: 2, paddingVertical: 10, alignItems: "center" },
+    regionBtn: { flex: 1, borderRadius: 16, borderWidth: 2, paddingVertical: 10, alignItems: "center" },
     regionBtnText: { fontWeight: "700", fontSize: 14 },
 
     // ── Disclosure box ──
-    disclosureBox: { marginTop: 16, borderRadius: 12, borderWidth: 2, padding: 14, gap: 4 },
+    disclosureBox: { marginTop: 16, borderRadius: 22, borderWidth: 2, padding: 14, gap: 4 },
     disclosureLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 0.8 },
     disclosureText: { fontSize: 13, lineHeight: 20, fontWeight: "500" },
 

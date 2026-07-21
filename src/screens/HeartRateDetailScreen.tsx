@@ -260,7 +260,7 @@ function makeStyles(ink: string, card: string) {
   };
   return StyleSheet.create({
   content: { padding: 16, gap: 12, paddingBottom: 32 },
-  card: { borderRadius: 14, borderWidth: 2, borderColor: ink, padding: 16, backgroundColor: card, ...shadow },
+  card: { borderRadius: 26, borderWidth: 2, borderColor: ink, padding: 16, backgroundColor: card, ...shadow },
   sectionTitle: { fontSize: 16, fontWeight: "800", marginBottom: 10 },
   rowBetween: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 2 },
 
@@ -273,13 +273,13 @@ function makeStyles(ink: string, card: string) {
   rangeRow: { flexDirection: "row", gap: 6, marginBottom: 4 },
   rangeBtn: {
     borderWidth: 2,
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 5,
     shadowColor: ink,
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     elevation: 2,
   },
 

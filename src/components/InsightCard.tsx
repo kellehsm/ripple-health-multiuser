@@ -291,7 +291,7 @@ export function InsightCard({ insight, onDismiss, compact = false }: InsightCard
   return (
     <Pressable
       onPress={() => setExpanded(e => !e)}
-      style={[styles.card, { backgroundColor: card, borderColor: ink, shadowColor: ink }]}
+      style={[styles.card, { backgroundColor: card, borderColor: ink, shadowColor: "rgba(60,40,20,0.1)" }]}
       accessibilityRole="button"
       accessibilityLabel={insight.title}
     >
@@ -371,12 +371,12 @@ export function InsightCard({ insight, onDismiss, compact = false }: InsightCard
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 14,
+    borderRadius: 26,
     borderWidth: 2,
     padding: 14,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 3,
   },
   headerRow: {
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
   iconBox: {
     width: 30,
     height: 30,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     alignSelf: "flex-start",
     borderWidth: 1,
-    borderRadius: 6,
+    borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 5,
   },

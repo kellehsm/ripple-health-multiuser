@@ -216,7 +216,7 @@ export function ExerciseSessionScreen() {
       <View style={[styles.footer, { borderTopColor: theme.cardBorder }]}>
         <Pressable
           onPress={() => setSearchVisible(true)}
-          style={[styles.addBtn, { backgroundColor: ink, borderColor: ink, shadowColor: ink }]}
+          style={[styles.addBtn, { backgroundColor: ink, borderColor: ink, shadowColor: "rgba(60,40,20,0.1)" }]}
         >
           <Text style={[styles.addBtnText, { color: theme.page }]}>+ Add exercise</Text>
         </Pressable>
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   timerLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2 },
   timer: { fontSize: 32, fontWeight: '800', fontVariant: ['tabular-nums'], marginTop: 2 },
   finishBtn: {
-    borderRadius: 10,
+    borderRadius: 16,
     borderWidth: 2,
     paddingHorizontal: 18,
     paddingVertical: 10,
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
-    borderRadius: 12,
+    borderRadius: 22,
     borderWidth: 1,
     gap: 8,
   },
@@ -266,13 +266,13 @@ const styles = StyleSheet.create({
   entryDetail: { fontSize: 13, marginTop: 2 },
   footer: { padding: 14, borderTopWidth: 1 },
   addBtn: {
-    borderRadius: 14,
+    borderRadius: 26,
     borderWidth: 2,
     paddingVertical: 15,
     alignItems: 'center',
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
     elevation: 4,
   },
   addBtnText: { fontSize: 16, fontWeight: '800' },

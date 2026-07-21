@@ -96,7 +96,7 @@ export function TabPreferencesScreen({ onDone, mode, onCancel }: TabPreferencesS
                   backgroundColor: isSelected ? theme.teal.tint : theme.card,
                   borderColor: isSelected ? theme.teal.solid : theme.cardBorder,
                   borderWidth: isSelected ? 2 : 1,
-                  shadowColor: ink,
+                  shadowColor: "rgba(60,40,20,0.1)",
                 },
               ]}
             >
@@ -143,14 +143,14 @@ export function TabPreferencesScreen({ onDone, mode, onCancel }: TabPreferencesS
       <View style={styles.actions}>
         {mode === 'settings' && onCancel && (
           <Pressable
-            style={[styles.cancelBtn, { borderColor: ink, backgroundColor: theme.card, shadowColor: ink }]}
+            style={[styles.cancelBtn, { borderColor: ink, backgroundColor: theme.card, shadowColor: "rgba(60,40,20,0.1)" }]}
             onPress={onCancel}
           >
             <Text style={[styles.cancelBtnText, { color: ink }]}>Cancel</Text>
           </Pressable>
         )}
         <Pressable
-          style={[styles.confirmBtn, { backgroundColor: theme.purple.solid, borderColor: ink, shadowColor: ink }]}
+          style={[styles.confirmBtn, { backgroundColor: theme.purple.solid, borderColor: ink, shadowColor: "rgba(60,40,20,0.1)" }]}
           onPress={handleConfirm}
         >
           <Text style={[styles.confirmBtnText, { color: theme.page }]}>
@@ -188,10 +188,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     padding: 14,
-    borderRadius: 12,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    borderRadius: 22,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 3,
   },
   tileEmoji: {
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   subSection: {
     marginTop: 20,
     padding: 14,
-    borderRadius: 12,
+    borderRadius: 22,
     borderWidth: 1.5,
     gap: 8,
   },
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   },
   subToggle: {
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 16,
   },
   subToggleText: {
     fontSize: 14,
@@ -237,12 +237,12 @@ const styles = StyleSheet.create({
   cancelBtn: {
     flex: 1,
     padding: 14,
-    borderRadius: 12,
+    borderRadius: 22,
     borderWidth: 2,
     alignItems: 'center',
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 3,
   },
   cancelBtnText: {
@@ -252,12 +252,12 @@ const styles = StyleSheet.create({
   confirmBtn: {
     flex: 1,
     padding: 14,
-    borderRadius: 12,
+    borderRadius: 22,
     borderWidth: 2,
     alignItems: 'center',
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 4,
   },
   confirmBtnText: {

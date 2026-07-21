@@ -275,7 +275,7 @@ export function ExerciseSearchModal({ visible, onClose, onAdd }: Props) {
 
             <Pressable
               onPress={handleAdd}
-              style={[styles.addBtn, { backgroundColor: ink, borderColor: ink, shadowColor: ink }]}
+              style={[styles.addBtn, { backgroundColor: ink, borderColor: ink, shadowColor: "rgba(60,40,20,0.1)" }]}
             >
               <Text style={[styles.addBtnText, { color: theme.page }]}>Log exercise</Text>
             </Pressable>
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
     margin: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: 22,
     borderWidth: 1,
   },
   searchInput: { flex: 1, fontSize: 16 },
@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
   resultThumb: {
     width: 48,
     height: 48,
-    borderRadius: 8,
+    borderRadius: 12,
   },
   resultThumbPlaceholder: {
     opacity: 0.4,
@@ -385,18 +385,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 22,
     borderWidth: 1,
   },
   chipImage: {
     width: 64,
     height: 64,
-    borderRadius: 8,
+    borderRadius: 12,
   },
   chipImagePlaceholder: {
     width: 64,
     height: 64,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
   rangeRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   rangeDash: { fontSize: 18, fontWeight: '600', marginBottom: 2 },
   formField: {
-    borderRadius: 10,
+    borderRadius: 16,
     borderWidth: 2,
     padding: 12,
   },
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
   setLabel: { fontSize: 12, fontWeight: '700', width: 40, letterSpacing: 0.4 },
   setField: {
     flex: 1,
-    borderRadius: 10,
+    borderRadius: 16,
     borderWidth: 2,
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -430,20 +430,20 @@ const styles = StyleSheet.create({
   removeBtn: { padding: 4 },
   addSetBtn: {
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: 16,
     paddingVertical: 10,
     alignItems: 'center',
     borderStyle: 'dashed',
   },
   addBtn: {
-    borderRadius: 14,
+    borderRadius: 26,
     borderWidth: 2,
     paddingVertical: 15,
     alignItems: 'center',
     marginTop: 8,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
     elevation: 4,
   },
   addBtnText: { fontSize: 16, fontWeight: '800' },

@@ -90,8 +90,8 @@ function GraceCountdown({ count, accentColor, theme, ink }: {
           backgroundColor: theme.card,
           borderWidth: 2, borderColor: accentColor,
           alignItems: "center", justifyContent: "center",
-          shadowColor: ink, shadowOffset: { width: 3, height: 3 },
-          shadowOpacity: 1, shadowRadius: 0, elevation: 3,
+          shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.1, shadowRadius: 12, elevation: 3,
         }}>
           <Text style={{ color: accentColor, fontSize: 48, fontWeight: "900" }}>{count}</Text>
         </View>
@@ -198,15 +198,15 @@ function TileGrid({ theme, ink, onSelect }: { theme: any; ink: string; onSelect:
               onPress={() => onSelect(t.section)}
               style={{
                 width: "47%",
-                borderRadius: 14,
+                borderRadius: 26,
                 borderWidth: 2,
                 borderColor: ink,
                 backgroundColor: c?.solid ?? ink,
                 padding: 18,
-                shadowColor: ink,
-                shadowOffset: { width: 4, height: 4 },
-                shadowOpacity: 1,
-                shadowRadius: 0,
+                shadowColor: "rgba(60,40,20,0.1)",
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.12,
+                shadowRadius: 14,
                 elevation: 4,
               }}
               accessibilityRole="button"
@@ -417,8 +417,8 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
                 width: 180, height: 180, borderRadius: 90,
                 backgroundColor: tealSolid,
                 borderWidth: 3, borderColor: ink,
-                shadowColor: ink, shadowOffset: { width: 4, height: 4 },
-                shadowOpacity: 1, shadowRadius: 0, elevation: 6,
+                shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.12, shadowRadius: 14, elevation: 6,
                 alignItems: "center", justifyContent: "center",
               }}>
                 <Text style={{ color: "#fff", fontSize: 16, fontWeight: "900", letterSpacing: 1.5 }}>
@@ -612,7 +612,7 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
                 }]}
               >
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: current ? 8 : 0 }}>
-                  <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: current ? (theme.coral as any)?.solid : theme.cardBorder, alignItems: "center", justifyContent: "center" }}>
+                  <View style={{ width: 28, height: 28, borderRadius: 26, backgroundColor: current ? (theme.coral as any)?.solid : theme.cardBorder, alignItems: "center", justifyContent: "center" }}>
                     <Text style={{ color: current ? "#fff" : theme.textSoft, fontWeight: "800", fontSize: 13 }}>{item.count}</Text>
                   </View>
                   <Text style={{ color: current ? (theme.coral as any)?.fg : theme.textSoft, fontWeight: "800", fontSize: 13, letterSpacing: 0.5 }}>
@@ -705,7 +705,7 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
                 }]}
               >
                 <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
-                  <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: current ? (theme.coral as any)?.solid : theme.cardBorder, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <View style={{ width: 32, height: 32, borderRadius: 12, backgroundColor: current ? (theme.coral as any)?.solid : theme.cardBorder, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <Text style={{ color: current ? "#fff" : theme.textSoft, fontWeight: "900", fontSize: 15 }}>{s.letter}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
@@ -872,11 +872,11 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
                 key={d}
                 onPress={() => startGrace(d)}
                 style={{
-                  borderWidth: 2, borderColor: ink, borderRadius: 12,
+                  borderWidth: 2, borderColor: ink, borderRadius: 22,
                   paddingVertical: 14, paddingHorizontal: 18,
                   backgroundColor: (theme.purple as any)?.tint,
-                  shadowColor: ink, shadowOffset: { width: 2, height: 2 },
-                  shadowOpacity: 1, shadowRadius: 0, elevation: 2,
+                  shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: 0.08, shadowRadius: 10, elevation: 2,
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={d + " minutes"}
@@ -903,7 +903,7 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
             width: 180, height: 180, borderRadius: 90,
             backgroundColor: purpleSolid,
             borderWidth: 3, borderColor: ink,
-            shadowColor: ink, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0, elevation: 6,
+            shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.12, shadowRadius: 14, elevation: 6,
             alignItems: "center", justifyContent: "center",
           }}>
             <Text style={{ color: "#fff", fontSize: 36, fontWeight: "900" }}>{fmtTime}</Text>
@@ -984,10 +984,10 @@ function GratitudeSection({ theme, ink, onBack }: { theme: any; ink: string; onB
             placeholder="Write your reflection here…"
             placeholderTextColor={theme.textSoft}
             style={{
-              borderWidth: 2, borderColor: ink, borderRadius: 12, padding: 14,
+              borderWidth: 2, borderColor: ink, borderRadius: 22, padding: 14,
               fontSize: 15, minHeight: 120, color: theme.textStrong,
               backgroundColor: theme.card, textAlignVertical: "top",
-              shadowColor: ink, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0, elevation: 2,
+              shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 2,
             }}
             multiline
             accessibilityLabel="Gratitude journal entry"
@@ -1013,43 +1013,43 @@ function GratitudeSection({ theme, ink, onBack }: { theme: any; ink: string; onB
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
+    borderRadius: 22,
     borderWidth: 2,
     padding: 14,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 3,
   },
   endBtn: {
     borderWidth: 2,
-    borderRadius: 12,
+    borderRadius: 22,
     paddingVertical: 14,
     paddingHorizontal: 24,
     alignItems: "center",
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     elevation: 2,
   },
   nextBtn: {
     borderWidth: 2,
-    borderRadius: 10,
+    borderRadius: 16,
     paddingVertical: 12,
     alignItems: "center",
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     elevation: 2,
   },
   saveBtn: {
     borderWidth: 2,
-    borderRadius: 12,
+    borderRadius: 22,
     paddingVertical: 16,
     alignItems: "center",
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 3,
   },
 });

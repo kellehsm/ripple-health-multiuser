@@ -83,7 +83,7 @@ function CaffeineForm({
 }) {
   const ink = theme.ink;
   const card = theme.card;
-  const styles = useMemo(() => makeStyles(ink, card), [ink, card]);
+  const styles = useMemo(() => makeStyles(ink, card, theme.cardBorder), [ink, card, theme.cardBorder]);
   const [name, setName] = useState(initial.name);
   const [mg, setMg] = useState(initial.caffeine_mg != null ? String(initial.caffeine_mg) : "");
   const [nameErr, setNameErr] = useState("");
@@ -165,7 +165,7 @@ function AlcoholForm({
 }) {
   const ink = theme.ink;
   const card = theme.card;
-  const styles = useMemo(() => makeStyles(ink, card), [ink, card]);
+  const styles = useMemo(() => makeStyles(ink, card, theme.cardBorder), [ink, card, theme.cardBorder]);
   const [name, setName] = useState(initial.name);
   const [abv, setAbv] = useState(initial.abv_percent != null ? String(initial.abv_percent) : "");
   const [vol, setVol] = useState(initial.volume_ml != null ? String(initial.volume_ml) : "");
@@ -404,7 +404,7 @@ function MacroEditForm({
   const { theme } = useTheme();
   const ink = theme.ink;
   const card = theme.card;
-  const styles = useMemo(() => makeStyles(ink, card), [ink, card]);
+  const styles = useMemo(() => makeStyles(ink, card, theme.cardBorder), [ink, card, theme.cardBorder]);
   const [name, setName] = useState(initial.name);
   const [carbs, setCarbs] = useState(initial.carbs_g != null ? String(initial.carbs_g) : "");
   const [sugar, setSugar] = useState(initial.sugar_g != null ? String(initial.sugar_g) : "");
@@ -552,7 +552,7 @@ function MiniGlucoseChart({
   const chartLineColor = isHighResponse ? theme.red.solid : theme.berry.sub;
 
   return (
-    <View style={{ marginTop: 4, borderRadius: 8, borderWidth: isHighResponse ? 1.5 : 0, borderColor: isHighResponse ? theme.red.solid : "transparent", padding: isHighResponse ? 4 : 0 }}>
+    <View style={{ marginTop: 4, borderRadius: 12, borderWidth: isHighResponse ? 1.5 : 0, borderColor: isHighResponse ? theme.red.solid : "transparent", padding: isHighResponse ? 4 : 0 }}>
       {isHighResponse && (
         <Text style={{ color: theme.red.fg, fontSize: 10, fontWeight: "700", marginBottom: 2 }}>⚠ HIGH RESPONSE ({peakVal} mg/dL)</Text>
       )}
@@ -575,7 +575,7 @@ export function MealsScreen() {
   const { preferences, loading: prefsLoading } = useTabPreferences();
   const ink = theme.ink;
   const card = theme.card;
-  const styles = useMemo(() => makeStyles(ink, card), [ink, card]);
+  const styles = useMemo(() => makeStyles(ink, card, theme.cardBorder), [ink, card, theme.cardBorder]);
 
   useFocusEffect(useCallback(() => {
     if (prefsLoading) return;
@@ -1475,7 +1475,7 @@ export function MealsScreen() {
   );
 }
 
-function makeStyles(ink: string, card: string) {
+function makeStyles(ink: string, card: string, border: string) {
   return StyleSheet.create({
   content: { padding: 16, gap: 12 },
 
@@ -1483,14 +1483,14 @@ function makeStyles(ink: string, card: string) {
   totalsRow: { flexDirection: "row", gap: 8 },
   totalBlock: {
     flex: 1,
-    borderRadius: 12,
+    borderRadius: 22,
     borderWidth: 2,
     borderColor: ink,
     padding: 10,
     shadowColor: ink,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 3,
   },
   totalBlockLabel: { fontSize: 9, fontWeight: "800", letterSpacing: 0.6, marginBottom: 4 },
@@ -1498,14 +1498,14 @@ function makeStyles(ink: string, card: string) {
 
   // Card
   card: {
-    borderRadius: 12,
+    borderRadius: 22,
     borderWidth: 2,
-    borderColor: ink,
+    borderColor: border,
     padding: 14,
-    shadowColor: ink,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowColor: "rgba(60,40,20,0.08)",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
     elevation: 4,
   },
   cardTitle: { fontSize: 19, fontWeight: "800", marginBottom: 8 },
@@ -1517,14 +1517,14 @@ function makeStyles(ink: string, card: string) {
   frequentChip: {
     borderWidth: 2,
     borderColor: ink,
-    borderRadius: 10,
+    borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 8,
     maxWidth: 150,
     shadowColor: ink,
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     elevation: 2,
   },
 
@@ -1536,9 +1536,9 @@ function makeStyles(ink: string, card: string) {
     paddingHorizontal: 12,
     paddingVertical: 6,
     shadowColor: ink,
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     elevation: 2,
   },
 
@@ -1546,19 +1546,19 @@ function makeStyles(ink: string, card: string) {
   textInput: {
     borderWidth: 2,
     borderColor: ink,
-    borderRadius: 10,
+    borderRadius: 16,
     paddingHorizontal: 10,
     paddingVertical: 10,
     backgroundColor: card,
     fontSize: 14,
     shadowColor: ink,
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     elevation: 2,
   },
   actionBtn: {
-    borderRadius: 10,
+    borderRadius: 16,
     borderWidth: 2,
     borderColor: ink,
     paddingHorizontal: 14,
@@ -1567,9 +1567,9 @@ function makeStyles(ink: string, card: string) {
     justifyContent: "center",
     minWidth: 72,
     shadowColor: ink,
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     elevation: 2,
   },
   actionBtnText: { fontWeight: "800", fontSize: 11, letterSpacing: 0.4 },
@@ -1586,9 +1586,9 @@ function makeStyles(ink: string, card: string) {
     paddingVertical: 6,
     backgroundColor: card,
     shadowColor: ink,
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     elevation: 2,
   },
   secondaryBtnText: { color: ink, fontSize: 10, fontWeight: "800", letterSpacing: 0.4 },
@@ -1597,14 +1597,14 @@ function makeStyles(ink: string, card: string) {
     flexDirection: "row",
     gap: 10,
     borderWidth: 2,
-    borderRadius: 10,
+    borderRadius: 16,
     padding: 10,
     alignItems: "center",
     backgroundColor: card,
     shadowColor: ink,
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     elevation: 2,
   },
 
@@ -1614,15 +1614,15 @@ function makeStyles(ink: string, card: string) {
     flex: 1,
     borderWidth: 2,
     borderColor: ink,
-    borderRadius: 10,
+    borderRadius: 16,
     paddingHorizontal: 8,
     paddingVertical: 8,
     fontSize: 12,
     backgroundColor: card,
     shadowColor: ink,
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     elevation: 2,
   },
   macroLabel: { flex: 1, fontSize: 9, fontWeight: "800", letterSpacing: 0.6, textAlign: "center" },
@@ -1630,16 +1630,16 @@ function makeStyles(ink: string, card: string) {
   cancelBtn: {
     borderWidth: 2,
     borderColor: ink,
-    borderRadius: 10,
+    borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 9,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: card,
     shadowColor: ink,
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     elevation: 2,
   },
   cancelBtnText: { color: ink, fontWeight: "800", fontSize: 11, letterSpacing: 0.4 },
@@ -1648,28 +1648,28 @@ function makeStyles(ink: string, card: string) {
   mealCard: {
     marginTop: 10,
     borderWidth: 2,
-    borderRadius: 12,
+    borderRadius: 22,
     overflow: "hidden",
     shadowColor: ink,
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 3,
   },
   mealContent: { flexDirection: "row", alignItems: "flex-start", padding: 10 },
   mealIconTile: {
     width: 40,
     height: 40,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: ink,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 10,
     shadowColor: ink,
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
     elevation: 2,
     flexShrink: 0,
   },

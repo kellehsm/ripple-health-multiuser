@@ -232,7 +232,7 @@ export function MoodCheckInModal({ visible, period, onDismiss, onSubmitted }: Pr
                               backgroundColor: isSelected ? (c?.tint ?? theme.card) : theme.card,
                               borderColor: isSelected ? (c?.solid ?? ink) : ink,
                               borderWidth: isSelected ? 2.5 : 2,
-                              shadowColor: ink,
+                              shadowColor: "rgba(60,40,20,0.1)",
                               shadowOffset: { width: isSelected ? 3 : 2, height: isSelected ? 3 : 2 },
                               elevation: isSelected ? 4 : 2,
                             },
@@ -318,7 +318,7 @@ export function MoodCheckInModal({ visible, period, onDismiss, onSubmitted }: Pr
                   backgroundColor: selected ? theme.coral.solid : theme.cardBorder ?? ink,
                   opacity: selected ? 1 : 0.4,
                   borderColor: ink,
-                  shadowColor: ink,
+                  shadowColor: "rgba(60,40,20,0.1)",
                 },
               ]}
               accessibilityRole="button"
@@ -417,9 +417,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 8,
     paddingHorizontal: 2,
-    borderRadius: 10,
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    borderRadius: 16,
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
   },
   moodEmoji: {
     fontSize: 20,
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
   },
   noteInput: {
     borderWidth: 2,
-    borderRadius: 10,
+    borderRadius: 16,
     padding: 12,
     fontSize: 14,
     minHeight: 56,
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
   skipBtn: {
     flex: 1,
     borderWidth: 2,
-    borderRadius: 10,
+    borderRadius: 16,
     paddingVertical: 14,
     alignItems: "center",
     justifyContent: "center",
@@ -495,13 +495,13 @@ const styles = StyleSheet.create({
   logBtn: {
     flex: 2,
     borderWidth: 2,
-    borderRadius: 10,
+    borderRadius: 16,
     paddingVertical: 14,
     alignItems: "center",
     justifyContent: "center",
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
     elevation: 4,
   },
   logText: {

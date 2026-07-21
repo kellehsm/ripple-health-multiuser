@@ -117,7 +117,7 @@ export function MedicationImportScreen() {
             Supports CSV, XLS, and XLSX files. Column names are detected automatically.
           </Text>
           <Pressable
-            style={[styles.primaryBtn, { backgroundColor: theme.teal.solid, borderColor: ink, shadowColor: ink }]}
+            style={[styles.primaryBtn, { backgroundColor: theme.teal.solid, borderColor: ink, shadowColor: "rgba(60,40,20,0.1)" }]}
             onPress={pickFile}
             disabled={loading}
           >
@@ -179,7 +179,7 @@ export function MedicationImportScreen() {
               <Text style={{ color: theme.textStrong, fontWeight: '700' }}>Back</Text>
             </Pressable>
             <Pressable
-              style={[styles.primaryBtn, { flex: 1, backgroundColor: theme.teal.solid, borderColor: ink, shadowColor: ink }]}
+              style={[styles.primaryBtn, { flex: 1, backgroundColor: theme.teal.solid, borderColor: ink, shadowColor: "rgba(60,40,20,0.1)" }]}
               onPress={commitImport}
               disabled={importing || !mapping.name}
             >
@@ -201,7 +201,7 @@ export function MedicationImportScreen() {
             {importedCount} medication{importedCount !== 1 ? 's' : ''} added to your schedule.
           </Text>
           <Pressable
-            style={[styles.primaryBtn, { backgroundColor: theme.teal.solid, borderColor: ink, shadowColor: ink }]}
+            style={[styles.primaryBtn, { backgroundColor: theme.teal.solid, borderColor: ink, shadowColor: "rgba(60,40,20,0.1)" }]}
             onPress={() => navigation.goBack()}
           >
             <Text style={styles.primaryBtnText}>Done</Text>
@@ -253,20 +253,20 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14, textAlign: 'center', lineHeight: 21 },
   primaryBtn: {
     borderWidth: 2,
-    borderRadius: 12,
+    borderRadius: 22,
     paddingVertical: 14,
     paddingHorizontal: 24,
     alignItems: 'center',
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
     elevation: 4,
     minWidth: 160,
   },
   primaryBtnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
   secondaryBtn: {
     borderWidth: 2,
-    borderRadius: 12,
+    borderRadius: 22,
     paddingVertical: 14,
     paddingHorizontal: 20,
     alignItems: 'center',
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
-    borderRadius: 12,
+    borderRadius: 22,
     borderWidth: 1.5,
     gap: 10,
   },
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   previewLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2, marginTop: 4 },
   previewRow: {
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 16,
     borderWidth: 1,
     gap: 2,
   },

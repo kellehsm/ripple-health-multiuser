@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   row: {
-    borderRadius: 14,
+    borderRadius: 26,
     overflow: "hidden",
     marginBottom: 10,
   },
