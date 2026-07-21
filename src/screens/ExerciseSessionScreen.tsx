@@ -1,12 +1,25 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View, Text, Pressable, ScrollView, StyleSheet, Alert,
+  View, Text, Pressable, ScrollView, StyleSheet, Alert, Image,
 } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
 import { api } from '../api/client';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { ExerciseSearchModal } from '../components/ExerciseSearchModal';
+
+const IMAGE_BASE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
+
+function CyclingImage({ images, style }: { images: string[]; style: any }) {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    if (images.length <= 1) return;
+    const t = setInterval(() => setIdx(i => (i + 1) % images.length), 2000);
+    return () => clearInterval(t);
+  }, [images.length]);
+  if (!images.length) return <View style={[style, { backgroundColor: '#D8F5EB', opacity: 0.4, borderRadius: 14 }]} />;
+  return <Image source={{ uri: IMAGE_BASE + images[idx] }} style={[style, { borderRadius: 14 }]} resizeMode="cover" />;
+}
 
 interface LogEntry {
   id: string;
@@ -29,11 +42,17 @@ interface LogEntry {
   };
 }
 
-function formatElapsed(startedAt: string): string {
-  const elapsed = Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000);
-  const h = Math.floor(elapsed / 3600);
-  const m = Math.floor((elapsed % 3600) / 60);
-  const s = elapsed % 60;
+interface ActiveExercise {
+  name: string;
+  images: string[];
+  primary_muscles: string[];
+  category: string;
+}
+
+function formatSecs(totalSecs: number): string {
+  const h = Math.floor(totalSecs / 3600);
+  const m = Math.floor((totalSecs % 3600) / 60);
+  const s = totalSecs % 60;
   if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
@@ -63,27 +82,23 @@ export function ExerciseSessionScreen() {
   const { sessionId } = route.params as { sessionId: string };
   const ink = theme.ink;
 
-  const [startedAt, setStartedAt] = useState<string>('');
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [loadingEntries, setLoadingEntries] = useState(true);
   const [searchVisible, setSearchVisible] = useState(false);
   const [finishing, setFinishing] = useState(false);
+
+  // Timer — only runs after user taps Start
+  const [started, setStarted] = useState(false);
   const [elapsed, setElapsed] = useState('00:00');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Prevents the interval from being created more than once per mount,
-  // even if useFocusEffect fires multiple times (re-navigation, tab switch).
-  const timerStartedRef = useRef(false);
-  // Prevents setStartedAt from being called again on re-focus — the absolute
-  // started_at value never changes, so resetting it would re-trigger useEffect
-  // and create a duplicate interval.
-  const sessionLoadedRef = useRef(false);
+  const startEpochRef = useRef<number | null>(null);
 
-  // Load session details — on first focus, capture startedAt to seed the timer.
-  // On subsequent focuses (navigate away → back), only refresh entries.
-  const loadSession = useCallback(async (firstLoad = false) => {
+  // Currently active exercise (most recently added)
+  const [activeExercise, setActiveExercise] = useState<ActiveExercise | null>(null);
+
+  const loadSession = useCallback(async () => {
     try {
       const s = await api.getExerciseSession(sessionId);
-      if (firstLoad) setStartedAt(s.started_at);
       setEntries(s.entries ?? []);
     } catch {
       Alert.alert('Error', 'Could not load session.');
@@ -93,25 +108,23 @@ export function ExerciseSessionScreen() {
   }, [sessionId]);
 
   useFocusEffect(useCallback(() => {
-    if (!sessionLoadedRef.current) {
-      sessionLoadedRef.current = true;
-      loadSession(true);   // first focus: fetch startedAt + entries
-    } else {
-      loadSession(false);  // re-focus: refresh entries only, timer keeps running
-    }
+    loadSession();
   }, [loadSession]));
 
-  // Timer — starts once when startedAt is first set, never restarts on re-focus.
-  useEffect(() => {
-    if (!startedAt || timerStartedRef.current) return;
-    timerStartedRef.current = true;
-    setElapsed(formatElapsed(startedAt));
-    timerRef.current = setInterval(() => setElapsed(formatElapsed(startedAt)), 1000);
-    return () => {
-      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-      timerStartedRef.current = false;
-    };
-  }, [startedAt]);
+  useEffect(() => () => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+  }, []);
+
+  function handleStartWorkout() {
+    if (started || timerRef.current) return;
+    setStarted(true);
+    startEpochRef.current = Date.now();
+    timerRef.current = setInterval(() => {
+      if (!startEpochRef.current) return;
+      const secs = Math.floor((Date.now() - startEpochRef.current) / 1000);
+      setElapsed(formatSecs(secs));
+    }, 1000);
+  }
 
   async function handleAdd(exercise: any, form: {
     sets?: number; reps?: number; duration_seconds?: number;
@@ -119,11 +132,13 @@ export function ExerciseSessionScreen() {
     actual_reps_per_set?: number[];
   }) {
     try {
-      const entry = await api.addExerciseEntry(sessionId, {
-        exercise_id: exercise.id,
-        ...form,
+      await api.addExerciseEntry(sessionId, { exercise_id: exercise.id, ...form });
+      setActiveExercise({
+        name: exercise.name,
+        images: exercise.images ?? [],
+        primary_muscles: exercise.primary_muscles ?? [],
+        category: exercise.category ?? '',
       });
-      // Refresh entries
       await loadSession();
     } catch {
       Alert.alert('Error', 'Could not log exercise.');
@@ -167,23 +182,54 @@ export function ExerciseSessionScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.page }]}>
-      {/* Timer */}
+      {/* Timer bar */}
       <View style={[styles.timerBar, { backgroundColor: theme.card, borderBottomColor: ink }]}>
         <View>
           <Text style={[styles.timerLabel, { color: theme.textSoft }]}>SESSION TIME</Text>
           <Text style={[styles.timer, { color: ink }]}>{elapsed}</Text>
         </View>
-        <Pressable
-          onPress={handleFinish}
-          disabled={finishing}
-          style={[styles.finishBtn, { backgroundColor: theme.coral.solid, borderColor: ink }]}
-        >
-          {finishing
-            ? <LoadingIndicator color="#fff" size="small" />
-            : <Text style={styles.finishBtnText}>Finish</Text>
-          }
-        </Pressable>
+        {!started ? (
+          <Pressable
+            onPress={handleStartWorkout}
+            style={[styles.startBtn, { backgroundColor: theme.teal.solid, borderColor: ink }]}
+          >
+            <Text style={styles.startBtnText}>▶  Start</Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={handleFinish}
+            disabled={finishing}
+            style={[styles.finishBtn, { backgroundColor: theme.coral.solid, borderColor: ink }]}
+          >
+            {finishing
+              ? <LoadingIndicator color="#fff" size="small" />
+              : <Text style={styles.finishBtnText}>Finish</Text>
+            }
+          </Pressable>
+        )}
       </View>
+
+      {/* Active exercise card */}
+      {activeExercise && (
+        <View style={[styles.activeCard, { backgroundColor: theme.card, borderColor: theme.teal.solid ?? ink }]}>
+          <CyclingImage images={activeExercise.images} style={styles.activeImage} />
+          <View style={styles.activeInfo}>
+            <Text style={[styles.activeName, { color: theme.textStrong }]} numberOfLines={2}>
+              {activeExercise.name}
+            </Text>
+            {activeExercise.primary_muscles.length > 0 && (
+              <Text style={[styles.activeMuscles, { color: theme.textSoft }]} numberOfLines={1}>
+                {activeExercise.primary_muscles.join(', ')}
+              </Text>
+            )}
+            {activeExercise.category ? (
+              <Text style={[styles.activeCategory, { color: theme.teal.fg ?? theme.textSoft }]}>
+                {activeExercise.category}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+      )}
 
       {/* Entries */}
       <ScrollView contentContainerStyle={styles.entries}>
@@ -216,7 +262,7 @@ export function ExerciseSessionScreen() {
       <View style={[styles.footer, { borderTopColor: theme.cardBorder }]}>
         <Pressable
           onPress={() => setSearchVisible(true)}
-          style={[styles.addBtn, { backgroundColor: ink, borderColor: ink, shadowColor: "rgba(60,40,20,0.1)" }]}
+          style={[styles.addBtn, { backgroundColor: ink, borderColor: ink }]}
         >
           <Text style={[styles.addBtnText, { color: theme.page }]}>+ Add exercise</Text>
         </Pressable>
@@ -243,6 +289,13 @@ const styles = StyleSheet.create({
   },
   timerLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2 },
   timer: { fontSize: 32, fontWeight: '800', fontVariant: ['tabular-nums'], marginTop: 2 },
+  startBtn: {
+    borderRadius: 16,
+    borderWidth: 2,
+    paddingHorizontal: 22,
+    paddingVertical: 10,
+  },
+  startBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
   finishBtn: {
     borderRadius: 16,
     borderWidth: 2,
@@ -250,6 +303,22 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   finishBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
+  activeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 14,
+    marginTop: 12,
+    borderRadius: 20,
+    borderWidth: 2,
+    overflow: 'hidden',
+    padding: 10,
+    gap: 12,
+  },
+  activeImage: { width: 80, height: 80 },
+  activeInfo: { flex: 1, gap: 3 },
+  activeName: { fontSize: 16, fontWeight: '800', lineHeight: 20 },
+  activeMuscles: { fontSize: 12, textTransform: 'capitalize' },
+  activeCategory: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 2 },
   entries: { padding: 14, gap: 10, paddingBottom: 24 },
   center: { paddingTop: 40, alignItems: 'center' },
   empty: { paddingTop: 48, alignItems: 'center', paddingHorizontal: 32 },
@@ -270,6 +339,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     paddingVertical: 15,
     alignItems: 'center',
+    shadowColor: 'rgba(60,40,20,0.1)',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.12,
     shadowRadius: 14,

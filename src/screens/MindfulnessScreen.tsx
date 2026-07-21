@@ -463,14 +463,24 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
   const [countdown, setCountdown] = useState(PMR_DURATION);
   const [pmrGraceCount, setPmrGraceCount] = useState<number | null>(null);
   const [pmrGracePending, setPmrGracePending] = useState(false);
+  const [pmrReadyToStart, setPmrReadyToStart] = useState(false);
+  // Inter-step "get ready" transition state
+  const [pmrGetReadyFor, setPmrGetReadyFor] = useState<string | null>(null);
+  const [pmrGetReadyNextStep, setPmrGetReadyNextStep] = useState<number | null>(null);
+  const [pmrGetReadyCountdown, setPmrGetReadyCountdown] = useState(3);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pmrGraceRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pmrGraceDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const getReadyTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const coralSolid = (theme.coral as any)?.solid ?? ink;
 
   function stopTimer() {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+  }
+
+  function clearGetReadyTimer() {
+    if (getReadyTimerRef.current) { clearInterval(getReadyTimerRef.current); getReadyTimerRef.current = null; }
   }
 
   function clearPmrGraceInterval() {
@@ -479,6 +489,22 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
 
   function clearPmrGraceDelay() {
     if (pmrGraceDelayRef.current) { clearTimeout(pmrGraceDelayRef.current); pmrGraceDelayRef.current = null; }
+  }
+
+  function startGetReady(nextStep: number) {
+    clearGetReadyTimer();
+    setPmrGetReadyFor(PMR_STEPS[nextStep]);
+    setPmrGetReadyNextStep(nextStep);
+    setPmrGetReadyCountdown(3);
+    getReadyTimerRef.current = setInterval(() => {
+      setPmrGetReadyCountdown((c) => {
+        if (c <= 1) {
+          clearGetReadyTimer();
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
   }
 
   function startPmrStep(s: number, phase: "tense" | "release") {
@@ -493,7 +519,8 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
           if (phase === "tense") {
             startPmrStep(s, "release");
           } else if (s + 1 < PMR_STEPS.length) {
-            startPmrStep(s + 1, "tense");
+            // Pause and announce the next body part before starting it
+            startGetReady(s + 1);
           } else {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             trackMindfulnessCompletion("grounding");
@@ -505,6 +532,17 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
       });
     }, 1000);
   }
+
+  // When get-ready countdown hits 0, advance to the next step
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (pmrGetReadyCountdown === 0 && pmrGetReadyNextStep !== null) {
+      const next = pmrGetReadyNextStep;
+      setPmrGetReadyFor(null);
+      setPmrGetReadyNextStep(null);
+      startPmrStep(next, "tense");
+    }
+  }, [pmrGetReadyCountdown, pmrGetReadyNextStep]);
 
   function startPmrGrace() {
     clearPmrGraceInterval();
@@ -539,30 +577,43 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
     setTechnique(t);
     setStep(0);
     setPmrPhase("tense");
-    if (t === "pmr") startPmrGrace();
+    if (t === "pmr") setPmrReadyToStart(true);
+  }
+
+  function handlePmrBegin() {
+    setPmrReadyToStart(false);
+    startPmrGrace();
   }
 
   function handlePmrRestart() {
     stopTimer();
+    clearGetReadyTimer();
     clearPmrGraceDelay();
+    setPmrGetReadyFor(null);
+    setPmrGetReadyNextStep(null);
     setStep(0);
     setPmrPhase("tense");
     setCountdown(PMR_DURATION);
-    startPmrGrace();
+    setPmrReadyToStart(true);
   }
 
   function handleBack() {
     stopTimer();
+    clearGetReadyTimer();
     clearPmrGraceDelay();
     clearPmrGraceInterval();
     setPmrGraceCount(null);
     setPmrGracePending(false);
+    setPmrReadyToStart(false);
+    setPmrGetReadyFor(null);
+    setPmrGetReadyNextStep(null);
     setTechnique(null);
     onBack();
   }
 
   useEffect(() => () => {
     stopTimer();
+    clearGetReadyTimer();
     clearPmrGraceDelay();
     clearPmrGraceInterval();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -649,8 +700,57 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
         </View>
       ) : technique === "pmr" ? (
         <View style={{ gap: 14 }}>
-          {inPmrGrace ? (
+          {pmrReadyToStart ? (
+            // "Are you ready?" prompt before starting
+            <View style={{ alignItems: "center", gap: 18, paddingVertical: 24 }}>
+              <Text style={{ color: (theme.coral as any)?.fg, fontSize: 21, fontWeight: "900", textAlign: "center" }}>
+                Progressive Muscle Relaxation
+              </Text>
+              <View style={[styles.card, { backgroundColor: (theme.coral as any)?.tint, borderColor: (theme.coral as any)?.solid, width: "100%" }]}>
+                <Text style={{ color: (theme.coral as any)?.fg, fontSize: 14, lineHeight: 22, textAlign: "center" }}>
+                  {`We'll work through ${PMR_STEPS.length} muscle groups — tensing each for ${PMR_DURATION}s, then releasing for ${PMR_DURATION}s.`}
+                </Text>
+                <Text style={{ color: (theme.coral as any)?.sub, fontSize: 13, marginTop: 8, textAlign: "center" }}>
+                  Find a comfortable position — lying down or seated works best.
+                </Text>
+              </View>
+              <Pressable
+                onPress={handlePmrBegin}
+                style={[styles.nextBtn, { backgroundColor: (theme.coral as any)?.solid, borderColor: ink, width: "100%", paddingVertical: 16 }]}
+                accessibilityRole="button"
+              >
+                <Text style={{ color: "#fff", fontSize: 15, fontWeight: "900", letterSpacing: 0.5 }}>
+                  I'm ready — begin →
+                </Text>
+              </Pressable>
+            </View>
+          ) : inPmrGrace ? (
             <GraceCountdown count={pmrGraceCount} accentColor={coralSolid} theme={theme} ink={ink} />
+          ) : pmrGetReadyFor !== null ? (
+            // Inter-step "get ready for next body part" screen
+            <View style={{ alignItems: "center", gap: 16, paddingVertical: 28 }}>
+              <Text style={{ color: theme.textSoft, fontSize: 14, letterSpacing: 0.3 }}>
+                Great work! Next up…
+              </Text>
+              <Text style={{ color: (theme.coral as any)?.fg, fontSize: 15, fontWeight: "700", textAlign: "center" }}>
+                Get ready for
+              </Text>
+              <Text style={{ color: (theme.coral as any)?.fg, fontSize: 26, fontWeight: "900", textAlign: "center" }}>
+                {pmrGetReadyFor}
+              </Text>
+              <View style={{
+                width: 90, height: 90, borderRadius: 45,
+                backgroundColor: theme.card,
+                borderWidth: 2, borderColor: coralSolid,
+                alignItems: "center", justifyContent: "center",
+                shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.1, shadowRadius: 12, elevation: 3,
+              }}>
+                <Text style={{ color: coralSolid, fontSize: 40, fontWeight: "900" }}>
+                  {pmrGetReadyCountdown}
+                </Text>
+              </View>
+            </View>
           ) : (
             <>
               <Text style={{ color: theme.textSoft, fontSize: 13 }}>
@@ -679,7 +779,7 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
                   <Text style={{ color: ink, fontSize: 13, fontWeight: "800" }}>↺ RESTART</Text>
                 </Pressable>
                 <Pressable
-                  onPress={() => { stopTimer(); setTechnique(null); }}
+                  onPress={() => { stopTimer(); clearGetReadyTimer(); setTechnique(null); }}
                   style={[styles.endBtn, { borderColor: ink, backgroundColor: theme.card, flex: 1 }]}
                   accessibilityRole="button"
                 >
