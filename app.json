@@ -71,10 +71,10 @@
       "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
-    "owner": "kellyjas-team",
+    "owner": "keells",
     "extra": {
       "eas": {
-        "projectId": "e9f6c0bb-24a1-412f-8947-c886d73b8918"
+        "projectId": "24d6d00c-8c89-45fa-9a30-532450044375"
       },
       "apiBaseUrl": "http://129.121.125.214:4002"
     }
