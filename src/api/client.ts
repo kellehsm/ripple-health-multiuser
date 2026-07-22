@@ -83,7 +83,7 @@ export const api = {
     });
   },
   me: function () {
-    return request("/auth/me", { method: "POST" });
+    return request("/auth/me", { method: "POST", body: JSON.stringify({}) });
   },
   changePassword: function (current_password: string, new_password: string) {
     return request("/auth/change-password", { method: "POST", body: JSON.stringify({ current_password, new_password }) });
@@ -671,4 +671,20 @@ export const api = {
       body: JSON.stringify({ message, context, platform }),
     });
   },
+
+  // ── Glucose TIR ───────────────────────────────────────────────────────────────
+  getGlucoseTir: (date: string) => request(`/glucose/tir?date=${date}`),
+
+  // ── Spending mood suggestion ───────────────────────────────────────────────────
+  spendingMoodSuggest: () => request('/spending/mood-suggest'),
+  tagSpending: (id: string, tag: string | null) => request(`/spending/${id}`, { method: 'PATCH', body: JSON.stringify({ tag }) }),
+
+  // ── Experiments ───────────────────────────────────────────────────────────────
+  getExperiments: () => request('/experiments'),
+  getExperiment: (id: string) => request(`/experiments/${id}`),
+  createExperiment: (body: { description: string; duration_days: number; metrics: string[] }) =>
+    request('/experiments', { method: 'POST', body: JSON.stringify(body) }),
+  getExperimentResults: (id: string) => request(`/experiments/${id}/results`),
+  updateExperiment: (id: string, body: { status: string }) =>
+    request(`/experiments/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 };

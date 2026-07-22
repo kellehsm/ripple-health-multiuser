@@ -399,6 +399,18 @@ export function LifeScreen() {
         <Ionicons name="chevron-forward" size={16} color={theme.teal.fg} />
       </Pressable>
 
+      {/* Experiments entry */}
+      <Pressable
+        onPress={() => navigation.navigate("Experiments")}
+        style={[styles.completedBtn, { backgroundColor: theme.card, borderColor: ink }]}
+      >
+        <Text style={{ fontSize: 16, marginRight: 4 }}>🧪</Text>
+        <Text style={{ color: theme.textStrong, fontWeight: "800", fontSize: 13, flex: 1 }}>
+          Experiments
+        </Text>
+        <Ionicons name="chevron-forward" size={16} color={theme.textSoft} />
+      </Pressable>
+
       {/* Add a book card */}
       <View style={[styles.card, { backgroundColor: theme.card }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Add a book</Text>

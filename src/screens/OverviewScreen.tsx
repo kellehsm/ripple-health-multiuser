@@ -319,6 +319,7 @@ export function OverviewScreen() {
 
   const [dailySummary, setDailySummary] = useState<DailySummaryData | null>(null);
   const [topInsight, setTopInsight] = useState<Insight | null>(null);
+  const [tirPercent, setTirPercent] = useState<number | null>(null);
 
   // Mood modal state
   const [showMoodModal, setShowMoodModal] = useState(false);
@@ -364,7 +365,7 @@ export function OverviewScreen() {
 
       const dayMs = 24 * 60 * 60 * 1000;
       const nowMs = Date.now();
-      const [entries, weekly, pattern, dig, day, streakData, glucSt, meals, steps, sleep, dse, insightsList, yestGluc] =
+      const [entries, weekly, pattern, dig, day, streakData, glucSt, meals, steps, sleep, dse, insightsList, yestGluc, tirRes] =
         await Promise.all([
           api.journalToday(),
           api.weeklyMoodSummary(),
@@ -382,6 +383,7 @@ export function OverviewScreen() {
             new Date(nowMs - dayMs - 16 * 3600 * 1000).toISOString(),
             new Date(nowMs - dayMs).toISOString()
           ).catch(() => []),
+          api.getGlucoseTir(today).catch(() => null),
         ]);
 
       // Water count (sequential — needs metricId)
@@ -410,6 +412,7 @@ export function OverviewScreen() {
       setGlucoseStatus(glucSt);
       setTodayMeals(Array.isArray(meals) ? meals : []);
       setStepsCount(stepsVal);
+      setTirPercent(tirRes?.tir_percent ?? null);
 
       // Milestone checks — fire at most one celebration per load
       const candidates = await Promise.all([
@@ -1043,6 +1046,38 @@ export function OverviewScreen() {
         onDismiss={() => setShowMoodSheet(false)}
         onSubmitted={() => { setShowMoodSheet(false); load(); }}
       />
+
+      {/* ── Today's Snapshot ── */}
+      {!loading && (
+        <>
+          <Text style={{ fontSize: 10, fontWeight: "800", letterSpacing: 0.8, color: theme.textSoft, marginBottom: -4 }}>TODAY'S SNAPSHOT</Text>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            {/* TIR tile */}
+            <View style={{ flex: 1, backgroundColor: theme.card, borderWidth: 2, borderColor: theme.cardBorder, borderRadius: 20, padding: 12, alignItems: "center" }}>
+              <Text style={{ fontSize: 22, fontWeight: "900", color: theme.textStrong }}>
+                {tirPercent !== null ? tirPercent + "%" : "—"}
+              </Text>
+              <Text style={{ fontSize: 10, fontWeight: "700", color: theme.textSoft, letterSpacing: 0.8, marginTop: 2 }}>Time in Range</Text>
+            </View>
+            {/* Sleep tile */}
+            <View style={{ flex: 1, backgroundColor: theme.card, borderWidth: 2, borderColor: theme.cardBorder, borderRadius: 20, padding: 12, alignItems: "center" }}>
+              <Text style={{ fontSize: 22, fontWeight: "900", color: theme.textStrong }}>
+                {sleepStats && sleepStats.yesterday_seconds > 0
+                  ? fmtSleep(sleepStats.yesterday_seconds)
+                  : "—"}
+              </Text>
+              <Text style={{ fontSize: 10, fontWeight: "700", color: theme.textSoft, letterSpacing: 0.8, marginTop: 2 }}>Sleep</Text>
+            </View>
+            {/* Steps tile */}
+            <View style={{ flex: 1, backgroundColor: theme.card, borderWidth: 2, borderColor: theme.cardBorder, borderRadius: 20, padding: 12, alignItems: "center" }}>
+              <Text style={{ fontSize: 22, fontWeight: "900", color: theme.textStrong }} numberOfLines={1} adjustsFontSizeToFit>
+                {stepsCount !== null ? stepsCount.toLocaleString() : "—"}
+              </Text>
+              <Text style={{ fontSize: 10, fontWeight: "700", color: theme.textSoft, letterSpacing: 0.8, marginTop: 2 }}>Steps</Text>
+            </View>
+          </View>
+        </>
+      )}
 
       {/* ── Dashboard cards in user-defined order ── */}
       {dashboardLayout.order

@@ -9,6 +9,8 @@ import { PALETTES } from "../theme/palettes";
 import { api } from "../api/client";
 import { logout } from "../lib/auth";
 import { reportError } from "../utils/errorReport";
+import { QUIET_PRESETS, muteFor, getMuteUntil, clearMute } from "../lib/muteNotifications";
+import { toast } from "../lib/toast";
 
 type Journey = { total_meals: number; total_mood_checkins: number; total_active_days: number; member_since: string | null };
 
@@ -31,13 +33,51 @@ export function SettingsScreen() {
   const { theme, paletteId } = useTheme();
   const [journey, setJourney] = useState<Journey | null>(null);
   const [journeyLoading, setJourneyLoading] = useState(true);
+  const [muteUntil, setMuteUntil] = useState<number | null>(null);
 
   // Cancel legacy expo-notifications on every Settings open
   useFocusEffect(useCallback(() => {
     Notifications.cancelAllScheduledNotificationsAsync().catch(() => {});
     setJourneyLoading(true);
     api.journey().then(setJourney).catch(() => {}).finally(() => setJourneyLoading(false));
+    getMuteUntil().then(setMuteUntil).catch(() => {});
   }, []));
+
+  function fmtMuteTime(ts: number): string {
+    const d = new Date(ts);
+    return d.getHours().toString().padStart(2, "0") + ":" + d.getMinutes().toString().padStart(2, "0");
+  }
+
+  async function handlePreset(preset: typeof QUIET_PRESETS[number]) {
+    if (preset.id === 'focus') {
+      Alert.alert(
+        "Focus duration",
+        "How long do you need to focus?",
+        [
+          { text: "30 min",  onPress: () => void activateMute(30 * 60 * 1000,       preset.mode) },
+          { text: "1 hour",  onPress: () => void activateMute(60 * 60 * 1000,       preset.mode) },
+          { text: "2 hours", onPress: () => void activateMute(2 * 60 * 60 * 1000,   preset.mode) },
+          { text: "4 hours", onPress: () => void activateMute(4 * 60 * 60 * 1000,   preset.mode) },
+          { text: "Cancel",  style: "cancel" },
+        ]
+      );
+    } else {
+      await activateMute(preset.durationMs as number, preset.mode);
+    }
+  }
+
+  async function activateMute(ms: number, mode: "silent" | "vibrate") {
+    await muteFor(ms, mode);
+    const until = await getMuteUntil();
+    setMuteUntil(until);
+    toast("Quiet mode on until " + (until ? fmtMuteTime(until) : "?"));
+  }
+
+  async function handleClearMute() {
+    await clearMute();
+    setMuteUntil(null);
+    toast("Quiet mode off");
+  }
 
   function nav(screen: string) { navigation.navigate(screen); }
 
@@ -102,6 +142,35 @@ export function SettingsScreen() {
         <MenuRow title="Notifications" subtitle="Smart reminders, mute & schedules" onPress={() => nav("SettingsNotifications")} theme={theme} />
         <View style={[styles.divider, { backgroundColor: theme.cardBorder }]} />
         <MenuRow title="Always-on Tracking" subtitle="Persistent notification & background sync" onPress={() => nav("SettingsTracking")} theme={theme} />
+      </View>
+
+      {/* Quiet Mode */}
+      <Text style={[styles.groupLabel, { color: theme.textSoft }]}>QUIET MODE</Text>
+      {muteUntil !== null && (
+        <Pressable
+          onPress={handleClearMute}
+          style={[styles.quietBanner, { backgroundColor: theme.teal.tint, borderColor: theme.teal.solid }]}
+        >
+          <Text style={{ color: theme.teal.fg, fontSize: 13, fontWeight: "700", flex: 1 }}>
+            Quiet mode active until {fmtMuteTime(muteUntil)} — Tap to cancel
+          </Text>
+          <Text style={{ color: theme.teal.fg, fontSize: 16 }}>×</Text>
+        </Pressable>
+      )}
+      <View style={{ flexDirection: "row", gap: 8 }}>
+        {QUIET_PRESETS.map((preset) => (
+          <Pressable
+            key={preset.id}
+            onPress={() => void handlePreset(preset)}
+            style={[styles.quietPreset, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}
+          >
+            <Text style={{ fontSize: 22 }}>{preset.emoji}</Text>
+            <Text style={{ color: theme.textStrong, fontSize: 13, fontWeight: "700", marginTop: 4 }}>{preset.label}</Text>
+            <Text style={{ color: theme.textSoft, fontSize: 10, fontWeight: "600", marginTop: 2, textAlign: "center" }}>
+              {preset.id === 'meeting' ? "1 hour · Silent" : preset.id === 'cinema' ? "2.5 hrs · Silent" : "Custom · Vibrate only"}
+            </Text>
+          </Pressable>
+        ))}
       </View>
 
       {/* Security */}
@@ -194,4 +263,6 @@ const styles = StyleSheet.create({
   journeyCard: { borderRadius: 26, borderWidth: 2, padding: 16, gap: 4, alignItems: "flex-start" },
   journeyTitle: { fontSize: 14, fontWeight: "700", marginBottom: 4 },
   statChip: { flex: 1, borderWidth: 1.5, borderRadius: 16, padding: 10, alignItems: "center", gap: 2 },
+  quietBanner: { borderRadius: 16, borderWidth: 2, padding: 12, flexDirection: "row", alignItems: "center", gap: 8 },
+  quietPreset: { flex: 1, borderWidth: 2, borderRadius: 16, padding: 10, alignItems: "center", gap: 0 },
 });
