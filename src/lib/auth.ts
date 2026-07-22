@@ -1,5 +1,5 @@
 import * as SecureStore from "expo-secure-store";
-import { File, Paths } from "expo-file-system";
+import * as FileSystem from "expo-file-system";
 import { clearAllBarcodeCache } from "../utils/barcodeCache";
 
 const TOKEN_KEY = "ripple_jwt";
@@ -19,15 +19,19 @@ export async function setToken(token: string): Promise<void> {
   await SecureStore.setItemAsync(TOKEN_KEY, token);
   // Mirror to a plain file so the Android widget (same package) can read it
   try {
-    new File(Paths.document, WIDGET_AUTH_FILE).write(JSON.stringify({ token }));
+    await FileSystem.writeAsStringAsync(
+      FileSystem.documentDirectory + WIDGET_AUTH_FILE,
+      JSON.stringify({ token })
+    );
   } catch {}
 }
 
 export async function clearToken(): Promise<void> {
   await SecureStore.deleteItemAsync(TOKEN_KEY);
   try {
-    const f = new File(Paths.document, WIDGET_AUTH_FILE);
-    if (f.exists) f.delete();
+    const path = FileSystem.documentDirectory + WIDGET_AUTH_FILE;
+    const info = await FileSystem.getInfoAsync(path);
+    if (info.exists) await FileSystem.deleteAsync(path);
   } catch {}
 }
 
