@@ -28,6 +28,7 @@ import { checkMilestone, milestoneCopy } from "../utils/milestones";
 import { resolveLayout, type DashboardLayout, type CardId } from "../constants/dashboardCards";
 import { TooltipBubble } from "../components/TooltipBubble";
 import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
+import { DashboardEditorModal } from "../components/DashboardEditorModal";
 import { useFocusEffect } from "@react-navigation/native";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -329,6 +330,7 @@ export function OverviewScreen() {
   const [milestoneMessage, setMilestoneMessage] = useState<string | null>(null);
   const [dashboardLayout, setDashboardLayout] = useState<DashboardLayout>({ order: ["metric_chips","trends_nav","daily_summary","top_insight","timeline","insights","weekly_review","mood_pattern"], hidden: [] });
   const [showTooltip, setShowTooltip] = useState(false);
+  const [showEditor, setShowEditor] = useState(false);
 
   // Correlation toggle
   const [correlation, setCorrelation] = useState<"sleep" | "spend">("sleep");
@@ -447,6 +449,12 @@ export function OverviewScreen() {
   async function handleRefresh() {
     setRefreshing(true);
     try { await load(); } finally { setRefreshing(false); }
+  }
+
+  async function handleSaveLayout(newLayout: DashboardLayout) {
+    setDashboardLayout(newLayout);
+    setShowEditor(false);
+    try { await api.patchSettings({ dashboard_layout: newLayout }); } catch (_) {}
   }
 
   useEffect(function () { load(); }, [load]);
@@ -1017,10 +1025,23 @@ export function OverviewScreen() {
       )}
       {/* ── 1. Header ── */}
       <View style={styles.headerBlock}>
-        <Text style={[styles.greeting, { color: theme.textStrong }]} accessibilityRole="header">
-          {greetingPrefix()}, Kelly
-        </Text>
-        <Text style={[styles.dateText, { color: theme.textSoft }]}>{dateStr}</Text>
+        <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.greeting, { color: theme.textStrong }]} accessibilityRole="header">
+              {greetingPrefix()}, Kelly
+            </Text>
+            <Text style={[styles.dateText, { color: theme.textSoft }]}>{dateStr}</Text>
+          </View>
+          <Pressable
+            onPress={() => setShowEditor(true)}
+            hitSlop={10}
+            style={{ marginTop: 2 }}
+            accessibilityLabel="Edit dashboard layout"
+            accessibilityRole="button"
+          >
+            <Ionicons name="pencil-outline" size={19} color={theme.textSoft} />
+          </Pressable>
+        </View>
 
         {streak >= 3 ? (
           <View style={[styles.streakPill, { backgroundColor: theme.teal.solid }]}>
@@ -1094,6 +1115,12 @@ export function OverviewScreen() {
         onDismiss={() => setMilestoneMessage(null)}
       />
     )}
+    <DashboardEditorModal
+      visible={showEditor}
+      layout={dashboardLayout}
+      onSave={handleSaveLayout}
+      onCancel={() => setShowEditor(false)}
+    />
     </View>
   );
 }
