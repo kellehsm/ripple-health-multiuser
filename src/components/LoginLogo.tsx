@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { View } from "react-native";
+import { Animated, Easing, View } from "react-native";
 import Svg, { Path, G, Rect, Defs, ClipPath } from "react-native-svg";
 import ReanimatedLib, {
   useSharedValue,
@@ -32,27 +32,30 @@ const HB_PAUSE =  600;
 const HB_STROKE      = 0.35;
 const OUTLINE_STROKE = 0.45;
 
-const DIM = 90; // slightly smaller than original 120
+const DIM = 90;
+const CONTAINER = Math.round(DIM * 2.4) + 8;
 
-// Static ring sizes — three concentric rings frozen mid-ripple
-const RINGS: Array<{ scale: number; color: string; opacity: number }> = [
-  { scale: 1.45, color: TEAL,   opacity: 0.40 },
-  { scale: 1.90, color: CORAL,  opacity: 0.24 },
-  { scale: 2.35, color: PURPLE, opacity: 0.12 },
-];
+// Ring animation timing (slightly slower than loader for logo context)
+const LOOP_MS  = 1400;
+const RING_DUR =  900;
+const RING_GAP =  160;
 
-// Container must fit the outermost ring
-const CONTAINER = Math.round(DIM * 2.35) + 8;
+const RING_COLORS = [TEAL, CORAL, PURPLE];
 
 export function LoginLogo() {
   const uid = useRef(Math.random().toString(36).slice(2, 6)).current;
   const clipId = `ll-${uid}`;
 
+  // Heartbeat
   const dashOffset = useSharedValue(HB_LENGTH);
-
   const animatedHBProps = useAnimatedProps(() => ({
     strokeDashoffset: dashOffset.value,
   }));
+
+  // Ripple rings (same expanding-fade pattern as RippleLoader large)
+  const ring1 = useRef(new Animated.Value(0)).current;
+  const ring2 = useRef(new Animated.Value(0)).current;
+  const ring3 = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     dashOffset.value = withRepeat(
@@ -64,7 +67,30 @@ export function LoginLogo() {
       -1,
       false
     );
-    return () => cancelAnimation(dashOffset);
+
+    const ringAnim = (anim: Animated.Value, delayMs: number) => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delayMs),
+          Animated.timing(anim, {
+            toValue: 1, duration: RING_DUR, useNativeDriver: true,
+            easing: Easing.out(Easing.quad),
+          }),
+          Animated.timing(anim, { toValue: 0, duration: 0, useNativeDriver: true }),
+          Animated.delay(LOOP_MS - RING_DUR - delayMs),
+        ])
+      ).start();
+    };
+    ringAnim(ring1, 0);
+    ringAnim(ring2, RING_GAP);
+    ringAnim(ring3, RING_GAP * 2);
+
+    return () => {
+      cancelAnimation(dashOffset);
+      ring1.stopAnimation();
+      ring2.stopAnimation();
+      ring3.stopAnimation();
+    };
   }, []);
 
   return (
@@ -73,19 +99,19 @@ export function LoginLogo() {
       accessibilityLabel="Ripple Wellness"
       accessibilityRole="image"
     >
-      {/* Static ripple rings */}
-      {RINGS.map((r) => (
-        <View
-          key={r.color}
+      {/* Animated ripple rings */}
+      {[ring1, ring2, ring3].map((anim, i) => (
+        <Animated.View
+          key={i}
           style={{
             position: "absolute",
             width: DIM,
             height: DIM,
             borderRadius: DIM / 2,
             borderWidth: 2,
-            borderColor: r.color,
-            opacity: r.opacity,
-            transform: [{ scale: r.scale }],
+            borderColor: RING_COLORS[i],
+            opacity: anim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 0] }),
+            transform: [{ scale: anim.interpolate({ inputRange: [0, 1], outputRange: [1, 2.4] }) }],
           }}
         />
       ))}
