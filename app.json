@@ -76,7 +76,7 @@
       "eas": {
         "projectId": "24d6d00c-8c89-45fa-9a30-532450044375"
       },
-      "apiBaseUrl": "http://129.121.125.214:4002"
+      "apiBaseUrl": "https://app.kels.gg/dev-api"
     }
   }
 }
