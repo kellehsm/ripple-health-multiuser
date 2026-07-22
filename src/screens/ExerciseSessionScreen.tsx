@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View, Text, Pressable, ScrollView, StyleSheet, Alert, Image,
+  View, Text, Pressable, ScrollView, StyleSheet, Alert, Image, Animated,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
 import { api } from '../api/client';
@@ -111,6 +112,15 @@ export function ExerciseSessionScreen() {
   const [restSeconds, setRestSeconds] = useState<number | null>(null);
   const restTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Live heart rate
+  const [liveHR, setLiveHR] = useState<number | null>(null);
+  const hrPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Session end celebration
+  const [celebrating, setCelebrating] = useState(false);
+  const [celebStats, setCelebStats] = useState<{ exercises: number; sets: number; duration: string; peakHR: number | null } | null>(null);
+  const celebOpacity = useRef(new Animated.Value(0)).current;
+
   const loadSession = useCallback(async () => {
     try {
       const s = await api.getExerciseSession(sessionId);
@@ -129,7 +139,19 @@ export function ExerciseSessionScreen() {
   useEffect(() => () => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     if (restTimerRef.current) { clearInterval(restTimerRef.current); restTimerRef.current = null; }
+    if (hrPollRef.current) { clearInterval(hrPollRef.current); hrPollRef.current = null; }
   }, []);
+
+  async function pollHR() {
+    try {
+      const now = new Date();
+      const twoMinAgo = new Date(now.getTime() - 2 * 60 * 1000);
+      const readings = await api.heartRateRange(twoMinAgo.toISOString(), now.toISOString());
+      if (Array.isArray(readings) && readings.length > 0) {
+        setLiveHR(readings[readings.length - 1].bpm);
+      }
+    } catch {}
+  }
 
   function handleStartWorkout() {
     if (started || timerRef.current) return;
@@ -140,17 +162,27 @@ export function ExerciseSessionScreen() {
       const secs = Math.floor((Date.now() - startEpochRef.current) / 1000);
       setElapsed(formatSecs(secs));
     }, 1000);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    pollHR();
+    hrPollRef.current = setInterval(pollHR, 30000);
   }
 
+  const restElapsedRef = useRef(0);
   function startRestTimer(secs: number) {
     if (restTimerRef.current) clearInterval(restTimerRef.current);
+    restElapsedRef.current = 0;
     setRestSeconds(secs);
     restTimerRef.current = setInterval(() => {
+      restElapsedRef.current += 1;
+      if (restElapsedRef.current % 10 === 0) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      }
       setRestSeconds(prev => {
         if (prev === null || prev <= 1) {
           clearInterval(restTimerRef.current!);
           restTimerRef.current = null;
           fireRestTimerDone().catch(() => {});
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
           return null;
         }
         return prev - 1;
@@ -170,13 +202,13 @@ export function ExerciseSessionScreen() {
   }) {
     try {
       await api.addExerciseEntry(sessionId, { exercise_id: exercise.id, ...form });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       setActiveExercise({
         name: exercise.name,
         images: exercise.images ?? [],
         primary_muscles: exercise.primary_muscles ?? [],
         category: exercise.category ?? '',
       });
-      // Remove from planned list if it was a planned exercise
       setPlanned(prev => {
         const idx = prev.findIndex(p => p.id === exercise.id);
         if (idx === -1) return prev;
@@ -184,7 +216,6 @@ export function ExerciseSessionScreen() {
       });
       setLogTarget(null);
       await loadSession();
-      // Start rest timer automatically (60s default)
       startRestTimer(60);
     } catch {
       Alert.alert('Error', 'Could not log exercise.');
@@ -215,10 +246,24 @@ export function ExerciseSessionScreen() {
           setFinishing(true);
           try {
             await api.finishExerciseSession(sessionId);
-            navigation.replace('ExerciseDetail', { sessionId });
+            if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+            if (hrPollRef.current) { clearInterval(hrPollRef.current); hrPollRef.current = null; }
+            const uniqueExercises = new Set(entries.map(e => e.exercise.id)).size;
+            const totalSets = entries.reduce((sum, e) => sum + (e.sets ?? 1), 0);
+            const durationSecs = startEpochRef.current ? Math.floor((Date.now() - startEpochRef.current) / 1000) : 0;
+            setCelebStats({ exercises: uniqueExercises, sets: totalSets, duration: formatSecs(durationSecs), peakHR: liveHR });
+            setCelebrating(true);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+            celebOpacity.setValue(0);
+            Animated.timing(celebOpacity, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+            setTimeout(() => {
+              Animated.timing(celebOpacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+                setCelebrating(false);
+                navigation.replace('ExerciseDetail', { sessionId });
+              });
+            }, 2200);
           } catch {
             Alert.alert('Error', 'Could not finish session.');
-          } finally {
             setFinishing(false);
           }
         },
@@ -231,6 +276,35 @@ export function ExerciseSessionScreen() {
     setSearchVisible(true);
   }
 
+  if (celebrating && celebStats) {
+    return (
+      <Animated.View style={[styles.celebContainer, { backgroundColor: theme.teal.tint, opacity: celebOpacity }]}>
+        <Text style={[styles.celebEmoji]}>🏋️</Text>
+        <Text style={[styles.celebTitle, { color: theme.teal.sub }]}>Workout complete!</Text>
+        <View style={styles.celebStats}>
+          <View style={styles.celebStat}>
+            <Text style={[styles.celebStatVal, { color: theme.teal.sub }]}>{celebStats.exercises}</Text>
+            <Text style={[styles.celebStatLabel, { color: theme.teal.fg }]}>EXERCISES</Text>
+          </View>
+          <View style={styles.celebStat}>
+            <Text style={[styles.celebStatVal, { color: theme.teal.sub }]}>{celebStats.sets}</Text>
+            <Text style={[styles.celebStatLabel, { color: theme.teal.fg }]}>SETS</Text>
+          </View>
+          <View style={styles.celebStat}>
+            <Text style={[styles.celebStatVal, { color: theme.teal.sub }]}>{celebStats.duration}</Text>
+            <Text style={[styles.celebStatLabel, { color: theme.teal.fg }]}>TIME</Text>
+          </View>
+          {celebStats.peakHR && (
+            <View style={styles.celebStat}>
+              <Text style={[styles.celebStatVal, { color: theme.teal.sub }]}>{celebStats.peakHR}</Text>
+              <Text style={[styles.celebStatLabel, { color: theme.teal.fg }]}>BPM</Text>
+            </View>
+          )}
+        </View>
+      </Animated.View>
+    );
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: theme.page }]}>
       {/* Timer bar */}
@@ -238,6 +312,9 @@ export function ExerciseSessionScreen() {
         <View>
           <Text style={[styles.timerLabel, { color: theme.textSoft }]}>SESSION TIME</Text>
           <Text style={[styles.timer, { color: ink }]}>{elapsed}</Text>
+          {liveHR && (
+            <Text style={[styles.liveHR, { color: theme.coral.solid }]}>♥ {liveHR} bpm</Text>
+          )}
         </View>
         {!started ? (
           <Pressable
@@ -509,4 +586,21 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   addBtnText: { fontSize: 16, fontWeight: '800' },
+  liveHR: { fontSize: 13, fontWeight: '700', marginTop: 2 },
+  celebContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  celebEmoji: { fontSize: 64 },
+  celebTitle: { fontSize: 28, fontWeight: '900' },
+  celebStats: {
+    flexDirection: 'row',
+    gap: 24,
+    marginTop: 8,
+  },
+  celebStat: { alignItems: 'center', gap: 2 },
+  celebStatVal: { fontSize: 28, fontWeight: '900', fontVariant: ['tabular-nums'] },
+  celebStatLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2 },
 });

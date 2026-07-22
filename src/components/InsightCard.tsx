@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import React, { useRef, useState } from "react";
+import { Animated, PanResponder, View, Text, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
 import { onSolid } from "../theme/colorUtils";
@@ -288,7 +288,28 @@ export function InsightCard({ insight, onDismiss, compact = false }: InsightCard
   const isNew = (Date.now() - new Date(insight.first_detected).getTime()) < 7 * 86400000;
   const tip = TYPE_TIP[insight.type];
 
+  const translateX = useRef(new Animated.Value(0)).current;
+  const panResponder = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, { dx, dy }) => Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.5,
+    onPanResponderMove: (_, { dx }) => {
+      if (dx < 0) translateX.setValue(dx);
+    },
+    onPanResponderRelease: (_, { dx }) => {
+      if (dx < -72 && onDismiss) {
+        Animated.timing(translateX, { toValue: -500, duration: 200, useNativeDriver: true }).start(() => {
+          onDismiss(insight.id);
+        });
+      } else {
+        Animated.spring(translateX, { toValue: 0, useNativeDriver: true, tension: 180, friction: 12 }).start();
+      }
+    },
+    onPanResponderTerminate: () => {
+      Animated.spring(translateX, { toValue: 0, useNativeDriver: true, tension: 180, friction: 12 }).start();
+    },
+  })).current;
+
   return (
+    <Animated.View style={{ transform: [{ translateX }] }} {...panResponder.panHandlers}>
     <Pressable
       onPress={() => setExpanded(e => !e)}
       style={[styles.card, { backgroundColor: card, borderColor: ink, shadowColor: "rgba(60,40,20,0.1)" }]}
@@ -366,6 +387,7 @@ export function InsightCard({ insight, onDismiss, compact = false }: InsightCard
         </View>
       )}
     </Pressable>
+    </Animated.View>
   );
 }
 
