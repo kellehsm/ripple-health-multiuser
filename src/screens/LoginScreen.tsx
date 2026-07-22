@@ -225,6 +225,20 @@ export function LoginScreen({ onLoginSuccess, onShowSignup }: Props) {
               </Text>
             </Pressable>
           </Animated.View>
+
+          {/* Demo account shortcut */}
+          <Pressable
+            onPress={() => {
+              setEmail("demo@ripple.test");
+              setPassword("demo123");
+              setError(null);
+            }}
+            style={{ alignItems: "center", marginTop: 28, paddingVertical: 10 }}
+          >
+            <Text style={{ color: theme.textSoft ?? "#888", fontSize: 12, letterSpacing: 0.4 }}>
+              ✦ Use demo account
+            </Text>
+          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
