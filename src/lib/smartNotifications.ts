@@ -4,31 +4,37 @@ import { isMuted } from "./muteNotifications";
 
 // ─── Channels ─────────────────────────────────────────────────────────────────
 
-export const CH_MEALS    = "ripple-meal-reminders";
-export const CH_GLUCOSE  = "ripple-glucose";
-export const CH_EVENING  = "ripple-evening";
-export const CH_WATER    = "ripple-water";
-export const CH_STREAK   = "ripple-streak";
-export const CH_MOOD     = "ripple-mood";
-export const CH_BOOKS    = "ripple-books";
-export const CH_HOBBIES  = "ripple-hobbies";
-export const CH_SPENDING = "ripple-spending";
-export const CH_MEDS     = "ripple-medication";
-export const CH_CYCLE    = "ripple-cycle";
+export const CH_MEALS        = "ripple-meal-reminders";
+export const CH_GLUCOSE      = "ripple-glucose";
+export const CH_EVENING      = "ripple-evening";
+export const CH_WATER        = "ripple-water";
+export const CH_STREAK       = "ripple-streak";
+export const CH_MOOD         = "ripple-mood";
+export const CH_BOOKS        = "ripple-books";
+export const CH_HOBBIES      = "ripple-hobbies";
+export const CH_SPENDING     = "ripple-spending";
+export const CH_MEDS         = "ripple-medication";
+export const CH_CYCLE        = "ripple-cycle";
+export const CH_EXERCISE     = "ripple-exercise";
+export const CH_MINDFULNESS  = "ripple-mindfulness";
+export const CH_SLEEP        = "ripple-sleep";
 
 export async function initSmartChannels() {
   await Promise.all([
-    notifee.createChannel({ id: CH_MEALS,    name: "Meal Reminders",         importance: AndroidImportance.DEFAULT }),
-    notifee.createChannel({ id: CH_GLUCOSE,  name: "Glucose Alerts",         importance: AndroidImportance.HIGH }),
-    notifee.createChannel({ id: CH_EVENING,  name: "Evening Check-in",       importance: AndroidImportance.DEFAULT }),
-    notifee.createChannel({ id: CH_WATER,    name: "Water Reminders",        importance: AndroidImportance.DEFAULT }),
-    notifee.createChannel({ id: CH_STREAK,   name: "Streak Protection",      importance: AndroidImportance.DEFAULT }),
-    notifee.createChannel({ id: CH_MOOD,     name: "Mood Check-in",          importance: AndroidImportance.DEFAULT }),
-    notifee.createChannel({ id: CH_BOOKS,    name: "Reading Reminders",      importance: AndroidImportance.MIN }),
-    notifee.createChannel({ id: CH_HOBBIES,  name: "Hobby Reminders",        importance: AndroidImportance.MIN }),
-    notifee.createChannel({ id: CH_SPENDING, name: "Spending Reminders",     importance: AndroidImportance.MIN }),
-    notifee.createChannel({ id: CH_MEDS,     name: "Medication Reminders",   importance: AndroidImportance.HIGH }),
-    notifee.createChannel({ id: CH_CYCLE,    name: "Cycle Reminders",        importance: AndroidImportance.DEFAULT }),
+    notifee.createChannel({ id: CH_MEALS,       name: "Meal Reminders",         importance: AndroidImportance.DEFAULT }),
+    notifee.createChannel({ id: CH_GLUCOSE,     name: "Glucose Alerts",         importance: AndroidImportance.HIGH }),
+    notifee.createChannel({ id: CH_EVENING,     name: "Evening Check-in",       importance: AndroidImportance.DEFAULT }),
+    notifee.createChannel({ id: CH_WATER,       name: "Water Reminders",        importance: AndroidImportance.DEFAULT }),
+    notifee.createChannel({ id: CH_STREAK,      name: "Streak Protection",      importance: AndroidImportance.DEFAULT }),
+    notifee.createChannel({ id: CH_MOOD,        name: "Mood Check-in",          importance: AndroidImportance.DEFAULT }),
+    notifee.createChannel({ id: CH_BOOKS,       name: "Reading Reminders",      importance: AndroidImportance.MIN }),
+    notifee.createChannel({ id: CH_HOBBIES,     name: "Hobby Reminders",        importance: AndroidImportance.MIN }),
+    notifee.createChannel({ id: CH_SPENDING,    name: "Spending Alerts",        importance: AndroidImportance.DEFAULT }),
+    notifee.createChannel({ id: CH_MEDS,        name: "Medication Reminders",   importance: AndroidImportance.HIGH }),
+    notifee.createChannel({ id: CH_CYCLE,       name: "Cycle Reminders",        importance: AndroidImportance.DEFAULT }),
+    notifee.createChannel({ id: CH_EXERCISE,    name: "Workout Alerts",         importance: AndroidImportance.HIGH }),
+    notifee.createChannel({ id: CH_MINDFULNESS, name: "Mindfulness Reminders",  importance: AndroidImportance.DEFAULT }),
+    notifee.createChannel({ id: CH_SLEEP,       name: "Sleep Reminders",        importance: AndroidImportance.DEFAULT }),
   ]);
 }
 
@@ -660,5 +666,313 @@ export async function checkHobbyReminder(settings: any, now: Date) {
         ],
       },
     });
+  } catch (_) {}
+}
+
+// ─── Rest timer done ──────────────────────────────────────────────────────────
+// Called directly from ExerciseSessionScreen when countdown reaches 0.
+
+export async function fireRestTimerDone() {
+  await notifee.displayNotification({
+    id: "rest-timer-done",
+    title: "Rest done 💪",
+    body: "Time for your next set — tap to return to your workout.",
+    data: { target: "exercise" },
+    android: {
+      channelId: CH_EXERCISE,
+      smallIcon: "ic_launcher",
+      pressAction: { id: "default", launchActivity: "default" },
+      actions: [
+        { title: "Back to workout", pressAction: { id: "default", launchActivity: "default" } },
+      ],
+    },
+  });
+}
+
+// ─── Glucose threshold alerts ─────────────────────────────────────────────────
+// Separate from the spike alert — fires when current reading crosses a hard
+// hypo or hyper boundary. Uses its own per-type cooldown.
+
+let lastHypoCooldownMs = 0;
+let lastHyperCooldownMs = 0;
+const GLUCOSE_THRESHOLD_COOLDOWN_MS = 30 * 60 * 1000; // 30 min per alert type
+
+export async function checkGlucoseThreshold(settings: any, now: Date) {
+  if (await areMuted()) return;
+  const cfg = settings?.smart_notifications?.glucose_threshold;
+  if (!cfg?.enabled) return;
+
+  const lowThreshold: number = cfg.low_mg_dl ?? 70;
+  const highThreshold: number = cfg.high_mg_dl ?? 250;
+
+  try {
+    const status = await api.glucoseStatus();
+    if (!status?.hasData || status.mg_dl == null) return;
+    const mg = Number(status.mg_dl);
+
+    if (mg < lowThreshold && now.getTime() - lastHypoCooldownMs > GLUCOSE_THRESHOLD_COOLDOWN_MS) {
+      lastHypoCooldownMs = now.getTime();
+      await notifee.displayNotification({
+        id: "glucose-low",
+        title: `Low glucose ⚠️ ${mg} mg/dL`,
+        body: `Your reading of ${mg} mg/dL is below ${lowThreshold} mg/dL. Consider having a snack.`,
+        data: { target: "health" },
+        android: {
+          channelId: CH_GLUCOSE,
+          smallIcon: "ic_launcher",
+          pressAction: { id: "default", launchActivity: "default" },
+          actions: [
+            { title: "Log Snack", pressAction: { id: "log-meal", launchActivity: "default" } },
+            { title: "Dismiss",   pressAction: { id: "dismiss-glucose-low" } },
+          ],
+        },
+      });
+    } else if (mg > highThreshold && now.getTime() - lastHyperCooldownMs > GLUCOSE_THRESHOLD_COOLDOWN_MS) {
+      lastHyperCooldownMs = now.getTime();
+      await notifee.displayNotification({
+        id: "glucose-high",
+        title: `High glucose ⚠️ ${mg} mg/dL`,
+        body: `Your reading of ${mg} mg/dL is above ${highThreshold} mg/dL.`,
+        data: { target: "health" },
+        android: {
+          channelId: CH_GLUCOSE,
+          smallIcon: "ic_launcher",
+          pressAction: { id: "default", launchActivity: "default" },
+          actions: [
+            { title: "Dismiss", pressAction: { id: "dismiss-glucose-high" } },
+          ],
+        },
+      });
+    }
+  } catch (_) {}
+}
+
+// ─── Spending alerts ──────────────────────────────────────────────────────────
+// Fires once per day if today's spending has exceeded the configured budget.
+
+export async function checkSpendingAlerts(settings: any, now: Date) {
+  if (await areMuted()) return;
+  const cfg = settings?.smart_notifications?.spending_alerts;
+  if (!cfg?.enabled) return;
+  if (isNighttime(now)) return;
+  if (wasSent("spending_alert")) return;
+
+  const budget: number = cfg.daily_budget ?? 100;
+  const today = now.toISOString().slice(0, 10);
+
+  try {
+    const transactions: any[] = await api.spending(today).catch(() => []);
+    if (!Array.isArray(transactions) || transactions.length === 0) return;
+
+    const todayTotal = transactions
+      .filter((t: any) => {
+        const d = (t.date ?? t.spent_at ?? "").slice(0, 10);
+        return d === today;
+      })
+      .reduce((sum: number, t: any) => sum + Math.abs(Number(t.amount ?? 0)), 0);
+
+    if (todayTotal < budget) return;
+    markSent("spending_alert");
+
+    await notifee.displayNotification({
+      id: "spending-alert",
+      title: "Daily budget reached 💳",
+      body: `You've spent $${todayTotal.toFixed(2)} today — over your $${budget} daily budget.`,
+      data: { target: "finance" },
+      android: {
+        channelId: CH_SPENDING,
+        smallIcon: "ic_launcher",
+        pressAction: { id: "default", launchActivity: "default" },
+        actions: [
+          { title: "Review", pressAction: { id: "default", launchActivity: "default" } },
+          { title: "Dismiss", pressAction: { id: "dismiss-spending" } },
+        ],
+      },
+    });
+  } catch (_) {}
+}
+
+// ─── Mindfulness reminder ─────────────────────────────────────────────────────
+// Simple once-per-day nudge to practice. Fires at a configurable hour.
+
+export async function checkMindfulnessReminder(settings: any, now: Date) {
+  if (await areMuted()) return;
+  const cfg = settings?.smart_notifications?.mindfulness_reminder;
+  if (!cfg?.enabled) return;
+  if (isNighttime(now)) return;
+
+  const targetH: number = cfg.hour ?? 20;
+  if (now.getHours() < targetH) return;
+  if (wasSent("mindfulness_reminder")) return;
+  markSent("mindfulness_reminder");
+
+  const messages = [
+    "A few minutes of breathing or meditation can shift your whole evening.",
+    "Take a moment to check in with yourself — a quick body scan or breath session is waiting.",
+    "Even two minutes of mindful breathing makes a difference.",
+    "Your mindfulness practice is one tap away — want to unwind?",
+  ];
+  const body = messages[now.getDate() % messages.length];
+
+  await notifee.displayNotification({
+    id: "mindfulness-reminder",
+    title: "Mindfulness moment 🧘",
+    body,
+    data: { target: "mindfulness" },
+    android: {
+      channelId: CH_MINDFULNESS,
+      smallIcon: "ic_launcher",
+      pressAction: { id: "default", launchActivity: "default" },
+      actions: [
+        { title: "Open app", pressAction: { id: "default", launchActivity: "default" } },
+        { title: "Later",    pressAction: { id: "skip-mindfulness" } },
+      ],
+    },
+  });
+}
+
+// ─── Sleep / bedtime reminder ─────────────────────────────────────────────────
+// Fires once at the user's configured bedtime hour.
+
+export async function checkSleepReminder(settings: any, now: Date) {
+  if (await areMuted()) return;
+  const cfg = settings?.smart_notifications?.sleep_reminder;
+  if (!cfg?.enabled) return;
+
+  const targetH: number = cfg.hour ?? 22;
+  if (now.getHours() < targetH) return;
+  if (wasSent("sleep_reminder")) return;
+  markSent("sleep_reminder");
+
+  const messages = [
+    "Winding down soon? Consistent sleep times help your rhythm.",
+    "Getting close to bedtime — try to start your wind-down routine.",
+    "A good night's sleep starts with a consistent bedtime.",
+  ];
+  const body = messages[now.getDate() % messages.length];
+
+  await notifee.displayNotification({
+    id: "sleep-reminder",
+    title: "Bedtime 😴",
+    body,
+    data: { target: "health" },
+    android: {
+      channelId: CH_SLEEP,
+      smallIcon: "ic_launcher",
+      pressAction: { id: "default", launchActivity: "default" },
+      actions: [
+        { title: "Dismiss", pressAction: { id: "dismiss-sleep" } },
+      ],
+    },
+  });
+}
+
+// ─── Workout reminder ─────────────────────────────────────────────────────────
+// Fires once per day (afternoon) if the user hasn't had a completed workout
+// session in the configured number of days.
+
+export async function checkWorkoutReminder(settings: any, now: Date) {
+  if (await areMuted()) return;
+  const cfg = settings?.smart_notifications?.workout_reminder;
+  if (!cfg?.enabled) return;
+  if (isNighttime(now)) return;
+
+  const targetH = 15; // 3pm — enough time in the day to act on it
+  if (now.getHours() < targetH) return;
+  if (wasSent("workout_reminder")) return;
+  markSent("workout_reminder");
+
+  const daysThreshold: number = cfg.days_threshold ?? 3;
+
+  try {
+    const sessions: any[] = await api.listExerciseSessions(5, 0).catch(() => []);
+    const completed = Array.isArray(sessions) ? sessions.filter((s: any) => !!s.ended_at) : [];
+    if (completed.length === 0) return; // never worked out — don't nag
+
+    const lastMs = new Date(completed[0].ended_at ?? completed[0].started_at).getTime();
+    const daysSince = (now.getTime() - lastMs) / 86400000;
+    if (daysSince < daysThreshold) return;
+
+    const days = Math.floor(daysSince);
+    await notifee.displayNotification({
+      id: "workout-reminder",
+      title: "Time to move 🏋️",
+      body: `It's been ${plural(days, "day")} since your last workout — want to start a session today?`,
+      data: { target: "exercise" },
+      android: {
+        channelId: CH_EXERCISE,
+        smallIcon: "ic_launcher",
+        pressAction: { id: "default", launchActivity: "default" },
+        actions: [
+          { title: "Start workout", pressAction: { id: "default", launchActivity: "default" } },
+          { title: "Later",         pressAction: { id: "skip-workout" } },
+        ],
+      },
+    });
+  } catch (_) {}
+}
+
+// ─── Step goal ────────────────────────────────────────────────────────────────
+// Fires once when the user is 80%+ toward their goal but hasn't hit it yet,
+// and once more as a celebration when the goal is reached.
+
+const stepCelebrationSent = new Set<string>();
+
+export async function checkStepGoal(settings: any, now: Date) {
+  if (await areMuted()) return;
+  const cfg = settings?.smart_notifications?.step_goal;
+  if (!cfg?.enabled) return;
+  if (isNighttime(now)) return;
+  if (now.getHours() < 10) return; // wait until mid-morning
+
+  const goal: number = cfg.goal ?? 10000;
+  const today = now.toISOString().slice(0, 10);
+  const todayKey = `steps_${today}`;
+
+  try {
+    const data = await api.stepsToday(today).catch(() => null);
+    const steps = typeof data === "number" ? data
+      : (data as any)?.count ?? (data as any)?.steps ?? null;
+    if (steps === null || steps === undefined) return;
+    const count = Number(steps);
+    if (isNaN(count) || count <= 0) return;
+
+    const pct = count / goal;
+
+    // Celebration — once per day when goal hit
+    const celebKey = `${todayKey}_done`;
+    if (count >= goal && !stepCelebrationSent.has(celebKey)) {
+      stepCelebrationSent.add(celebKey);
+      await notifee.displayNotification({
+        id: "step-goal-done",
+        title: `Step goal reached! 🎉`,
+        body: `You hit ${count.toLocaleString()} steps today — goal crushed.`,
+        data: { target: "health" },
+        android: {
+          channelId: CH_EXERCISE,
+          smallIcon: "ic_launcher",
+          pressAction: { id: "default", launchActivity: "default" },
+        },
+      });
+      return;
+    }
+
+    // Close-to-goal nudge — once per day when 80–99%
+    const nudgeKey = `${todayKey}_nudge`;
+    if (pct >= 0.8 && pct < 1.0 && !stepCelebrationSent.has(nudgeKey)) {
+      stepCelebrationSent.add(nudgeKey);
+      const remaining = goal - count;
+      await notifee.displayNotification({
+        id: "step-goal-close",
+        title: `Almost there! ${count.toLocaleString()} steps`,
+        body: `Only ${remaining.toLocaleString()} more steps to hit your ${goal.toLocaleString()} goal.`,
+        data: { target: "health" },
+        android: {
+          channelId: CH_EXERCISE,
+          smallIcon: "ic_launcher",
+          pressAction: { id: "default", launchActivity: "default" },
+        },
+      });
+    }
   } catch (_) {}
 }

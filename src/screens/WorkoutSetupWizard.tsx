@@ -452,6 +452,11 @@ export function WorkoutSetupWizard({ onComplete }: Props) {
             onNext={goNext} nextDisabled={!goal}
             theme={theme} ink={ink}
           />
+          <Pressable onPress={handleSkip} disabled={skipping} style={{ alignItems: 'center', paddingTop: 12 }}>
+            <Text style={{ color: theme.textSoft, fontSize: 13 }}>
+              {skipping ? 'Skipping…' : 'Skip setup — I\'ll build sessions manually'}
+            </Text>
+          </Pressable>
         </>
       )}
 

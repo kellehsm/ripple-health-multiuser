@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
+  PanResponder,
   ScrollView,
   View,
   Text,
@@ -8,7 +9,7 @@ import {
   Dimensions
 } from "react-native";
 import { LoadingIndicator } from "../components/LoadingIndicator";
-import Svg, { Circle, Line } from "react-native-svg";
+import Svg, { Circle, Line, Rect, Text as SvgText } from "react-native-svg";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { useFocusEffect } from "@react-navigation/native";
@@ -59,8 +60,8 @@ function splitAvg(xs: number[], ys: number[]): [number | null, number | null] {
 // ── Scatter plot ──────────────────────────────────────────────────────────────
 
 function ScatterPlot({
-  xs, ys, dotColor, lineColor,
-}: { xs: number[]; ys: number[]; dotColor: string; lineColor: string }) {
+  xs, ys, dotColor, lineColor, xLabel, yLabel,
+}: { xs: number[]; ys: number[]; dotColor: string; lineColor: string; xLabel?: string; yLabel?: string }) {
   const xMin = Math.min(...xs), xMax = Math.max(...xs);
   const yMin = Math.min(...ys), yMax = Math.max(...ys);
   if (xMax - xMin < 0.001 || yMax - yMin < 0.001) return null;
@@ -76,17 +77,69 @@ function ScatterPlot({
   const lx1 = PAD, ly1 = clamp(py(slope * xMin + intercept));
   const lx2 = PAD + W, ly2 = clamp(py(slope * xMax + intercept));
 
+  const [scrub, setScrub] = useState<{ cx: number; xv: number; yv: number } | null>(null);
+  const viewRef = useRef<View>(null);
+
+  const panResponder = useRef(PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: (e) => handleScrub(e.nativeEvent.locationX),
+    onPanResponderMove: (e) => handleScrub(e.nativeEvent.locationX),
+    onPanResponderRelease: () => setScrub(null),
+    onPanResponderTerminate: () => setScrub(null),
+  })).current;
+
+  function handleScrub(touchX: number) {
+    const clampedX = Math.max(PAD, Math.min(PAD + W, touchX));
+    const xVal = xMin + ((clampedX - PAD) / W) * (xMax - xMin);
+    let closest = 0;
+    let minDist = Infinity;
+    for (let i = 0; i < xs.length; i++) {
+      const d = Math.abs(xs[i] - xVal);
+      if (d < minDist) { minDist = d; closest = i; }
+    }
+    setScrub({ cx: px(xs[closest]), xv: xs[closest], yv: ys[closest] });
+  }
+
+  const labelY = scrub ? Math.max(14, py(scrub.yv) - 6) : 0;
+
   return (
     <View
+      ref={viewRef}
       accessible={true}
       accessibilityRole="image"
-      accessibilityLabel={`Scatter chart showing ${xs.length} data points. Range: ${xMin.toFixed(1)}–${xMax.toFixed(1)} on the x-axis, ${yMin.toFixed(1)}–${yMax.toFixed(1)} on the y-axis.`}
+      accessibilityLabel={`Scatter chart showing ${xs.length} data points.`}
+      {...panResponder.panHandlers}
     >
       <Svg width={CHART_W} height={CHART_H}>
         <Line x1={lx1} y1={ly1} x2={lx2} y2={ly2} stroke={lineColor} strokeWidth={1.5} strokeDasharray="5,4" opacity={0.45} />
         {xs.map((x, i) => (
           <Circle key={i} cx={px(x)} cy={py(ys[i])} r={4} fill={dotColor} opacity={0.72} />
         ))}
+        {scrub && (
+          <>
+            <Line x1={scrub.cx} y1={PAD} x2={scrub.cx} y2={PAD + H} stroke={dotColor} strokeWidth={1.5} opacity={0.6} strokeDasharray="3,3" />
+            <Circle cx={scrub.cx} cy={py(scrub.yv)} r={6} fill={dotColor} opacity={1} />
+            <Rect
+              x={Math.min(scrub.cx + 6, CHART_W - 86)}
+              y={labelY - 12}
+              width={80}
+              height={22}
+              rx={5}
+              fill={dotColor}
+              opacity={0.9}
+            />
+            <SvgText
+              x={Math.min(scrub.cx + 10, CHART_W - 82)}
+              y={labelY + 3}
+              fontSize={10}
+              fill="#fff"
+              fontWeight="700"
+            >
+              {scrub.xv.toFixed(1)} → {scrub.yv.toFixed(1)}
+            </SvgText>
+          </>
+        )}
       </Svg>
     </View>
   );

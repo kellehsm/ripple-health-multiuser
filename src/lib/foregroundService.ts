@@ -5,6 +5,7 @@ import {
   initSmartChannels,
   checkMealReminders,
   checkGlucoseSpike,
+  checkGlucoseThreshold,
   checkEveningCheckin,
   checkWaterReminder,
   checkStreakProtection,
@@ -13,6 +14,11 @@ import {
   checkHobbyReminder,
   checkMedicationReminders,
   checkCycleReminders,
+  checkSpendingAlerts,
+  checkMindfulnessReminder,
+  checkSleepReminder,
+  checkWorkoutReminder,
+  checkStepGoal,
 } from "./smartNotifications";
 
 const CHANNEL_ID = "ripple-wellness-live";
@@ -108,6 +114,7 @@ async function syncAndUpdateNotification(notificationId: string) {
     const now = new Date();
     await checkMealReminders(settings, now);
     await checkGlucoseSpike(settings, now);
+    await checkGlucoseThreshold(settings, now);
     await checkEveningCheckin(settings, now);
     await checkWaterReminder(settings, now);
     await checkStreakProtection(settings, now);
@@ -116,6 +123,11 @@ async function syncAndUpdateNotification(notificationId: string) {
     await checkHobbyReminder(settings, now);
     await checkMedicationReminders(settings, now);
     await checkCycleReminders(settings, now);
+    await checkSpendingAlerts(settings, now);
+    await checkMindfulnessReminder(settings, now);
+    await checkSleepReminder(settings, now);
+    await checkWorkoutReminder(settings, now);
+    await checkStepGoal(settings, now);
   } catch (_) {}
 }
 

@@ -21,6 +21,8 @@ import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { UndoBanner } from "../components/UndoBanner";
 import { HOBBY_LIST } from "../lib/hobbyList";
+import { TooltipBubble } from "../components/TooltipBubble";
+import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
 
 
 type Book = {
@@ -85,11 +87,19 @@ export function LifeScreen() {
   const navigation = useNavigation<any>();
   const { preferences, loading: prefsLoading } = useTabPreferences();
 
+  const [showTooltip, setShowTooltip] = useState(false);
+
   useFocusEffect(useCallback(() => {
     if (prefsLoading) return;
     if (!preferences.selectedModules.includes('hobbies')) {
       navigation.navigate('Home');
     }
+    hasSeenTooltip("life").then(seen => {
+      if (!seen) {
+        setShowTooltip(true);
+        markTooltipSeen("life");
+      }
+    });
   }, [prefsLoading, preferences.selectedModules]));
 
   const [books, setBooks] = useState<Book[]>([]);
@@ -372,6 +382,12 @@ export function LifeScreen() {
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
     >
+      {showTooltip && (
+        <TooltipBubble
+          message="Track hobbies, books, journal entries, and mood here. Log time on the things you love to discover patterns in what recharges you."
+          onDismiss={() => setShowTooltip(false)}
+        />
+      )}
       {/* Completed banner */}
       <Pressable
         onPress={() => navigation.navigate("Completed")}
@@ -469,9 +485,14 @@ export function LifeScreen() {
                           width: `${Math.min(pct ?? 0, 100)}%` as any,
                         }]} />
                       </View>
-                      <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 4 }}>
-                        {pagesTotal} of {totalPages} pages · {pct ?? 0}%
-                      </Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
+                        <Text style={{ color: theme.textSoft, fontSize: 11 }}>
+                          {pagesTotal} of {totalPages} pages
+                        </Text>
+                        <Text style={{ color: theme.teal.fg, fontSize: 14, fontWeight: "800" }}>
+                          {pct ?? 0}%
+                        </Text>
+                      </View>
                     </>
                   ) : pagesTotal > 0 ? (
                     <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 4 }}>{pagesTotal} pages read</Text>
@@ -732,7 +753,7 @@ function makeStyles(ink: string, card: string, border: string) {
     shadowRadius: 10,
     elevation: 2,
   },
-  coverThumb: { width: 36, height: 52, borderRadius: 4 },
+  coverThumb: { width: 54, height: 78, borderRadius: 6 },
 
   bookRow: { flexDirection: "row", gap: 12 },
   bookTitle: { fontSize: 15, fontWeight: "800", marginBottom: 2 },

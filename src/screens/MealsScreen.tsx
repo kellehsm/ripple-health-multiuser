@@ -26,6 +26,8 @@ import { invalidateBarcodeCache } from "../utils/barcodeCache";
 import { RecipeBuilderModal, Recipe } from "../components/RecipeBuilderModal";
 import { toast, Msg } from "../lib/toast";
 import { UndoBanner } from "../components/UndoBanner";
+import { TooltipBubble } from "../components/TooltipBubble";
+import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
 
 // ── Substance types ───────────────────────────────────────────────────────────
 
@@ -653,11 +655,19 @@ export function MealsScreen() {
   const card = theme.card;
   const styles = useMemo(() => makeStyles(ink, card, theme.cardBorder), [ink, card, theme.cardBorder]);
 
+  const [showTooltip, setShowTooltip] = useState(false);
+
   useFocusEffect(useCallback(() => {
     if (prefsLoading) return;
     if (!preferences.selectedModules.includes('meals')) {
       navigation.navigate('Home');
     }
+    hasSeenTooltip("meals").then(seen => {
+      if (!seen) {
+        setShowTooltip(true);
+        markTooltipSeen("meals");
+      }
+    });
   }, [prefsLoading, preferences.selectedModules]));
 
   const [mealType, setMealType] = useState<MealType>("breakfast");
@@ -1093,6 +1103,12 @@ export function MealsScreen() {
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
     >
+      {showTooltip && (
+        <TooltipBubble
+          message="Log meals, drinks, and snacks here. Tap + to add by name, scan a barcode, or pick from your frequent items. Swipe or hold entries to edit or delete."
+          onDismiss={() => setShowTooltip(false)}
+        />
+      )}
       {/* Totals strip */}
       {totals !== null && (
         <View style={styles.totalsRow}>

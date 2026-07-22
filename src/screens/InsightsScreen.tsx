@@ -1,6 +1,6 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ScrollView, View, Text, StyleSheet, RefreshControl, Pressable
+  Animated, ScrollView, View, Text, StyleSheet, RefreshControl, Pressable
 } from "react-native";
 import { LoadingIndicator } from "../components/LoadingIndicator";
 import { useFocusEffect } from "@react-navigation/native";
@@ -8,6 +8,54 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { InsightCard, Insight } from "../components/InsightCard";
+import { UndoBanner } from "../components/UndoBanner";
+import { TooltipBubble } from "../components/TooltipBubble";
+import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
+
+function SkeletonPulse({ style }: { style?: object }) {
+  const opacity = useRef(new Animated.Value(0.4)).current;
+  useEffect(() => {
+    const anim = Animated.loop(Animated.sequence([
+      Animated.timing(opacity, { toValue: 0.85, duration: 750, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 0.4, duration: 750, useNativeDriver: true }),
+    ]));
+    anim.start();
+    return () => anim.stop();
+  }, []);
+  return <Animated.View style={[{ backgroundColor: "#C8C8C8", borderRadius: 14 }, style, { opacity }]} />;
+}
+
+function SkeletonCard() {
+  return (
+    <View style={{ gap: 10, padding: 14, borderRadius: 26, borderWidth: 2, borderColor: "#E0E0E0", backgroundColor: "#F5F5F5" }}>
+      <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
+        <SkeletonPulse style={{ width: 30, height: 30, borderRadius: 12 }} />
+        <View style={{ flex: 1, gap: 6 }}>
+          <SkeletonPulse style={{ height: 14, width: "70%" }} />
+          <SkeletonPulse style={{ height: 10, width: "40%" }} />
+        </View>
+      </View>
+      <SkeletonPulse style={{ height: 13, width: "95%" }} />
+      <SkeletonPulse style={{ height: 13, width: "80%" }} />
+    </View>
+  );
+}
+
+function AnimatedCard({ insight, onDismiss, index }: { insight: Insight; onDismiss?: (id: string) => void; index: number }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(14)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, { toValue: 1, duration: 280, delay: index * 55, useNativeDriver: true }),
+      Animated.timing(translateY, { toValue: 0, duration: 280, delay: index * 55, useNativeDriver: true }),
+    ]).start();
+  }, []);
+  return (
+    <Animated.View style={{ opacity, transform: [{ translateY }] }}>
+      <InsightCard insight={insight} onDismiss={onDismiss} />
+    </Animated.View>
+  );
+}
 
 const TYPE_GROUPS: { label: string; types: string[]; emoji: string }[] = [
   { label: "All",          types: [],                                              emoji: "✨" },
@@ -26,6 +74,7 @@ export function InsightsScreen() {
   const ink = theme.ink;
   const card = theme.card;
 
+  const [showTooltip, setShowTooltip] = useState(false);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [dismissed, setDismissed] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +83,9 @@ export function InsightsScreen() {
   const [activeGroup, setActiveGroup] = useState(0);
   const [showDismissed, setShowDismissed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [undoItem, setUndoItem] = useState<Insight | null>(null);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [animationKey, setAnimationKey] = useState(0);
 
   async function load(showRefresh = false) {
     if (showRefresh) setRefreshing(true);
@@ -48,6 +100,7 @@ export function InsightsScreen() {
         : [];
       setInsights(activeList);
       setDismissed(dismissedList);
+      setAnimationKey(k => k + 1);
     } catch (e: any) {
       setError("Couldn't load insights — pull to retry.");
     } finally {
@@ -56,15 +109,36 @@ export function InsightsScreen() {
     }
   }
 
-  useFocusEffect(useCallback(() => { load(); }, []));
+  useFocusEffect(useCallback(() => {
+    hasSeenTooltip("insights").then(seen => {
+      if (!seen) {
+        setShowTooltip(true);
+        markTooltipSeen("insights");
+      }
+    });
+    load();
+  }, []));
 
   async function handleDismiss(id: string) {
     try {
       await api.dismissInsight(id);
       const item = insights.find(i => i.id === id);
       setInsights(prev => prev.filter(i => i.id !== id));
-      if (item) setDismissed(prev => [{ ...item, dismissed: true }, ...prev]);
+      if (item) {
+        setDismissed(prev => [{ ...item, dismissed: true }, ...prev]);
+        if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+        setUndoItem(item);
+        undoTimerRef.current = setTimeout(() => setUndoItem(null), 3500);
+      }
     } catch (_) {}
+  }
+
+  async function handleUndoDismiss() {
+    if (!undoItem) return;
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    const item = undoItem;
+    setUndoItem(null);
+    await handleUndismiss(item.id);
   }
 
   async function handleUndismiss(id: string) {
@@ -96,11 +170,18 @@ export function InsightsScreen() {
   const styles = makeStyles(theme.page, ink, card);
 
   return (
+    <View style={{ flex: 1, backgroundColor: theme.page }}>
     <ScrollView
-      style={{ backgroundColor: theme.page }}
+      style={{ flex: 1 }}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={theme.teal.bar} />}
     >
+      {showTooltip && (
+        <TooltipBubble
+          message="Long-term patterns detected from your data, updated nightly. Each insight shows a confidence level based on how strong the pattern is. Dismiss ones that don't apply to you."
+          onDismiss={() => setShowTooltip(false)}
+        />
+      )}
       {/* Header */}
       <View style={styles.headerBlock}>
         <Text style={[styles.heading, { color: theme.textStrong }]}>Your Insights</Text>
@@ -146,9 +227,10 @@ export function InsightsScreen() {
       </View>
 
       {loading && (
-        <View style={{ paddingVertical: 40, alignItems: "center" }}>
-          <LoadingIndicator size="large" color={theme.teal.solid} />
-          <Text style={[styles.emptyText, { color: theme.textSoft, marginTop: 12 }]}>Analyzing your data…</Text>
+        <View style={{ gap: 10 }}>
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
         </View>
       )}
 
@@ -177,8 +259,8 @@ export function InsightsScreen() {
         <View style={{ marginBottom: 4 }}>
           <Text style={[styles.sectionLabel, { color: theme.textSoft }]}>STREAKS</Text>
           <View style={{ gap: 10 }}>
-            {streaks.map(insight => (
-              <InsightCard key={insight.id} insight={insight} onDismiss={handleDismiss} />
+            {streaks.map((insight, i) => (
+              <AnimatedCard key={`${animationKey}-${insight.id}`} insight={insight} onDismiss={handleDismiss} index={i} />
             ))}
           </View>
         </View>
@@ -191,8 +273,8 @@ export function InsightsScreen() {
             <Text style={[styles.sectionLabel, { color: theme.textSoft, marginTop: 8 }]}>PATTERNS</Text>
           )}
           <View style={{ gap: 10 }}>
-            {patterns.map(insight => (
-              <InsightCard key={insight.id} insight={insight} onDismiss={handleDismiss} />
+            {patterns.map((insight, i) => (
+              <AnimatedCard key={`${animationKey}-${insight.id}`} insight={insight} onDismiss={handleDismiss} index={streaks.length + i} />
             ))}
           </View>
         </View>
@@ -234,6 +316,14 @@ export function InsightsScreen() {
         Insights are based on statistical patterns in your personal data only. They describe observations, never diagnoses. Always consult a healthcare professional for medical decisions.
       </Text>
     </ScrollView>
+    {undoItem && (
+      <UndoBanner
+        message={`Dismissed: ${undoItem.title.slice(0, 50)}${undoItem.title.length > 50 ? '…' : ''}`}
+        onUndo={handleUndoDismiss}
+        theme={theme}
+      />
+    )}
+    </View>
   );
 }
 

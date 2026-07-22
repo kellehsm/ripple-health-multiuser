@@ -26,6 +26,9 @@ import { MoodPageSheet } from "../components/MoodPageSheet";
 import { MilestoneBanner } from "../components/MilestoneBanner";
 import { checkMilestone, milestoneCopy } from "../utils/milestones";
 import { resolveLayout, type DashboardLayout, type CardId } from "../constants/dashboardCards";
+import { TooltipBubble } from "../components/TooltipBubble";
+import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
+import { useFocusEffect } from "@react-navigation/native";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -299,6 +302,7 @@ export function OverviewScreen() {
   const [patternEvents, setPatternEvents] = useState<PatternEvent[]>([]);
   const [digest, setDigest] = useState<WeeklyDigest | null>(null);
   const [dayGlucose, setDayGlucose] = useState<GlucoseReading[]>([]);
+  const [yesterdayGlucose, setYesterdayGlucose] = useState<GlucoseReading[]>([]);
   const [dayEvents, setDayEvents] = useState<DayEvent[]>([]);
   const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -323,13 +327,14 @@ export function OverviewScreen() {
 
   const [milestoneMessage, setMilestoneMessage] = useState<string | null>(null);
   const [dashboardLayout, setDashboardLayout] = useState<DashboardLayout>({ order: ["metric_chips","trends_nav","daily_summary","top_insight","timeline","insights","weekly_review","mood_pattern"], hidden: [] });
+  const [showTooltip, setShowTooltip] = useState(false);
 
   // Correlation toggle
   const [correlation, setCorrelation] = useState<"sleep" | "spend">("sleep");
 
   // Glucose chart scrub
-  const [scrub, setScrub] = useState<{ x: number; mgDl: number; time: number } | null>(null);
-  const scrubData = useRef({ windowStart: 0, windowEnd: 1, minVal: 60, maxVal: 200, dayGlucose: [] as GlucoseReading[] });
+  const [scrub, setScrub] = useState<{ x: number; mgDl: number; yestMgDl: number | null; time: number } | null>(null);
+  const scrubData = useRef({ windowStart: 0, windowEnd: 1, minVal: 60, maxVal: 200, dayGlucose: [] as GlucoseReading[], yesterdayGlucose: [] as GlucoseReading[] });
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => scrubData.current.dayGlucose.length > 0,
@@ -345,18 +350,21 @@ export function OverviewScreen() {
   ).current;
 
   function updateScrub(touchX: number) {
-    const { windowStart, windowEnd, minVal, maxVal, dayGlucose } = scrubData.current;
+    const { windowStart, windowEnd, minVal, maxVal, dayGlucose, yesterdayGlucose } = scrubData.current;
     const x = Math.max(PAD_L, Math.min(CHART_W, touchX));
     const t = windowStart + ((x - PAD_L) / (CHART_W - PAD_L)) * (windowEnd - windowStart);
     const raw = interpolateGlucose(dayGlucose, t);
-    if (raw !== null) setScrub({ x, mgDl: Math.round(raw), time: t });
+    const yestRaw = interpolateGlucose(yesterdayGlucose, t);
+    if (raw !== null) setScrub({ x, mgDl: Math.round(raw), yestMgDl: yestRaw !== null ? Math.round(yestRaw) : null, time: t });
   }
 
   const load = useCallback(async function () {
     try {
       const today = new Date().toISOString().split("T")[0];
 
-      const [entries, weekly, pattern, dig, day, streakData, glucSt, meals, steps, sleep, dse, insightsList] =
+      const dayMs = 24 * 60 * 60 * 1000;
+      const nowMs = Date.now();
+      const [entries, weekly, pattern, dig, day, streakData, glucSt, meals, steps, sleep, dse, insightsList, yestGluc] =
         await Promise.all([
           api.journalToday(),
           api.weeklyMoodSummary(),
@@ -370,6 +378,10 @@ export function OverviewScreen() {
           api.sleepStats().catch(() => null),
           api.dailySummary(today).catch(() => null),
           api.getInsights().catch(() => null),
+          api.glucoseRange(
+            new Date(nowMs - dayMs - 16 * 3600 * 1000).toISOString(),
+            new Date(nowMs - dayMs).toISOString()
+          ).catch(() => []),
         ]);
 
       // Water count (sequential — needs metricId)
@@ -417,6 +429,11 @@ export function OverviewScreen() {
         setDayGlucose(Array.isArray(day.glucose) ? day.glucose : []);
         setDayEvents(Array.isArray(day.events) ? day.events : []);
       }
+      const yestArray = Array.isArray(yestGluc) ? yestGluc : [];
+      setYesterdayGlucose(yestArray.map((r: GlucoseReading) => ({
+        ...r,
+        recorded_at: new Date(new Date(r.recorded_at).getTime() + dayMs).toISOString(),
+      })));
     } catch {
       toast(Msg.loadData, "error");
     } finally {
@@ -436,6 +453,15 @@ export function OverviewScreen() {
       .then(function (s: any) { setDashboardLayout(resolveLayout(s?.dashboard_layout)); })
       .catch(function () {});
   }, []);
+
+  useFocusEffect(useCallback(() => {
+    hasSeenTooltip("overview").then(seen => {
+      if (!seen) {
+        setShowTooltip(true);
+        markTooltipSeen("overview");
+      }
+    });
+  }, []));
 
   // Mood period helpers
   const entryPerPeriod: Partial<Record<Bucket, JournalEntry>> = {};
@@ -469,14 +495,17 @@ export function OverviewScreen() {
   }), [dayGlucose, weeklyData, patternEvents, streak, stepsCount, sleepStats, digest]);
 
   // Glucose chart
-  const glucoseValues = dayGlucose.map((r) => Number(r.mg_dl));
-  const minVal = glucoseValues.length ? Math.min(...glucoseValues, 70) - 10 : 60;
-  const maxVal = glucoseValues.length ? Math.max(...glucoseValues, 140) + 10 : 200;
+  const allGlucoseValues = [...dayGlucose, ...yesterdayGlucose].map((r) => Number(r.mg_dl));
+  const minVal = allGlucoseValues.length ? Math.min(...allGlucoseValues, 70) - 10 : 60;
+  const maxVal = allGlucoseValues.length ? Math.max(...allGlucoseValues, 140) + 10 : 200;
   const dayTimes = dayGlucose.map((r) => new Date(r.recorded_at).getTime());
   const windowStart = dayTimes.length ? Math.min(...dayTimes) : Date.now() - 8 * 3600000;
   const windowEnd = dayTimes.length ? Math.max(Math.max(...dayTimes), Date.now()) : Date.now();
-  scrubData.current = { windowStart, windowEnd, minVal, maxVal, dayGlucose };
+  scrubData.current = { windowStart, windowEnd, minVal, maxVal, dayGlucose, yesterdayGlucose };
   const glucosePoints = dayGlucose
+    .map(r => eventX(new Date(r.recorded_at).getTime(), windowStart, windowEnd) + "," + glucoseY(Number(r.mg_dl), minVal, maxVal))
+    .join(" ");
+  const yesterdayPoints = yesterdayGlucose
     .map(r => eventX(new Date(r.recorded_at).getTime(), windowStart, windowEnd) + "," + glucoseY(Number(r.mg_dl), minVal, maxVal))
     .join(" ");
   const highBandY = glucoseY(180, minVal, maxVal);
@@ -675,6 +704,9 @@ export function OverviewScreen() {
                     <Rect x={PAD_L} y={highBandY} width={CHART_W - PAD_L} height={lowBandY - highBandY} fill={mode === "dark" ? theme.berry.sub : theme.berry.tint} opacity={mode === "dark" ? 0.25 : 0.4} stroke={ink} strokeWidth={1} strokeDasharray="5,5" />
                     <SvgText x={PAD_L - 3} y={highBandY + 4} fontSize={8} fill={theme.textSoft} textAnchor="end">180</SvgText>
                     <SvgText x={PAD_L - 3} y={lowBandY + 4} fontSize={8} fill={theme.textSoft} textAnchor="end">70</SvgText>
+                    {yesterdayPoints ? (
+                      <Polyline points={yesterdayPoints} fill="none" stroke={theme.berry.bar} strokeWidth={1.5} strokeDasharray="5,4" opacity={0.4} />
+                    ) : null}
                     {glucosePoints ? (
                       <>
                         <Polyline points={glucosePoints} fill="none" stroke={ink} strokeWidth={3.5} />
@@ -713,18 +745,31 @@ export function OverviewScreen() {
                     })}
                     {scrub && (() => {
                       const cy = glucoseY(scrub.mgDl, minVal, maxVal);
-                      const tipW = 68;
-                      const tipH = 30;
+                      const hasYest = scrub.yestMgDl !== null;
+                      const delta = hasYest ? scrub.mgDl - scrub.yestMgDl! : null;
+                      const tipW = hasYest ? 90 : 68;
+                      const tipH = hasYest ? 50 : 30;
                       const tipX = scrub.x + 10 + tipW > CHART_W ? scrub.x - tipW - 10 : scrub.x + 10;
                       const tipY = PAD_T;
                       const timeStr = new Date(scrub.time).getHours().toString().padStart(2, "0") + ":" + new Date(scrub.time).getMinutes().toString().padStart(2, "0");
+                      const deltaStr = delta !== null ? (delta >= 0 ? "+" : "") + delta + " vs 24h ago" : "";
+                      const deltaColor = delta === null ? ink : delta > 10 ? "#CE7A92" : delta < -10 ? "#8ED4D8" : theme.textSoft;
                       return (
                         <>
                           <SvgLine x1={scrub.x} y1={PAD_T} x2={scrub.x} y2={CHART_H - PAD_B} stroke={ink} strokeWidth={1.5} strokeDasharray="4,3" opacity={0.6} />
                           <Circle cx={scrub.x} cy={cy} r={5} fill={theme.berry.solid} stroke={ink} strokeWidth={2} />
+                          {hasYest && (
+                            <Circle cx={scrub.x} cy={glucoseY(scrub.yestMgDl!, minVal, maxVal)} r={4} fill={theme.berry.bar} stroke={ink} strokeWidth={1.5} opacity={0.55} />
+                          )}
                           <Rect x={tipX} y={tipY} width={tipW} height={tipH} rx={6} fill={theme.card} stroke={ink} strokeWidth={1.5} />
-                          <SvgText x={tipX + tipW / 2} y={tipY + 11} fontSize={11} fontWeight="800" fill={ink} textAnchor="middle">{scrub.mgDl} mg/dL</SvgText>
-                          <SvgText x={tipX + tipW / 2} y={tipY + 24} fontSize={9} fill={theme.textSoft} textAnchor="middle">{timeStr}</SvgText>
+                          <SvgText x={tipX + tipW / 2} y={tipY + 13} fontSize={12} fontWeight="800" fill={theme.berry.solid} textAnchor="middle">{scrub.mgDl} mg/dL</SvgText>
+                          <SvgText x={tipX + tipW / 2} y={tipY + 26} fontSize={9} fill={theme.textSoft} textAnchor="middle">{timeStr}</SvgText>
+                          {hasYest && (
+                            <>
+                              <SvgText x={tipX + tipW / 2} y={tipY + 38} fontSize={9} fill={theme.textSoft} textAnchor="middle">24h ago: {scrub.yestMgDl}</SvgText>
+                              {delta !== null && <SvgText x={tipX + tipW / 2} y={tipY + 49} fontSize={8} fontWeight="700" fill={deltaColor} textAnchor="middle">{deltaStr}</SvgText>}
+                            </>
+                          )}
                         </>
                       );
                     })()}
@@ -732,13 +777,14 @@ export function OverviewScreen() {
                 </View>
                 <View style={[styles.legendRow, { marginBottom: 12 }]}>
                   {[
-                    { color: theme.berry.bar, label: "Glucose" },
-                    { color: theme.coral.tint, label: "Meal" },
-                    { color: theme.violet.tint, label: "Mood" },
-                    { color: theme.purple.tint, label: "Spend" },
+                    { color: theme.berry.bar, label: "Today", dash: false },
+                    ...(yesterdayGlucose.length > 0 ? [{ color: theme.berry.bar, label: "24h ago", dash: true }] : []),
+                    { color: theme.coral.tint, label: "Meal", dash: false },
+                    { color: theme.violet.tint, label: "Mood", dash: false },
+                    { color: theme.purple.tint, label: "Spend", dash: false },
                   ].map(l => (
                     <View key={l.label} style={styles.legendItem}>
-                      <View style={[styles.legendDot, { backgroundColor: l.color, borderWidth: 1.5, borderColor: ink }]} />
+                      <View style={[styles.legendDot, { backgroundColor: l.color, borderWidth: 1.5, borderColor: ink, opacity: l.dash ? 0.45 : 1 }]} />
                       <Text style={{ color: theme.textSoft, fontSize: 10 }}>{l.label}</Text>
                     </View>
                   ))}
@@ -960,6 +1006,12 @@ export function OverviewScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
       accessibilityLabel="Today dashboard"
     >
+      {showTooltip && (
+        <TooltipBubble
+          message="Your daily wellness snapshot — mood, glucose, sleep, steps, and spending at a glance. Tap any section to log or explore. The score at the top reflects your overall day."
+          onDismiss={() => setShowTooltip(false)}
+        />
+      )}
       {/* ── 1. Header ── */}
       <View style={styles.headerBlock}>
         <Text style={[styles.greeting, { color: theme.textStrong }]} accessibilityRole="header">

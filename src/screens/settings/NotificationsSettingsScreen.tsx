@@ -9,12 +9,18 @@ import { useFocusEffect } from "@react-navigation/native";
 type SmartNotifs = {
   meal_reminders?: { enabled?: boolean; breakfast?: any; lunch?: any; dinner?: any };
   glucose_spike?: { enabled?: boolean };
+  glucose_threshold?: { enabled?: boolean; low_mg_dl?: number; high_mg_dl?: number };
   evening_checkin?: { enabled?: boolean; hour?: number };
   water_reminder?: { enabled?: boolean; start_hour?: number; goal?: number };
   streak_protection?: { enabled?: boolean; hour?: number };
   mood_checkin?: { enabled?: boolean };
   book_reminder?: { enabled?: boolean; hour?: number };
   hobby_reminder?: { enabled?: boolean; hour?: number };
+  spending_alerts?: { enabled?: boolean; daily_budget?: number };
+  mindfulness_reminder?: { enabled?: boolean; hour?: number };
+  sleep_reminder?: { enabled?: boolean; hour?: number };
+  workout_reminder?: { enabled?: boolean; days_threshold?: number };
+  step_goal?: { enabled?: boolean; goal?: number };
 };
 
 type HealthNotifs = {
@@ -184,6 +190,26 @@ export function NotificationsSettingsScreen() {
           onChange={(v) => save({ glucose_spike: { ...sn.glucose_spike, enabled: v } })} theme={theme} />
       </View>
 
+      {/* Glucose thresholds */}
+      <Text style={[styles.groupLabel, { color: theme.textSoft }]}>GLUCOSE THRESHOLDS</Text>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <Text style={[styles.desc, { color: theme.textSoft }]}>Alerts when glucose goes below or above fixed boundaries.</Text>
+        <ToggleRow label="Low/high glucose alerts" value={sn.glucose_threshold?.enabled === true}
+          onChange={(v) => save({ glucose_threshold: { ...sn.glucose_threshold, enabled: v } })} theme={theme} />
+        {sn.glucose_threshold?.enabled === true && (
+          <>
+            <Text style={[styles.subLabel, { color: theme.textStrong }]}>Low alert (mg/dL)</Text>
+            <HourChips hours={[55, 60, 65, 70, 75, 80]} current={sn.glucose_threshold?.low_mg_dl ?? 70}
+              onSelect={(v) => save({ glucose_threshold: { ...sn.glucose_threshold, low_mg_dl: v } })}
+              accentColor={theme.coral.sub} theme={theme} />
+            <Text style={[styles.subLabel, { color: theme.textStrong }]}>High alert (mg/dL)</Text>
+            <HourChips hours={[200, 220, 240, 250, 270, 300]} current={sn.glucose_threshold?.high_mg_dl ?? 250}
+              onSelect={(v) => save({ glucose_threshold: { ...sn.glucose_threshold, high_mg_dl: v } })}
+              accentColor={theme.coral.sub} theme={theme} />
+          </>
+        )}
+      </View>
+
       {/* Evening check-in */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>EVENING CHECK-IN</Text>
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
@@ -309,6 +335,80 @@ export function NotificationsSettingsScreen() {
         <Text style={[styles.desc, { color: theme.textSoft }]}>Reminds you to log a hobby or activity if you have any set up.</Text>
         <ToggleRow label="Remind me to log activities" value={sn.hobby_reminder?.enabled === true}
           onChange={(v) => save({ hobby_reminder: { ...sn.hobby_reminder, enabled: v } })} theme={theme} />
+      </View>
+
+      {/* Workout reminder */}
+      <Text style={[styles.groupLabel, { color: theme.textSoft }]}>WORKOUT REMINDER</Text>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <Text style={[styles.desc, { color: theme.textSoft }]}>Nudges you when you haven't had a completed workout session in a while.</Text>
+        <ToggleRow label="Remind me to work out" value={sn.workout_reminder?.enabled === true}
+          onChange={(v) => save({ workout_reminder: { ...sn.workout_reminder, enabled: v } })} theme={theme} />
+        {sn.workout_reminder?.enabled === true && (
+          <>
+            <Text style={[styles.subLabel, { color: theme.textStrong }]}>Remind after (days inactive)</Text>
+            <HourChips hours={[2, 3, 4, 5, 7]} current={sn.workout_reminder?.days_threshold ?? 3}
+              onSelect={(v) => save({ workout_reminder: { ...sn.workout_reminder, days_threshold: v } })}
+              accentColor={theme.teal.sub} theme={theme} />
+          </>
+        )}
+      </View>
+
+      {/* Step goal */}
+      <Text style={[styles.groupLabel, { color: theme.textSoft }]}>STEP GOAL</Text>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <Text style={[styles.desc, { color: theme.textSoft }]}>Alerts when you're close to your daily step goal and celebrates when you hit it.</Text>
+        <ToggleRow label="Step goal alerts" value={sn.step_goal?.enabled === true}
+          onChange={(v) => save({ step_goal: { ...sn.step_goal, enabled: v } })} theme={theme} />
+        {sn.step_goal?.enabled === true && (
+          <>
+            <Text style={[styles.subLabel, { color: theme.textStrong }]}>Daily goal</Text>
+            <HourChips hours={[5000, 7500, 8000, 10000, 12000, 15000]} current={sn.step_goal?.goal ?? 10000}
+              onSelect={(v) => save({ step_goal: { ...sn.step_goal, goal: v } })}
+              accentColor={theme.teal.sub} theme={theme} />
+          </>
+        )}
+      </View>
+
+      {/* Mindfulness reminder */}
+      <Text style={[styles.groupLabel, { color: theme.textSoft }]}>MINDFULNESS REMINDER</Text>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <Text style={[styles.desc, { color: theme.textSoft }]}>Daily nudge to take a few minutes for breathing or meditation.</Text>
+        <ToggleRow label="Remind me to practice" value={sn.mindfulness_reminder?.enabled === true}
+          onChange={(v) => save({ mindfulness_reminder: { ...sn.mindfulness_reminder, enabled: v } })} theme={theme} />
+        {sn.mindfulness_reminder?.enabled === true && (
+          <HourChips hours={[17, 18, 19, 20, 21]} current={sn.mindfulness_reminder?.hour ?? 20}
+            onSelect={(h) => save({ mindfulness_reminder: { ...sn.mindfulness_reminder, hour: h } })}
+            accentColor={theme.teal.sub} theme={theme} />
+        )}
+      </View>
+
+      {/* Bedtime reminder */}
+      <Text style={[styles.groupLabel, { color: theme.textSoft }]}>BEDTIME REMINDER</Text>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <Text style={[styles.desc, { color: theme.textSoft }]}>Reminds you to start winding down at your target bedtime.</Text>
+        <ToggleRow label="Bedtime reminder" value={sn.sleep_reminder?.enabled === true}
+          onChange={(v) => save({ sleep_reminder: { ...sn.sleep_reminder, enabled: v } })} theme={theme} />
+        {sn.sleep_reminder?.enabled === true && (
+          <HourChips hours={[20, 21, 22, 23]} current={sn.sleep_reminder?.hour ?? 22}
+            onSelect={(h) => save({ sleep_reminder: { ...sn.sleep_reminder, hour: h } })}
+            accentColor={theme.teal.sub} theme={theme} />
+        )}
+      </View>
+
+      {/* Spending alerts */}
+      <Text style={[styles.groupLabel, { color: theme.textSoft }]}>SPENDING ALERTS</Text>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <Text style={[styles.desc, { color: theme.textSoft }]}>Notifies you when today's spending exceeds your daily budget.</Text>
+        <ToggleRow label="Daily budget alert" value={sn.spending_alerts?.enabled === true}
+          onChange={(v) => save({ spending_alerts: { ...sn.spending_alerts, enabled: v } })} theme={theme} />
+        {sn.spending_alerts?.enabled === true && (
+          <>
+            <Text style={[styles.subLabel, { color: theme.textStrong }]}>Daily budget ($)</Text>
+            <HourChips hours={[25, 50, 75, 100, 150, 200, 250]} current={sn.spending_alerts?.daily_budget ?? 100}
+              onSelect={(v) => save({ spending_alerts: { ...sn.spending_alerts, daily_budget: v } })}
+              accentColor={theme.teal.sub} theme={theme} />
+          </>
+        )}
       </View>
     </ScrollView>
   );

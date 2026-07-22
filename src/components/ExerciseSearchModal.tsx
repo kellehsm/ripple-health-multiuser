@@ -53,6 +53,7 @@ interface Props {
   visible: boolean;
   onClose: () => void;
   onAdd: (exercise: ExerciseResult, form: AddPayload) => void;
+  initialExercise?: ExerciseResult;
 }
 
 const CARDIO_CATEGORIES = ['cardio', 'stretching'];
@@ -65,7 +66,7 @@ const INITIAL_FORM: LogForm = {
   duration_minutes: '',
 };
 
-export function ExerciseSearchModal({ visible, onClose, onAdd }: Props) {
+export function ExerciseSearchModal({ visible, onClose, onAdd, initialExercise }: Props) {
   const { theme } = useTheme();
   const ink = theme.ink;
   const [query, setQuery] = useState('');
@@ -81,6 +82,8 @@ export function ExerciseSearchModal({ visible, onClose, onAdd }: Props) {
       setResults([]);
       setSelected(null);
       setForm(INITIAL_FORM);
+    } else if (initialExercise) {
+      setSelected(initialExercise);
     }
   }, [visible]);
 
