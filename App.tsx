@@ -17,6 +17,7 @@ try {
   EventType = { PRESS: "press", ACTION_PRESS: "action_press" };
 }
 import { CommonActions } from "@react-navigation/native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ThemeProvider } from "./src/theme/ThemeContext";
 import { TabPreferencesProvider } from "./src/context/TabPreferencesContext";
@@ -243,58 +244,67 @@ export default function App() {
 
   if (appState === "loading") {
     return (
-      <SafeAreaProvider>
-        <View style={{ flex: 1, backgroundColor: "#F5F1E8" }} />
-      </SafeAreaProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <View style={{ flex: 1, backgroundColor: "#F5F1E8" }} />
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
     );
   }
 
   if (appState === "login") {
     return (
-      <SafeAreaProvider>
-        <AppErrorBoundary>
-          <ThemeProvider>
-            <StatusBar style="dark" />
-            <LoginScreen
-              onLoginSuccess={handleLoginSuccess}
-              onShowSignup={() => setAppState("signup")}
-            />
-          </ThemeProvider>
-        </AppErrorBoundary>
-      </SafeAreaProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <AppErrorBoundary>
+            <ThemeProvider>
+              <StatusBar style="dark" />
+              <LoginScreen
+                onLoginSuccess={handleLoginSuccess}
+                onShowSignup={() => setAppState("signup")}
+              />
+            </ThemeProvider>
+          </AppErrorBoundary>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
     );
   }
 
   if (appState === "signup") {
     return (
-      <SafeAreaProvider>
-        <AppErrorBoundary>
-          <ThemeProvider>
-            <StatusBar style="dark" />
-            <SignupScreen
-              onSignupSuccess={() => { markUnlocked(); setBiometricLocked(false); setAppState("onboarding"); }}
-              onBackToLogin={() => setAppState("login")}
-            />
-          </ThemeProvider>
-        </AppErrorBoundary>
-      </SafeAreaProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <AppErrorBoundary>
+            <ThemeProvider>
+              <StatusBar style="dark" />
+              <SignupScreen
+                onSignupSuccess={() => { markUnlocked(); setBiometricLocked(false); setAppState("onboarding"); }}
+                onBackToLogin={() => setAppState("login")}
+              />
+            </ThemeProvider>
+          </AppErrorBoundary>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
     );
   }
 
   if (appState === "onboarding") {
     return (
-      <SafeAreaProvider>
-        <AppErrorBoundary>
-          <ThemeProvider>
-            <StatusBar style="dark" />
-            <OnboardingFlow onComplete={handleOnboardingComplete} />
-          </ThemeProvider>
-        </AppErrorBoundary>
-      </SafeAreaProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <AppErrorBoundary>
+            <ThemeProvider>
+              <StatusBar style="dark" />
+              <OnboardingFlow onComplete={handleOnboardingComplete} />
+            </ThemeProvider>
+          </AppErrorBoundary>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
     );
   }
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <SafeAreaProvider>
       <AppErrorBoundary>
         <ThemeProvider>
@@ -321,6 +331,7 @@ export default function App() {
         </ThemeProvider>
       </AppErrorBoundary>
     </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
