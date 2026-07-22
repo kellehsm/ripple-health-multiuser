@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.app.PendingIntent
+import android.net.Uri
 import android.util.Log
 import android.widget.RemoteViews
 import org.json.JSONObject
@@ -71,13 +72,45 @@ class RippleWidgetProvider : AppWidgetProvider() {
         views.setTextViewText(R.id.widget_glucose, glucose)
         views.setTextViewText(R.id.widget_steps, steps)
 
+        // Tap anywhere on widget → open app
         val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)
             ?: Intent()
-        val pending = PendingIntent.getActivity(
-            context, 0, launch,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        views.setOnClickPendingIntent(
+            R.id.widget_root,
+            PendingIntent.getActivity(context, 0, launch,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         )
-        views.setOnClickPendingIntent(R.id.widget_root, pending)
+
+        // + Meal button → ripple://meals
+        try {
+            val mealIntent = Intent(Intent.ACTION_VIEW, Uri.parse("ripple://meals")).apply {
+                setPackage(context.packageName)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            views.setOnClickPendingIntent(
+                R.id.btn_meal,
+                PendingIntent.getActivity(context, 1, mealIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, "btn_meal intent failed", e)
+        }
+
+        // + Mood button → ripple://mood
+        try {
+            val moodIntent = Intent(Intent.ACTION_VIEW, Uri.parse("ripple://mood")).apply {
+                setPackage(context.packageName)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            views.setOnClickPendingIntent(
+                R.id.btn_mood,
+                PendingIntent.getActivity(context, 2, moodIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, "btn_mood intent failed", e)
+        }
+
         return views
     }
 
