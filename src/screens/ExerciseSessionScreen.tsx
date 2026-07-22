@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View, Text, Pressable, ScrollView, StyleSheet, Alert, Image, Animated,
+  View, Text, Pressable, ScrollView, StyleSheet, Alert, Image, Animated, Dimensions,
 } from 'react-native';
+import Svg, { Polyline } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
@@ -79,6 +80,26 @@ function entryLabel(entry: LogEntry): string {
 }
 
 const REST_OPTIONS = [30, 60, 90, 120];
+const SCREEN_W = Dimensions.get('window').width;
+
+function HRSparkline({ readings, color }: { readings: Array<{ bpm: number }>; color: string }) {
+  const W = SCREEN_W - 140;
+  const H = 28;
+  const bpms = readings.map(r => r.bpm);
+  const min = Math.min(...bpms);
+  const max = Math.max(...bpms);
+  const range = max - min || 1;
+  const pts = bpms.map((b, i) => {
+    const x = (i / (bpms.length - 1)) * W;
+    const y = H - ((b - min) / range) * H;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  return (
+    <Svg width={W} height={H} style={{ marginTop: 6 }}>
+      <Polyline points={pts} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" opacity={0.8} />
+    </Svg>
+  );
+}
 
 export function ExerciseSessionScreen() {
   const { theme } = useTheme();
@@ -112,9 +133,12 @@ export function ExerciseSessionScreen() {
   const [restSeconds, setRestSeconds] = useState<number | null>(null);
   const restTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Live heart rate
-  const [liveHR, setLiveHR] = useState<number | null>(null);
+  // Live heart rate — full session accumulation
+  const [sessionHR, setSessionHR] = useState<Array<{ recorded_at: string; bpm: number }>>([]);
   const hrPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const liveHR = sessionHR.length > 0 ? sessionHR[sessionHR.length - 1].bpm : null;
+  const peakHR = sessionHR.length > 0 ? Math.max(...sessionHR.map(r => r.bpm)) : null;
 
   // Session end celebration
   const [celebrating, setCelebrating] = useState(false);
@@ -143,12 +167,13 @@ export function ExerciseSessionScreen() {
   }, []);
 
   async function pollHR() {
+    if (!startEpochRef.current) return;
     try {
-      const now = new Date();
-      const twoMinAgo = new Date(now.getTime() - 2 * 60 * 1000);
-      const readings = await api.heartRateRange(twoMinAgo.toISOString(), now.toISOString());
+      const start = new Date(startEpochRef.current).toISOString();
+      const end = new Date().toISOString();
+      const readings = await api.heartRateRange(start, end);
       if (Array.isArray(readings) && readings.length > 0) {
-        setLiveHR(readings[readings.length - 1].bpm);
+        setSessionHR(readings);
       }
     } catch {}
   }
@@ -164,7 +189,7 @@ export function ExerciseSessionScreen() {
     }, 1000);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     pollHR();
-    hrPollRef.current = setInterval(pollHR, 30000);
+    hrPollRef.current = setInterval(pollHR, 1000);
   }
 
   const restElapsedRef = useRef(0);
@@ -251,7 +276,7 @@ export function ExerciseSessionScreen() {
             const uniqueExercises = new Set(entries.map(e => e.exercise.id)).size;
             const totalSets = entries.reduce((sum, e) => sum + (e.sets ?? 1), 0);
             const durationSecs = startEpochRef.current ? Math.floor((Date.now() - startEpochRef.current) / 1000) : 0;
-            setCelebStats({ exercises: uniqueExercises, sets: totalSets, duration: formatSecs(durationSecs), peakHR: liveHR });
+            setCelebStats({ exercises: uniqueExercises, sets: totalSets, duration: formatSecs(durationSecs), peakHR });
             setCelebrating(true);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
             celebOpacity.setValue(0);
@@ -296,8 +321,8 @@ export function ExerciseSessionScreen() {
           </View>
           {celebStats.peakHR && (
             <View style={styles.celebStat}>
-              <Text style={[styles.celebStatVal, { color: theme.teal.sub }]}>{celebStats.peakHR}</Text>
-              <Text style={[styles.celebStatLabel, { color: theme.teal.fg }]}>BPM</Text>
+              <Text style={[styles.celebStatVal, { color: theme.coral.solid }]}>{celebStats.peakHR}</Text>
+              <Text style={[styles.celebStatLabel, { color: theme.teal.fg }]}>PEAK BPM</Text>
             </View>
           )}
         </View>
@@ -309,11 +334,26 @@ export function ExerciseSessionScreen() {
     <View style={[styles.container, { backgroundColor: theme.page }]}>
       {/* Timer bar */}
       <View style={[styles.timerBar, { backgroundColor: theme.card, borderBottomColor: ink }]}>
-        <View>
-          <Text style={[styles.timerLabel, { color: theme.textSoft }]}>SESSION TIME</Text>
-          <Text style={[styles.timer, { color: ink }]}>{elapsed}</Text>
-          {liveHR && (
-            <Text style={[styles.liveHR, { color: theme.coral.solid }]}>♥ {liveHR} bpm</Text>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 16 }}>
+            <View>
+              <Text style={[styles.timerLabel, { color: theme.textSoft }]}>SESSION TIME</Text>
+              <Text style={[styles.timer, { color: ink }]}>{elapsed}</Text>
+            </View>
+            {liveHR && (
+              <View style={{ paddingBottom: 4 }}>
+                <Text style={[styles.timerLabel, { color: theme.textSoft }]}>HEART RATE</Text>
+                <Text style={[styles.liveHRBig, { color: theme.coral.solid }]}>
+                  ♥ {liveHR} <Text style={{ fontSize: 14 }}>bpm</Text>
+                </Text>
+                {peakHR && (
+                  <Text style={[styles.peakHRLabel, { color: theme.textSoft }]}>peak {peakHR}</Text>
+                )}
+              </View>
+            )}
+          </View>
+          {sessionHR.length >= 3 && (
+            <HRSparkline readings={sessionHR} color={theme.coral.solid} />
           )}
         </View>
         {!started ? (
@@ -587,6 +627,8 @@ const styles = StyleSheet.create({
   },
   addBtnText: { fontSize: 16, fontWeight: '800' },
   liveHR: { fontSize: 13, fontWeight: '700', marginTop: 2 },
+  liveHRBig: { fontSize: 22, fontWeight: '900', fontVariant: ['tabular-nums'] },
+  peakHRLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5, marginTop: 1 },
   celebContainer: {
     flex: 1,
     alignItems: 'center',
