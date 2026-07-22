@@ -26,15 +26,23 @@ const DROP_PATH =
 const HB_POINTS = "0,12 7.5,12 8.1,11 9.2,13 10,12 10.5,12 11.2,8 12.8,16 13.5,12 24,12";
 const HB_LENGTH = 58;
 
-// ── Timing ──────────────────────────────────────────────────────────────────
-const HB_DRAW  = 1200; // draw duration (ms) — calm, not frantic
-const HB_PAUSE =  600; // pause at end before reset
+const HB_DRAW  = 1200;
+const HB_PAUSE =  600;
 
-// ── Stroke weights ───────────────────────────────────────────────────────────
-const HB_STROKE      = 0.35; // thin heartbeat line in viewBox coords
-const OUTLINE_STROKE = 0.45; // droplet outline
+const HB_STROKE      = 0.35;
+const OUTLINE_STROKE = 0.45;
 
-const DIM = 120; // px — matches original splash size
+const DIM = 90; // slightly smaller than original 120
+
+// Static ring sizes — three concentric rings frozen mid-ripple
+const RINGS: Array<{ scale: number; color: string; opacity: number }> = [
+  { scale: 1.45, color: TEAL,   opacity: 0.40 },
+  { scale: 1.90, color: CORAL,  opacity: 0.24 },
+  { scale: 2.35, color: PURPLE, opacity: 0.12 },
+];
+
+// Container must fit the outermost ring
+const CONTAINER = Math.round(DIM * 2.35) + 8;
 
 export function LoginLogo() {
   const uid = useRef(Math.random().toString(36).slice(2, 6)).current;
@@ -61,10 +69,28 @@ export function LoginLogo() {
 
   return (
     <View
-      style={{ width: DIM, height: DIM, alignItems: "center", justifyContent: "center" }}
+      style={{ width: CONTAINER, height: CONTAINER, alignItems: "center", justifyContent: "center" }}
       accessibilityLabel="Ripple Wellness"
       accessibilityRole="image"
     >
+      {/* Static ripple rings */}
+      {RINGS.map((r) => (
+        <View
+          key={r.color}
+          style={{
+            position: "absolute",
+            width: DIM,
+            height: DIM,
+            borderRadius: DIM / 2,
+            borderWidth: 2,
+            borderColor: r.color,
+            opacity: r.opacity,
+            transform: [{ scale: r.scale }],
+          }}
+        />
+      ))}
+
+      {/* Droplet */}
       <Svg width={DIM} height={DIM} viewBox="0 0 24 24">
         <Defs>
           <ClipPath id={clipId}>
