@@ -7,6 +7,7 @@ import { File } from 'expo-file-system';
 import { useTheme } from '../theme/ThemeContext';
 import { api } from '../api/client';
 import { useNavigation } from '@react-navigation/native';
+import { showErrorAlert } from '../utils/errorReport';
 
 const TEMPLATE_URL = "https://app.kels.gg/api/medications/import/template";
 
@@ -82,13 +83,11 @@ export function MedicationImportScreen() {
       setMapping(res.suggestedMapping ?? {});
       setStep('mapping');
     } catch (err: any) {
-      Alert.alert(
+      showErrorAlert(
         'Could not read file',
         `${err?.message ?? 'Failed to read file'}\n\nTry downloading the template for the correct format.`,
-        [
-          { text: 'Download Template', onPress: () => Linking.openURL(TEMPLATE_URL) },
-          { text: 'OK', style: 'cancel' },
-        ]
+        'MedicationImport file read',
+        [{ text: 'Download Template', onPress: () => Linking.openURL(TEMPLATE_URL) }]
       );
     } finally {
       setLoading(false);
@@ -106,7 +105,7 @@ export function MedicationImportScreen() {
       setImportedCount(res?.imported ?? 0);
       setStep('done');
     } catch (err: any) {
-      Alert.alert('Error', err?.message ?? 'Import failed');
+      showErrorAlert('Import failed', err?.message ?? 'Import failed', 'MedicationImport commit');
     } finally {
       setImporting(false);
     }

@@ -665,4 +665,10 @@ export const api = {
   plaidDeleteItem: function (itemId: string) {
     return request("/plaid/items/" + itemId, { method: "DELETE" });
   },
+  submitErrorReport: function (message: string, context?: string, platform?: string) {
+    return request("/errors", {
+      method: "POST",
+      body: JSON.stringify({ message, context, platform }),
+    });
+  },
 };
