@@ -23,6 +23,13 @@ import { UndoBanner } from "../components/UndoBanner";
 import { HOBBY_LIST } from "../lib/hobbyList";
 import { TooltipBubble } from "../components/TooltipBubble";
 import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
+import { SectionEditorModal, SectionDef } from "../components/SectionEditorModal";
+
+const LIFE_SECTIONS: SectionDef[] = [
+  { id: 'books',       label: 'Books & Reading', description: 'Currently reading list and book search' },
+  { id: 'hobbies',     label: 'Hobbies',         description: 'Hobby logging and stats' },
+  { id: 'experiments', label: 'Experiments',      description: 'Personal self-experiments entry point' },
+];
 
 
 type Book = {
@@ -88,6 +95,8 @@ export function LifeScreen() {
   const { preferences, loading: prefsLoading } = useTabPreferences();
 
   const [showTooltip, setShowTooltip] = useState(false);
+  const [hiddenSections, setHiddenSections] = useState<string[]>([]);
+  const [showSectionEditor, setShowSectionEditor] = useState(false);
 
   useFocusEffect(useCallback(() => {
     if (prefsLoading) return;
@@ -100,7 +109,16 @@ export function LifeScreen() {
         markTooltipSeen("life");
       }
     });
+    api.getSettings().then((s: any) => {
+      setHiddenSections(s?.life_hidden_sections ?? []);
+    }).catch(() => {});
   }, [prefsLoading, preferences.selectedModules]));
+
+  async function handleSaveSections(newHidden: string[]) {
+    setHiddenSections(newHidden);
+    setShowSectionEditor(false);
+    try { await api.patchSettings({ life_hidden_sections: newHidden }); } catch (_) {}
+  }
 
   const [books, setBooks] = useState<Book[]>([]);
   const [loadingBooks, setLoadingBooks] = useState(true);
@@ -388,6 +406,12 @@ export function LifeScreen() {
           onDismiss={() => setShowTooltip(false)}
         />
       )}
+      {/* Section editor pencil */}
+      <View style={{ flexDirection: "row", justifyContent: "flex-end", marginBottom: 4 }}>
+        <Pressable onPress={() => setShowSectionEditor(true)} hitSlop={10} accessibilityLabel="Customize Life screen">
+          <Ionicons name="pencil-outline" size={17} color={theme.textSoft} />
+        </Pressable>
+      </View>
       {/* Completed banner */}
       <Pressable
         onPress={() => navigation.navigate("Completed")}
@@ -400,6 +424,7 @@ export function LifeScreen() {
       </Pressable>
 
       {/* Experiments entry */}
+      {!hiddenSections.includes('experiments') && (
       <Pressable
         onPress={() => navigation.navigate("Experiments")}
         style={[styles.completedBtn, { backgroundColor: theme.card, borderColor: ink }]}
@@ -410,8 +435,10 @@ export function LifeScreen() {
         </Text>
         <Ionicons name="chevron-forward" size={16} color={theme.textSoft} />
       </Pressable>
+      )}
 
-      {/* Add a book card */}
+      {/* Add a book card + Currently reading */}
+      {!hiddenSections.includes('books') && (<>
       <View style={[styles.card, { backgroundColor: theme.card }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Add a book</Text>
         <View style={styles.searchRow}>
@@ -543,8 +570,10 @@ export function LifeScreen() {
           );
         })
       )}
+      </>)}
 
-      {/* Hobbies section — add form */}
+      {/* Hobbies section — add form + individual cards */}
+      {!hiddenSections.includes('hobbies') && (<>
       <View style={[styles.card, { backgroundColor: theme.coral.tint }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Hobbies</Text>
         <View style={styles.searchRow}>
@@ -675,6 +704,7 @@ export function LifeScreen() {
           );
         })
       )}
+      </>)}
     </ScrollView>
     {undoInfo && (
       <UndoBanner
@@ -683,6 +713,14 @@ export function LifeScreen() {
         theme={theme}
       />
     )}
+    <SectionEditorModal
+      visible={showSectionEditor}
+      title="Customize Life"
+      sections={LIFE_SECTIONS}
+      hidden={hiddenSections}
+      onSave={handleSaveSections}
+      onCancel={() => setShowSectionEditor(false)}
+    />
     </View>
   );
 }

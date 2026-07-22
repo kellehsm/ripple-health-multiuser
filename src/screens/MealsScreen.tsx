@@ -28,6 +28,12 @@ import { toast, Msg } from "../lib/toast";
 import { UndoBanner } from "../components/UndoBanner";
 import { TooltipBubble } from "../components/TooltipBubble";
 import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
+import { SectionEditorModal, SectionDef } from "../components/SectionEditorModal";
+
+const MEALS_SECTIONS: SectionDef[] = [
+  { id: 'your_usual', label: 'Your Usual',    description: 'Quick-add from saved meals and recipes' },
+  { id: 'booze',      label: 'Alcohol',       description: 'Alcohol logging section' },
+];
 
 // ── Substance types ───────────────────────────────────────────────────────────
 
@@ -656,6 +662,8 @@ export function MealsScreen() {
   const styles = useMemo(() => makeStyles(ink, card, theme.cardBorder), [ink, card, theme.cardBorder]);
 
   const [showTooltip, setShowTooltip] = useState(false);
+  const [hiddenSections, setHiddenSections] = useState<string[]>([]);
+  const [showSectionEditor, setShowSectionEditor] = useState(false);
 
   useFocusEffect(useCallback(() => {
     if (prefsLoading) return;
@@ -668,7 +676,16 @@ export function MealsScreen() {
         markTooltipSeen("meals");
       }
     });
+    api.getSettings().then((s: any) => {
+      setHiddenSections(s?.meals_hidden_sections ?? []);
+    }).catch(() => {});
   }, [prefsLoading, preferences.selectedModules]));
+
+  async function handleSaveSections(newHidden: string[]) {
+    setHiddenSections(newHidden);
+    setShowSectionEditor(false);
+    try { await api.patchSettings({ meals_hidden_sections: newHidden }); } catch (_) {}
+  }
 
   const [mealType, setMealType] = useState<MealType>("breakfast");
   const [searchQuery, setSearchQuery] = useState("");
@@ -1109,6 +1126,12 @@ export function MealsScreen() {
           onDismiss={() => setShowTooltip(false)}
         />
       )}
+      {/* Section editor pencil */}
+      <View style={{ flexDirection: "row", justifyContent: "flex-end", marginBottom: 4 }}>
+        <Pressable onPress={() => setShowSectionEditor(true)} hitSlop={10} accessibilityLabel="Customize Meals screen">
+          <Ionicons name="pencil-outline" size={17} color={theme.textSoft} />
+        </Pressable>
+      </View>
       {/* Totals strip */}
       {totals !== null && (
         <View style={styles.totalsRow}>
@@ -1173,7 +1196,7 @@ export function MealsScreen() {
           </ScrollView>
         </View>
 
-        {(frequentMeals.length > 0 || recipes.length > 0) ? (
+        {!hiddenSections.includes('your_usual') && ((frequentMeals.length > 0 || recipes.length > 0) ? (
           <View style={styles.frequentSection}>
             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
               <Text style={[styles.sectionLabel, { color: theme.textSoft, flex: 1, marginBottom: 0 }]}>YOUR USUAL</Text>
@@ -1233,7 +1256,7 @@ export function MealsScreen() {
             <Ionicons name="bookmark-outline" size={12} color={ink} />
             <Text style={styles.secondaryBtnText}>+ SAVE A RECIPE</Text>
           </Pressable>
-        )}
+        ))}
 
         {/* Meal type selector */}
         <View style={styles.chipRow}>
@@ -1329,6 +1352,7 @@ export function MealsScreen() {
       </View>
 
       {/* Booze */}
+      {!hiddenSections.includes('booze') && (
       <View style={[styles.card, { backgroundColor: theme.purple.tint, borderColor: theme.cardBorder }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Booze</Text>
 
@@ -1434,6 +1458,7 @@ export function MealsScreen() {
           </View>
         ) : null}
       </View>
+      )}
 
       {/* Today's meals list */}
       <View style={[styles.card, { backgroundColor: theme.coral.tint }]}>
@@ -1545,6 +1570,14 @@ export function MealsScreen() {
           setEditingRecipe(null);
         }}
         existing={editingRecipe ?? undefined}
+      />
+      <SectionEditorModal
+        visible={showSectionEditor}
+        title="Customize Meals"
+        sections={MEALS_SECTIONS}
+        hidden={hiddenSections}
+        onSave={handleSaveSections}
+        onCancel={() => setShowSectionEditor(false)}
       />
     </ScrollView>
     {undoMeal && (

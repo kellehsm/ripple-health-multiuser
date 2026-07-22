@@ -14,6 +14,13 @@ import { EmptyState } from "../components/EmptyState";
 import { toast } from "../lib/toast";
 import { TooltipBubble } from "../components/TooltipBubble";
 import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
+import { SectionEditorModal, SectionDef } from "../components/SectionEditorModal";
+
+const FINANCE_SECTIONS: SectionDef[] = [
+  { id: 'totals',       label: 'Total spent',              description: 'Spending total card with add button' },
+  { id: 'breakdown',    label: 'Where it went',             description: 'Category breakdown bar chart' },
+  { id: 'mood_suggest', label: 'Spending-mood suggestion',  description: 'Banner linking spend to nearby mood entries' },
+];
 
 type SpendingEntry = {
   id: string;
@@ -130,6 +137,8 @@ export function FinanceScreen() {
   const { theme } = useTheme();
   const ink = theme.ink;
 
+  const [hiddenSections, setHiddenSections] = useState<string[]>([]);
+  const [showSectionEditor, setShowSectionEditor] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const [entries, setEntries] = useState<SpendingEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -193,10 +202,19 @@ export function FinanceScreen() {
           markTooltipSeen("finance");
         }
       });
+      api.getSettings().then((s: any) => {
+        setHiddenSections(s?.finance_hidden_sections ?? []);
+      }).catch(() => {});
       load();
       syncPlaid();
     }, [])
   );
+
+  async function handleSaveSections(newHidden: string[]) {
+    setHiddenSections(newHidden);
+    setShowSectionEditor(false);
+    try { await api.patchSettings({ finance_hidden_sections: newHidden }); } catch (_) {}
+  }
 
   const viewStart = view === "day" ? startOfToday() : startOfWeek();
 
@@ -340,6 +358,13 @@ export function FinanceScreen() {
             onDismiss={() => setShowTooltip(false)}
           />
         )}
+        {/* Section editor pencil */}
+        <View style={{ flexDirection: "row", justifyContent: "flex-end", marginBottom: 4 }}>
+          <Pressable onPress={() => setShowSectionEditor(true)} hitSlop={10} accessibilityLabel="Customize Finance screen">
+            <Ionicons name="pencil-outline" size={17} color={theme.textSoft} />
+          </Pressable>
+        </View>
+
         {/* Day / Week toggle */}
         <View style={[s.toggle, { backgroundColor: theme.card, borderColor: ink }]}>
           {(["day", "week"] as const).map((v) => (
@@ -357,6 +382,7 @@ export function FinanceScreen() {
         </View>
 
         {/* Total card */}
+        {!hiddenSections.includes('totals') && (
         <View style={[s.card, { backgroundColor: theme.purple.tint, borderColor: theme.purple.solid }]}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
             <View>
@@ -379,9 +405,10 @@ export function FinanceScreen() {
             </Pressable>
           </View>
         </View>
+        )}
 
         {/* Category breakdown chart */}
-        {categoryTotals.length > 0 && (
+        {categoryTotals.length > 0 && !hiddenSections.includes('breakdown') && (
           <View style={[s.card, { borderColor: theme.cardBorder }]}>
             <Text style={[s.cardTitle, { color: theme.textStrong }]}>Where it went</Text>
             <View style={{ gap: 11, marginTop: 6 }}>
@@ -404,7 +431,7 @@ export function FinanceScreen() {
         )}
 
         {/* Spending-Mood suggestion banner */}
-        {moodSuggestion && (
+        {moodSuggestion && !hiddenSections.includes('mood_suggest') && (
           <View style={[s.card, { borderColor: theme.berry?.solid ?? theme.cardBorder, backgroundColor: theme.berry?.tint ?? theme.card, borderWidth: 2 }]}>
             <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
               <Text style={{ fontSize: 20 }}>💭</Text>
@@ -595,6 +622,15 @@ export function FinanceScreen() {
           </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
       </Modal>
+
+      <SectionEditorModal
+        visible={showSectionEditor}
+        title="Customize Finance"
+        sections={FINANCE_SECTIONS}
+        hidden={hiddenSections}
+        onSave={handleSaveSections}
+        onCancel={() => setShowSectionEditor(false)}
+      />
 
       {/* Edit modal */}
       <Modal
