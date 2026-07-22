@@ -82,6 +82,8 @@ function handleUrl(url: string | null) {
     logWaterFromShortcut();
   } else if (url.includes("meals")) {
     navigateWhenReady("Meals");
+  } else if (url.includes("mood")) {
+    navigateWhenReady("Home");
   }
 }
 
