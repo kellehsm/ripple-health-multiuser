@@ -24,6 +24,13 @@ import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
 type Section = "breathing" | "grounding" | "meditation" | "gratitude";
 type BreathPattern = "box" | "478" | "equal";
 type GroundTechnique = "54321" | "pmr" | "stop";
+type MeditationMode = "guided" | "unguided" | null;
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const COLOR_TEAL   = "#3FA0A6";
+const COLOR_PURPLE = "#7B3FBF";
+const COLOR_CORAL  = "#E8654E";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -35,6 +42,8 @@ const BREATH_PATTERNS: Record<BreathPattern, { label: string; desc: string; phas
 
 const PHASE_LABELS = ["INHALE", "HOLD", "EXHALE", "HOLD"];
 
+const PHASE_COLORS: string[] = [COLOR_TEAL, COLOR_PURPLE, COLOR_CORAL, COLOR_PURPLE];
+
 const PMR_STEPS = [
   "Feet & toes",
   "Calves",
@@ -45,6 +54,28 @@ const PMR_STEPS = [
   "Face & jaw",
 ];
 const PMR_DURATION = 10;
+
+// PMR step → body area mapping
+const PMR_AREA_MAP: Record<string, { area: string; emoji: string }> = {
+  "Feet & toes":  { area: "feet",      emoji: "🦶" },
+  "Calves":       { area: "calves",    emoji: "🦵" },
+  "Thighs":       { area: "thighs",    emoji: "🦵" },
+  "Abdomen":      { area: "abdomen",   emoji: "🫁" },
+  "Hands & arms": { area: "arms",      emoji: "🤲" },
+  "Shoulders":    { area: "shoulders", emoji: "💪" },
+  "Face & jaw":   { area: "face",      emoji: "😌" },
+};
+
+// Body diagram display order (head → feet)
+const BODY_DIAGRAM_ORDER = [
+  { area: "face",      label: "Face",      emoji: "😌" },
+  { area: "shoulders", label: "Shoulders", emoji: "💪" },
+  { area: "arms",      label: "Arms",      emoji: "🤲" },
+  { area: "abdomen",   label: "Abdomen",   emoji: "🫁" },
+  { area: "thighs",    label: "Thighs",    emoji: "🦵" },
+  { area: "calves",    label: "Calves",    emoji: "🦵" },
+  { area: "feet",      label: "Feet",      emoji: "🦶" },
+];
 
 const GROUNDING_54321 = [
   { count: 5, sense: "SEE",   prompt: "Name 5 things you can see around you." },
@@ -70,13 +101,14 @@ const GRATITUDE_PROMPTS = [
   "Who is someone you're glad to have in your life, and why?",
   "What challenge taught you something valuable recently?",
   "What made you feel calm or at ease today?",
+  "What is something you often take for granted but are grateful for?",
+  "What's a recent moment of kindness you witnessed or experienced?",
+  "What skill or ability are you grateful to have?",
 ];
 
 const DURATIONS = [5, 10, 15, 20, 30];
 
 // ─── Shared: calm grace period countdown ─────────────────────────────────────
-// count === null means the delay hasn't started yet — show "Get ready..."
-// without a number so the first tick isn't jarring.
 
 function GraceCountdown({ count, accentColor, theme, ink }: {
   count: number | null; accentColor: string; theme: any; ink: string;
@@ -128,6 +160,244 @@ function StartCircleButton({ onPress, accentColor, ink, sublabel }: {
         <Text style={{ color: "#fff", fontSize: 13, fontWeight: "800", letterSpacing: 2, marginTop: 6 }}>START</Text>
       </Pressable>
       {sublabel ? <Text style={{ color: ink, fontSize: 14, fontWeight: "700" }}>{sublabel}</Text> : null}
+    </View>
+  );
+}
+
+// ─── PMR Body Diagram ─────────────────────────────────────────────────────────
+
+function PmrBodyDiagram({ activeArea, accentColor }: { activeArea: string; accentColor: string }) {
+  return (
+    <View style={{ gap: 4, marginBottom: 8 }}>
+      {BODY_DIAGRAM_ORDER.map((part) => {
+        const isActive = part.area === activeArea;
+        return (
+          <View
+            key={part.area}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingVertical: isActive ? 8 : 3,
+              paddingHorizontal: 12,
+              borderRadius: 12,
+              backgroundColor: isActive ? accentColor + "22" : "transparent",
+            }}
+          >
+            <Text style={{ fontSize: isActive ? 28 : 20, opacity: isActive ? 1 : 0.3, width: 36, textAlign: "center" }}>
+              {part.emoji}
+            </Text>
+            <Text style={{
+              fontSize: isActive ? 15 : 13,
+              fontWeight: isActive ? "800" : "400",
+              color: isActive ? accentColor : "#888",
+              opacity: isActive ? 1 : 0.3,
+              marginLeft: 8,
+              flex: 1,
+            }}>
+              {part.label}
+            </Text>
+            {isActive && (
+              <Text style={{ color: accentColor, fontSize: 16, fontWeight: "800" }}>◀</Text>
+            )}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+// ─── Box Breathing Animation ──────────────────────────────────────────────────
+
+function BoxBreathingAnimation({
+  perimeterAnim,
+  phase,
+  phaseSecsLeft,
+}: {
+  perimeterAnim: Animated.Value;
+  phase: number;
+  phaseSecsLeft: number;
+}) {
+  const BOX = 190;
+  const LINE_THICKNESS = 6;
+
+  // Interpolate each side from the single 0→4 perimeter value
+  const topWidth = perimeterAnim.interpolate({
+    inputRange: [0, 1, 4],
+    outputRange: [0, BOX, BOX],
+    extrapolate: "clamp",
+  });
+  const rightHeight = perimeterAnim.interpolate({
+    inputRange: [0, 1, 2, 4],
+    outputRange: [0, 0, BOX, BOX],
+    extrapolate: "clamp",
+  });
+  const bottomWidth = perimeterAnim.interpolate({
+    inputRange: [0, 2, 3, 4],
+    outputRange: [0, 0, BOX, BOX],
+    extrapolate: "clamp",
+  });
+  const leftHeight = perimeterAnim.interpolate({
+    inputRange: [0, 3, 4],
+    outputRange: [0, 0, BOX],
+    extrapolate: "clamp",
+  });
+
+  const phaseColor = PHASE_COLORS[phase] ?? COLOR_TEAL;
+  const phaseLabel = PHASE_LABELS[phase] ?? "INHALE";
+
+  return (
+    <View style={{ alignItems: "center", gap: 16, paddingVertical: 8 }}>
+      {/* Phase label above box */}
+      <Text style={{
+        fontSize: 38,
+        fontWeight: "900",
+        letterSpacing: 3,
+        color: phaseColor,
+      }}>
+        {phaseLabel}
+      </Text>
+
+      {/* The box */}
+      <View style={{ width: BOX, height: BOX, position: "relative" }}>
+        {/* Faint gray border box */}
+        <View style={{
+          position: "absolute",
+          top: 0, left: 0,
+          width: BOX, height: BOX,
+          borderWidth: 1,
+          borderColor: "rgba(150,150,150,0.25)",
+          borderRadius: 2,
+        }} />
+
+        {/* Top side — INHALE (teal), draws LEFT→RIGHT */}
+        <Animated.View style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          height: LINE_THICKNESS,
+          width: topWidth,
+          backgroundColor: COLOR_TEAL,
+          borderRadius: 3,
+        }} />
+
+        {/* Right side — HOLD1 (purple), draws TOP→DOWN */}
+        <Animated.View style={{
+          position: "absolute",
+          top: 0,
+          right: 0,
+          width: LINE_THICKNESS,
+          height: rightHeight,
+          backgroundColor: COLOR_PURPLE,
+          borderRadius: 3,
+        }} />
+
+        {/* Bottom side — EXHALE (coral), draws RIGHT→LEFT (mirror via right anchor) */}
+        <Animated.View style={{
+          position: "absolute",
+          bottom: 0,
+          right: 0,
+          height: LINE_THICKNESS,
+          width: bottomWidth,
+          backgroundColor: COLOR_CORAL,
+          borderRadius: 3,
+        }} />
+
+        {/* Left side — HOLD2 (purple), draws BOTTOM→UP (mirror via bottom anchor) */}
+        <Animated.View style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          width: LINE_THICKNESS,
+          height: leftHeight,
+          backgroundColor: COLOR_PURPLE,
+          borderRadius: 3,
+        }} />
+
+        {/* Centered countdown timer */}
+        <View style={{
+          position: "absolute",
+          top: 0, left: 0, right: 0, bottom: 0,
+          alignItems: "center",
+          justifyContent: "center",
+        }}>
+          <Text style={{
+            fontSize: 56,
+            fontWeight: "900",
+            color: phaseColor,
+            lineHeight: 64,
+          }}>
+            {phaseSecsLeft}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ─── Circle Breathing Animation (for 4-7-8 and Equal) ────────────────────────
+
+function CircleBreathingAnimation({
+  breathAnim,
+  phase,
+  phaseSecsLeft,
+  pattern,
+}: {
+  breathAnim: Animated.Value;
+  phase: number;
+  phaseSecsLeft: number;
+  pattern: BreathPattern;
+}) {
+  const scaleInterp = breathAnim.interpolate({ inputRange: [0.5, 1], outputRange: [0.5, 1] });
+  const phaseColor = PHASE_COLORS[phase] ?? COLOR_TEAL;
+  const phases = BREATH_PATTERNS[pattern].phases;
+
+  // Mini phase indicator bars
+  const phaseBarLabels = ["I", "H", "E", "H"];
+  const activeBars = phases.map((secs, i) => ({ secs, label: phaseBarLabels[i] + (secs > 0 ? secs : ""), active: i === phase, hasPhase: secs > 0 }));
+
+  return (
+    <View style={{ alignItems: "center", gap: 16 }}>
+      <View style={{ width: 200, height: 200, alignItems: "center", justifyContent: "center" }}>
+        <Animated.View style={{ transform: [{ scale: scaleInterp }] }}>
+          <View style={{
+            width: 180, height: 180, borderRadius: 90,
+            backgroundColor: phaseColor,
+            borderWidth: 3, borderColor: "rgba(0,0,0,0.15)",
+            shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.12, shadowRadius: 14, elevation: 6,
+            alignItems: "center", justifyContent: "center",
+          }}>
+            <Text style={{ color: "#fff", fontSize: 48, fontWeight: "900", lineHeight: 56 }}>
+              {phaseSecsLeft}
+            </Text>
+            <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 11, letterSpacing: 1.5, fontWeight: "700" }}>
+              SECONDS
+            </Text>
+          </View>
+        </Animated.View>
+      </View>
+
+      {/* Mini phase indicator row */}
+      <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+        {activeBars.filter(b => b.hasPhase).map((b, i) => (
+          <View key={i} style={{ alignItems: "center", gap: 3 }}>
+            <View style={{
+              height: 4,
+              width: 32,
+              borderRadius: 2,
+              backgroundColor: b.active ? phaseColor : "rgba(150,150,150,0.3)",
+            }} />
+            <Text style={{
+              fontSize: 10,
+              fontWeight: b.active ? "800" : "500",
+              color: b.active ? phaseColor : "#aaa",
+              letterSpacing: 0.5,
+            }}>
+              {b.label}
+            </Text>
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
@@ -278,12 +548,20 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
   const [breathWaiting, setBreathWaiting] = useState<BreathPattern | null>(null);
   const [gracePending, setGracePending] = useState<BreathPattern | null>(null);
   const [graceCount, setGraceCount] = useState<number | null>(null);
+  const [phaseSecsLeft, setPhaseSecsLeft] = useState(0);
 
+  // Box breathing perimeter animation (0→4 over one full cycle)
+  const perimeterAnim = useRef(new Animated.Value(0)).current;
+  // Circle breathing scale animation
   const breathAnim = useRef(new Animated.Value(0.5)).current;
+
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const runningRef = useRef(false);
   const graceRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const graceDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const phaseTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Ref to hold the recursive runCycle function to avoid stale closures
+  const runCycleRef = useRef<(key: BreathPattern) => void>();
 
   function clearTimers() {
     timersRef.current.forEach(clearTimeout);
@@ -298,42 +576,119 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
     if (graceDelayRef.current) { clearTimeout(graceDelayRef.current); graceDelayRef.current = null; }
   }
 
-  const runCycle = useCallback(function (phases: [number, number, number, number]) {
-    if (!runningRef.current) return;
-    const [inh, holdIn, exh, holdOut] = phases.map((s) => s * 1000);
+  function clearPhaseTimer() {
+    if (phaseTimerRef.current) { clearInterval(phaseTimerRef.current); phaseTimerRef.current = null; }
+  }
 
-    setPhase(0);
-    Animated.timing(breathAnim, { toValue: 1, duration: inh, useNativeDriver: true }).start();
+  function startPhaseCountdown(secs: number) {
+    clearPhaseTimer();
+    setPhaseSecsLeft(secs);
+    if (secs <= 0) return;
+    let remaining = secs;
+    phaseTimerRef.current = setInterval(() => {
+      remaining -= 1;
+      setPhaseSecsLeft(remaining > 0 ? remaining : 0);
+      if (remaining <= 0) {
+        clearPhaseTimer();
+      }
+    }, 1000);
+  }
 
-    const t1 = holdIn > 0 ? setTimeout(() => { if (runningRef.current) { breathAnim.stopAnimation(); setPhase(1); } }, inh) : null;
-    const t2 = setTimeout(() => {
+  // Define runCycle and store in ref so recursive calls always get latest version
+  useEffect(() => {
+    runCycleRef.current = function runCycle(key: BreathPattern) {
       if (!runningRef.current) return;
-      setPhase(2);
-      Animated.timing(breathAnim, { toValue: 0.5, duration: exh, useNativeDriver: true }).start();
-    }, inh + holdIn);
-    const t3 = holdOut > 0 ? setTimeout(() => { if (runningRef.current) { breathAnim.stopAnimation(); setPhase(3); } }, inh + holdIn + exh) : null;
-    const total = inh + holdIn + exh + holdOut;
-    const t4 = setTimeout(() => {
-      if (!runningRef.current) return;
-      setCycles((c) => c + 1);
-      Haptics.selectionAsync();
-      runCycle(phases);
-    }, total);
+      const phases = BREATH_PATTERNS[key].phases;
+      const [inh, holdIn, exh, holdOut] = phases.map((s) => s * 1000);
 
-    timersRef.current = [t1, t2, t3, t4].filter(Boolean) as ReturnType<typeof setTimeout>[];
-  }, [breathAnim]);
+      if (key === "box") {
+        // Box breathing: animate perimeter 0→4
+        perimeterAnim.setValue(0);
+        const totalSecs = phases.reduce((a, b) => a + b, 0);
+
+        setPhase(0);
+        startPhaseCountdown(phases[0]);
+
+        Animated.sequence([
+          Animated.timing(perimeterAnim, { toValue: 1, duration: inh, useNativeDriver: true }),
+          Animated.timing(perimeterAnim, { toValue: 2, duration: holdIn, useNativeDriver: true }),
+          Animated.timing(perimeterAnim, { toValue: 3, duration: exh, useNativeDriver: true }),
+          Animated.timing(perimeterAnim, { toValue: 4, duration: holdOut, useNativeDriver: true }),
+        ]).start(({ finished }) => {
+          if (finished && runningRef.current) {
+            setCycles((c) => c + 1);
+            Haptics.selectionAsync();
+            runCycleRef.current?.(key);
+          }
+        });
+
+        // Schedule phase transitions for box
+        const t1 = inh > 0 ? setTimeout(() => {
+          if (!runningRef.current) return;
+          setPhase(1);
+          startPhaseCountdown(phases[1]);
+        }, inh) : null;
+        const t2 = holdIn > 0 ? setTimeout(() => {
+          if (!runningRef.current) return;
+          setPhase(2);
+          startPhaseCountdown(phases[2]);
+        }, inh + holdIn) : null;
+        const t3 = exh > 0 ? setTimeout(() => {
+          if (!runningRef.current) return;
+          setPhase(3);
+          startPhaseCountdown(phases[3]);
+        }, inh + holdIn + exh) : null;
+
+        timersRef.current = [t1, t2, t3].filter(Boolean) as ReturnType<typeof setTimeout>[];
+      } else {
+        // Circle breathing
+        setPhase(0);
+        startPhaseCountdown(phases[0]);
+        Animated.timing(breathAnim, { toValue: 1, duration: inh, useNativeDriver: true }).start();
+
+        const t1 = holdIn > 0 ? setTimeout(() => {
+          if (runningRef.current) { breathAnim.stopAnimation(); setPhase(1); startPhaseCountdown(phases[1]); }
+        }, inh) : null;
+
+        const t2 = setTimeout(() => {
+          if (!runningRef.current) return;
+          setPhase(2);
+          startPhaseCountdown(phases[2]);
+          Animated.timing(breathAnim, { toValue: 0.5, duration: exh, useNativeDriver: true }).start();
+        }, inh + holdIn);
+
+        const t3 = holdOut > 0 ? setTimeout(() => {
+          if (runningRef.current) { breathAnim.stopAnimation(); setPhase(3); startPhaseCountdown(phases[3]); }
+        }, inh + holdIn + exh) : null;
+
+        const total = inh + holdIn + exh + holdOut;
+        const t4 = setTimeout(() => {
+          if (!runningRef.current) return;
+          setCycles((c) => c + 1);
+          Haptics.selectionAsync();
+          runCycleRef.current?.(key);
+        }, total);
+
+        timersRef.current = [t1, t2, t3, t4].filter(Boolean) as ReturnType<typeof setTimeout>[];
+      }
+    };
+  });
 
   function beginSession(key: BreathPattern) {
     runningRef.current = false;
     clearTimers();
+    clearPhaseTimer();
     breathAnim.stopAnimation();
     breathAnim.setValue(0.5);
+    perimeterAnim.stopAnimation();
+    perimeterAnim.setValue(0);
     setPattern(key);
     setPhase(0);
     setCycles(0);
+    setPhaseSecsLeft(BREATH_PATTERNS[key].phases[0]);
     setRunning(true);
     runningRef.current = true;
-    setTimeout(() => runCycle(BREATH_PATTERNS[key].phases), 100);
+    setTimeout(() => runCycleRef.current?.(key), 100);
   }
 
   function startGrace(key: BreathPattern) {
@@ -369,11 +724,15 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
   function stopBreathing() {
     runningRef.current = false;
     clearTimers();
+    clearPhaseTimer();
     breathAnim.stopAnimation();
     breathAnim.setValue(0.5);
+    perimeterAnim.stopAnimation();
+    perimeterAnim.setValue(0);
     setRunning(false);
     setPhase(0);
     setCycles(0);
+    setPhaseSecsLeft(0);
   }
 
   function fullStop() {
@@ -411,12 +770,12 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
   useEffect(() => () => {
     runningRef.current = false;
     clearTimers();
+    clearPhaseTimer();
     clearGraceDelay();
     clearGraceInterval();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const scaleInterp = breathAnim.interpolate({ inputRange: [0.5, 1], outputRange: [0.5, 1] });
   const tealSolid = (theme.teal as any)?.solid ?? ink;
   const inGrace = gracePending !== null;
 
@@ -473,22 +832,20 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
             {pattern ? BREATH_PATTERNS[pattern].label : ""}
           </Text>
 
-          <View style={{ width: 200, height: 200, alignItems: "center", justifyContent: "center" }}>
-            <Animated.View style={{ transform: [{ scale: scaleInterp }] }}>
-              <View style={{
-                width: 180, height: 180, borderRadius: 90,
-                backgroundColor: tealSolid,
-                borderWidth: 3, borderColor: ink,
-                shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 10 },
-                shadowOpacity: 0.12, shadowRadius: 14, elevation: 6,
-                alignItems: "center", justifyContent: "center",
-              }}>
-                <Text style={{ color: "#fff", fontSize: 16, fontWeight: "900", letterSpacing: 1.5 }}>
-                  {PHASE_LABELS[phase]}
-                </Text>
-              </View>
-            </Animated.View>
-          </View>
+          {pattern === "box" ? (
+            <BoxBreathingAnimation
+              perimeterAnim={perimeterAnim}
+              phase={phase}
+              phaseSecsLeft={phaseSecsLeft}
+            />
+          ) : pattern ? (
+            <CircleBreathingAnimation
+              breathAnim={breathAnim}
+              phase={phase}
+              phaseSecsLeft={phaseSecsLeft}
+              pattern={pattern}
+            />
+          ) : null}
 
           <Text style={{ color: theme.textSoft, fontSize: 13 }}>
             Cycles completed: <Text style={{ color: theme.textStrong, fontWeight: "800" }}>{cycles}</Text>
@@ -526,7 +883,6 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
   const [pmrGraceCount, setPmrGraceCount] = useState<number | null>(null);
   const [pmrGracePending, setPmrGracePending] = useState(false);
   const [pmrReadyToStart, setPmrReadyToStart] = useState(false);
-  // Inter-step "get ready" transition state
   const [pmrGetReadyFor, setPmrGetReadyFor] = useState<string | null>(null);
   const [pmrGetReadyNextStep, setPmrGetReadyNextStep] = useState<number | null>(null);
   const [pmrGetReadyCountdown, setPmrGetReadyCountdown] = useState(3);
@@ -581,7 +937,6 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
           if (phase === "tense") {
             startPmrStep(s, "release");
           } else if (s + 1 < PMR_STEPS.length) {
-            // Pause and announce the next body part before starting it
             startGetReady(s + 1);
           } else {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -595,7 +950,6 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
     }, 1000);
   }
 
-  // When get-ready countdown hits 0, advance to the next step
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (pmrGetReadyCountdown === 0 && pmrGetReadyNextStep !== null) {
@@ -683,6 +1037,11 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
 
   const inPmrGrace = pmrGracePending;
 
+  // Get active area for current PMR step
+  const activeArea = step < PMR_STEPS.length
+    ? (PMR_AREA_MAP[PMR_STEPS[step]]?.area ?? "")
+    : "";
+
   return (
     <>
       <BackBtn ink={ink} onBack={handleBack} />
@@ -763,7 +1122,6 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
       ) : technique === "pmr" ? (
         <View style={{ gap: 14 }}>
           {pmrReadyToStart ? (
-            // "Ready?" prompt — large circle start button
             <View style={{ gap: 12 }}>
               <View style={[styles.card, { backgroundColor: (theme.coral as any)?.tint, borderColor: (theme.coral as any)?.solid }]}>
                 <Text style={{ color: (theme.coral as any)?.fg, fontSize: 14, lineHeight: 22, textAlign: "center" }}>
@@ -783,7 +1141,6 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
           ) : inPmrGrace ? (
             <GraceCountdown count={pmrGraceCount} accentColor={coralSolid} theme={theme} ink={ink} />
           ) : pmrGetReadyFor !== null ? (
-            // Inter-step "get ready for next body part" screen
             <View style={{ alignItems: "center", gap: 16, paddingVertical: 28 }}>
               <Text style={{ color: theme.textSoft, fontSize: 14, letterSpacing: 0.3 }}>
                 Great work! Next up…
@@ -812,6 +1169,14 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
               <Text style={{ color: theme.textSoft, fontSize: 13 }}>
                 {step < PMR_STEPS.length ? `Step ${step + 1} of ${PMR_STEPS.length}` : "Complete"}
               </Text>
+
+              {/* PMR Body Diagram */}
+              {step < PMR_STEPS.length && (
+                <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder ?? ink }]}>
+                  <PmrBodyDiagram activeArea={activeArea} accentColor={coralSolid} />
+                </View>
+              )}
+
               {step < PMR_STEPS.length && (
                 <View style={[styles.card, { backgroundColor: (theme.coral as any)?.tint, borderColor: ink }]}>
                   <Text style={{ color: (theme.coral as any)?.fg, fontSize: 19, fontWeight: "900", marginBottom: 6 }}>
@@ -901,6 +1266,7 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
 // ─── Meditation section ───────────────────────────────────────────────────────
 
 function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; onBack: () => void }) {
+  const [mode, setMode] = useState<MeditationMode>(null);
   const [duration, setDuration] = useState<number | null>(null);
   const [remaining, setRemaining] = useState(0);
   const [running, setRunning] = useState(false);
@@ -1012,6 +1378,19 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
     startGrace(mins);
   }
 
+  function handleGoBack() {
+    fullStop();
+    // Reset mode so next entry starts fresh
+    setMode(null);
+    onBack();
+  }
+
+  function handleBackFromDuration() {
+    setMeditationWaiting(null);
+    // Go back to mode selection
+    setMode(null);
+  }
+
   useEffect(() => () => {
     stopTimer();
     clearGraceDelay();
@@ -1027,7 +1406,7 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
 
   return (
     <>
-      <BackBtn ink={ink} onBack={() => { fullStop(); onBack(); }} />
+      <BackBtn ink={ink} onBack={handleGoBack} />
       <Text style={{ color: theme.textStrong, fontSize: 20, fontWeight: "900", marginBottom: 2 }}>Meditation</Text>
 
       {inGrace ? (
@@ -1038,19 +1417,62 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
             onPress={handleMeditationStart}
             accentColor={purpleSolid}
             ink={ink}
-            sublabel={`${meditationWaiting} min session`}
+            sublabel={`${meditationWaiting} min · ${mode === "guided" ? "Guided" : "Unguided"}`}
           />
           <Pressable
-            onPress={() => setMeditationWaiting(null)}
+            onPress={handleBackFromDuration}
             style={{ alignItems: "center", paddingVertical: 4 }}
             accessibilityRole="button"
           >
             <Text style={{ color: theme.textSoft, fontSize: 13 }}>← Choose a different duration</Text>
           </Pressable>
         </>
-      ) : !running && !done ? (
+      ) : mode === null ? (
+        // Mode selection step
         <>
-          <Text style={{ color: theme.textSoft, fontSize: 13, marginBottom: 10 }}>Choose a duration.</Text>
+          <Text style={{ color: theme.textSoft, fontSize: 13, marginBottom: 10 }}>Choose a session type.</Text>
+          <Pressable
+            onPress={() => setMode("guided")}
+            style={[styles.card, { backgroundColor: (theme.purple as any)?.tint, borderColor: (theme.purple as any)?.solid }]}
+            accessibilityRole="button"
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+              <Text style={{ fontSize: 32 }}>🎵</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: (theme.purple as any)?.fg, fontSize: 16, fontWeight: "800" }}>Guided</Text>
+                <Text style={{ color: (theme.purple as any)?.sub, fontSize: 12, marginTop: 2 }}>Music & voice prompts</Text>
+              </View>
+              <Text style={{ color: (theme.purple as any)?.fg, fontSize: 20 }}>›</Text>
+            </View>
+          </Pressable>
+          <Pressable
+            onPress={() => setMode("unguided")}
+            style={[styles.card, { backgroundColor: (theme.purple as any)?.tint, borderColor: (theme.purple as any)?.solid }]}
+            accessibilityRole="button"
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+              <Text style={{ fontSize: 32 }}>🔇</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: (theme.purple as any)?.fg, fontSize: 16, fontWeight: "800" }}>Unguided</Text>
+                <Text style={{ color: (theme.purple as any)?.sub, fontSize: 12, marginTop: 2 }}>Quiet timed session</Text>
+              </View>
+              <Text style={{ color: (theme.purple as any)?.fg, fontSize: 20 }}>›</Text>
+            </View>
+          </Pressable>
+        </>
+      ) : !running && !done ? (
+        // Duration picker
+        <>
+          <Text style={{ color: theme.textSoft, fontSize: 13, marginBottom: 2 }}>
+            {mode === "guided" ? "Guided session" : "Unguided session"} — choose a duration.
+          </Text>
+          <Pressable
+            onPress={() => setMode(null)}
+            style={{ paddingVertical: 4, marginBottom: 8 }}
+            accessibilityRole="button"
+          >
+            <Text style={{ color: theme.textSoft, fontSize: 13 }}>← Change session type</Text>
+          </Pressable>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
             {DURATIONS.map((d) => (
               <Pressable
@@ -1076,14 +1498,15 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
         <View style={{ alignItems: "center", gap: 16, paddingVertical: 24 }}>
           <Text style={{ fontSize: 48 }}>🎉</Text>
           <Text style={{ color: theme.textStrong, fontSize: 20, fontWeight: "900" }}>Session complete</Text>
-          <Text style={{ color: theme.textSoft, fontSize: 14 }}>{duration} min meditation</Text>
-          <Pressable onPress={() => setDuration(null)} style={[styles.endBtn, { borderColor: ink, backgroundColor: theme.card }]}>
+          <Text style={{ color: theme.textSoft, fontSize: 14 }}>{duration} min · {mode === "guided" ? "Guided" : "Unguided"}</Text>
+          <Pressable onPress={() => { setDuration(null); setMode(null); }} style={[styles.endBtn, { borderColor: ink, backgroundColor: theme.card }]}>
             <Text style={{ color: ink, fontSize: 13, fontWeight: "800" }}>DONE</Text>
           </Pressable>
         </View>
       ) : (
+        // Running session
         <View style={{ alignItems: "center", gap: 20, paddingVertical: 16 }}>
-          <Text style={{ color: theme.textSoft, fontSize: 13 }}>{duration} min session</Text>
+          <Text style={{ color: theme.textSoft, fontSize: 13 }}>{duration} min · {mode === "guided" ? "Guided" : "Unguided"}</Text>
           <View style={{
             width: 180, height: 180, borderRadius: 90,
             backgroundColor: purpleSolid,
@@ -1110,6 +1533,38 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
               <Text style={{ color: ink, fontSize: 13, fontWeight: "800", letterSpacing: 0.5 }}>END SESSION</Text>
             </Pressable>
           </View>
+
+          {/* Guided session placeholder feature buttons */}
+          {mode === "guided" && (
+            <View style={{ width: "100%", gap: 10 }}>
+              <View style={{ opacity: 0.4 }}>
+                <View style={{
+                  flexDirection: "row", gap: 12, borderWidth: 2,
+                  borderColor: ink, borderRadius: 16, padding: 12,
+                  alignItems: "center", backgroundColor: theme.card,
+                }}>
+                  <Text style={{ fontSize: 22 }}>🎵</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: ink, fontSize: 14, fontWeight: "800" }}>Relaxation Music</Text>
+                    <Text style={{ color: theme.textSoft, fontSize: 12 }}>Coming soon</Text>
+                  </View>
+                </View>
+              </View>
+              <View style={{ opacity: 0.4 }}>
+                <View style={{
+                  flexDirection: "row", gap: 12, borderWidth: 2,
+                  borderColor: ink, borderRadius: 16, padding: 12,
+                  alignItems: "center", backgroundColor: theme.card,
+                }}>
+                  <Text style={{ fontSize: 22 }}>🎙️</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: ink, fontSize: 14, fontWeight: "800" }}>Voice Guidance</Text>
+                    <Text style={{ color: theme.textSoft, fontSize: 12 }}>Coming soon</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          )}
         </View>
       )}
     </>
@@ -1119,10 +1574,22 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
 // ─── Gratitude section ────────────────────────────────────────────────────────
 
 function GratitudeSection({ theme, ink, onBack }: { theme: any; ink: string; onBack: () => void }) {
-  const [promptIdx] = useState(() => Math.floor(Math.random() * GRATITUDE_PROMPTS.length));
+  const [promptIdx, setPromptIdx] = useState(() => Math.floor(Math.random() * GRATITUDE_PROMPTS.length));
   const [text, setText] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  function handleReroll() {
+    Haptics.selectionAsync();
+    setPromptIdx((prev) => {
+      let next = Math.floor(Math.random() * GRATITUDE_PROMPTS.length);
+      // Ensure we get a different prompt
+      while (next === prev && GRATITUDE_PROMPTS.length > 1) {
+        next = Math.floor(Math.random() * GRATITUDE_PROMPTS.length);
+      }
+      return next;
+    });
+  }
 
   async function handleSave() {
     if (!text.trim()) return;
@@ -1157,7 +1624,24 @@ function GratitudeSection({ theme, ink, onBack }: { theme: any; ink: string; onB
       ) : (
         <>
           <View style={[styles.card, { backgroundColor: (theme.berry as any)?.tint, borderColor: (theme.berry as any)?.solid }]}>
-            <Text style={{ color: (theme.berry as any)?.sub, fontSize: 10, fontWeight: "800", letterSpacing: 0.8, marginBottom: 8 }}>TODAY'S PROMPT</Text>
+            {/* Header row with label and reroll button */}
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+              <Text style={{ color: (theme.berry as any)?.sub, fontSize: 10, fontWeight: "800", letterSpacing: 0.8, flex: 1 }}>
+                TODAY'S PROMPT
+              </Text>
+              <Pressable
+                onPress={handleReroll}
+                accessibilityRole="button"
+                accessibilityLabel="Get a different prompt"
+                style={{
+                  paddingHorizontal: 8, paddingVertical: 4,
+                  borderRadius: 10,
+                  backgroundColor: (theme.berry as any)?.solid + "22",
+                }}
+              >
+                <Text style={{ fontSize: 14 }}>🔀</Text>
+              </Pressable>
+            </View>
             <Text style={{ color: (theme.berry as any)?.fg, fontSize: 16, lineHeight: 24, fontWeight: "600" }}>
               {GRATITUDE_PROMPTS[promptIdx]}
             </Text>
