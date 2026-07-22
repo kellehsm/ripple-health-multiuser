@@ -18,6 +18,7 @@ import { HeartRateDetailScreen } from "../screens/HeartRateDetailScreen";
 import { TrendsScreen } from "../screens/TrendsScreen";
 import { CompletedScreen } from "../screens/CompletedScreen";
 import { InsightsScreen } from "../screens/InsightsScreen";
+import { InsightsTrendsScreen } from "../screens/InsightsTrendsScreen";
 import { MindfulnessScreen } from "../screens/MindfulnessScreen";
 import { CustomizeDashboardScreen } from "../screens/CustomizeDashboardScreen";
 import { GlobalSearchScreen } from "../screens/GlobalSearchScreen";
@@ -109,15 +110,15 @@ function TabNavigator() {
             }}
           >
             {([
-              { emoji: "💡", label: "INSIGHT", screen: "Insights" },
-              { emoji: "📈", label: "TRENDS", screen: "Trends" },
-              { emoji: "🔍", label: "SEARCH", screen: "GlobalSearch" },
-              { emoji: "⚙️", label: "SETTINGS", screen: "Settings" },
+              { emoji: "💡", label: "INSIGHT", screen: "InsightsTrends", params: { tab: "insights" } },
+              { emoji: "📈", label: "TRENDS", screen: "InsightsTrends", params: { tab: "trends" } },
+              { emoji: "🔍", label: "SEARCH", screen: "GlobalSearch", params: undefined },
+              { emoji: "⚙️", label: "SETTINGS", screen: "Settings", params: undefined },
             ] as const).map((btn, i) => (
               <React.Fragment key={btn.label}>
                 {i > 0 && <View style={{ width: 2, backgroundColor: theme.ink }} />}
                 <Pressable
-                  onPress={() => (navigation as any).getParent()?.navigate(btn.screen)}
+                  onPress={() => (navigation as any).getParent()?.navigate(btn.screen, btn.params)}
                   style={{ alignItems: "center", justifyContent: "center", paddingHorizontal: 10, paddingVertical: 6 }}
                 >
                   <Text style={{ fontSize: 18 }}>{btn.emoji}</Text>
@@ -165,7 +166,8 @@ export function RootTabs({ onNavigationStateChange }: RootTabsProps) {
         <Stack.Screen name="History" component={HistoryScreen} options={{ title: "History" }} />
         <Stack.Screen name="StepsDetail" component={StepsDetailScreen} options={{ title: "Steps" }} />
         <Stack.Screen name="HeartRateDetail" component={HeartRateDetailScreen} options={{ title: "Heart Rate" }} />
-        <Stack.Screen name="Trends" component={TrendsScreen} options={{ title: "Trends & Insights" }} />
+        <Stack.Screen name="InsightsTrends" component={InsightsTrendsScreen} options={{ title: "Insights & Trends" }} />
+        <Stack.Screen name="Trends" component={TrendsScreen} options={{ title: "Trends" }} />
         <Stack.Screen name="Completed" component={CompletedScreen} options={{ title: "Completed" }} />
         <Stack.Screen name="Insights" component={InsightsScreen} options={{ title: "Insights" }} />
         <Stack.Screen name="Mindfulness" component={MindfulnessScreen} options={{ title: "Mindfulness" }} />
