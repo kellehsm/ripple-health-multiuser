@@ -148,6 +148,7 @@ export function FinanceScreen() {
 
   const [editEntry, setEditEntry] = useState<SpendingEntry | null>(null);
   const [editCategory, setEditCategory] = useState("");
+  const [moodSuggestion, setMoodSuggestion] = useState<{ spending_id: string; amount: number; merchant_name: string | null; mood_label: string } | null>(null);
   const [editNotes, setEditNotes] = useState("");
   const [editSubmitting, setEditSubmitting] = useState(false);
 
@@ -156,8 +157,14 @@ export function FinanceScreen() {
     else if (!entries.length) setLoading(true);
     try {
       const since = new Date(Date.now() - 60 * 86400000).toISOString();
-      const data = await api.spending(since);
+      const [data, suggestion] = await Promise.all([
+        api.spending(since),
+        api.spendingMoodSuggest().catch(() => null),
+      ]);
       setEntries(Array.isArray(data) ? data : []);
+      if (suggestion && suggestion.spending_id) {
+        setMoodSuggestion(suggestion);
+      }
     } catch {
       toast("Couldn't load spending.", "error");
     } finally {
@@ -392,6 +399,43 @@ export function FinanceScreen() {
                   </View>
                 );
               })}
+            </View>
+          </View>
+        )}
+
+        {/* Spending-Mood suggestion banner */}
+        {moodSuggestion && (
+          <View style={[s.card, { borderColor: theme.berry?.solid ?? theme.cardBorder, backgroundColor: theme.berry?.tint ?? theme.card, borderWidth: 2 }]}>
+            <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
+              <Text style={{ fontSize: 20 }}>💭</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: theme.textStrong, fontSize: 14, fontWeight: "900", marginBottom: 4 }}>Heads up</Text>
+                <Text style={{ color: theme.textStrong, fontSize: 13, lineHeight: 18 }}>
+                  {`This purchase ($${Number(moodSuggestion.amount).toFixed(2)}${moodSuggestion.merchant_name ? " from " + moodSuggestion.merchant_name : ""}) happened close to a ${moodSuggestion.mood_label} check-in. Want to tag it as related?`}
+                </Text>
+                <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
+                  <Pressable
+                    onPress={async () => {
+                      try {
+                        await api.tagSpending(moodSuggestion.spending_id, 'emotional_spend');
+                        setMoodSuggestion(null);
+                        toast("Tagged");
+                      } catch {
+                        toast("Couldn't tag.", "error");
+                      }
+                    }}
+                    style={[s.suggBtn, { backgroundColor: theme.teal.solid, borderColor: theme.teal.solid }]}
+                  >
+                    <Text style={{ color: "#fff", fontSize: 13, fontWeight: "700" }}>Yes, tag it</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setMoodSuggestion(null)}
+                    style={[s.suggBtn, { backgroundColor: "transparent", borderColor: theme.cardBorder }]}
+                  >
+                    <Text style={{ color: theme.textSoft, fontSize: 13, fontWeight: "700" }}>No thanks</Text>
+                  </Pressable>
+                </View>
+              </View>
             </View>
           </View>
         )}
@@ -700,5 +744,6 @@ function makeStyles(ink: string, card: string, border: string) {
     saveBtnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
     deleteBtn:   { borderRadius: 22, borderWidth: 2, paddingVertical: 12, alignItems: "center", backgroundColor: "transparent" },
     deleteBtnText:{ fontWeight: "700", fontSize: 15 },
+    suggBtn:     { borderRadius: 16, borderWidth: 2, paddingHorizontal: 16, paddingVertical: 9, alignItems: "center", justifyContent: "center" },
   });
 }
