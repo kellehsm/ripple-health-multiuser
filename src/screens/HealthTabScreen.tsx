@@ -19,7 +19,7 @@ import { LongPressActionMenu } from '../components/LongPressActionMenu';
 
 // ─── Sub-tab type ────────────────────────────────────────────────────────────
 
-type SubTab = 'medication' | 'cycle';
+type SubTab = 'medication' | 'cycle' | 'symptoms';
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 
@@ -178,9 +178,11 @@ function getWeekStart(): string {
 
 function OverviewBlocks({
   onNavigate,
+  activeSubTab,
   theme,
 }: {
   onNavigate: (t: SubTab) => void;
+  activeSubTab: SubTab;
   theme: any;
 }) {
   const [medications, setMedications] = useState<Medication[]>([]);
@@ -249,7 +251,7 @@ function OverviewBlocks({
       <View style={[obStyles.row, { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: "rgba(60,40,20,0.1)" }]}>
         {/* Medication block */}
         <Pressable
-          style={({ pressed }) => [obStyles.block, { backgroundColor: theme.teal.tint, opacity: pressed ? 0.75 : 1 }]}
+          style={({ pressed }) => [obStyles.block, { backgroundColor: activeSubTab === 'medication' ? theme.teal.tint : 'transparent', opacity: pressed ? 0.75 : 1 }]}
           onPress={() => onNavigate('medication')}
           onLongPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -267,7 +269,7 @@ function OverviewBlocks({
           accessibilityLabel="Medication overview"
         >
           <Text style={obStyles.icon}>💊</Text>
-          <Text style={[obStyles.blockLabel, { color: theme.textStrong }]}>Medication</Text>
+          <Text style={[obStyles.blockLabel, { color: theme.textStrong }]}>Meds</Text>
           <Text style={[obStyles.blockValue, { color: theme.teal.fg }]}>{medSummaryLine}</Text>
         </Pressable>
 
@@ -275,7 +277,7 @@ function OverviewBlocks({
 
         {/* Cycle block */}
         <Pressable
-          style={({ pressed }) => [obStyles.block, { opacity: pressed ? 0.75 : 1 }]}
+          style={({ pressed }) => [obStyles.block, { backgroundColor: activeSubTab === 'cycle' ? (theme.purple?.tint ?? '#F3EEFF') : 'transparent', opacity: pressed ? 0.75 : 1 }]}
           onPress={() => onNavigate('cycle')}
           accessibilityRole="button"
           accessibilityLabel="Cycle overview"
@@ -291,8 +293,8 @@ function OverviewBlocks({
 
         {/* Symptoms block */}
         <Pressable
-          style={({ pressed }) => [obStyles.block, { opacity: pressed ? 0.75 : 1 }]}
-          onPress={() => onNavigate('cycle')}
+          style={({ pressed }) => [obStyles.block, { backgroundColor: activeSubTab === 'symptoms' ? (theme.berry?.tint ?? '#FEF0F3') : 'transparent', opacity: pressed ? 0.75 : 1 }]}
+          onPress={() => onNavigate('symptoms')}
           accessibilityRole="button"
           accessibilityLabel="Symptoms overview"
         >
@@ -332,17 +334,17 @@ const obStyles = StyleSheet.create({
   },
   block: {
     flex: 1,
-    minHeight: 88,
-    padding: 12,
+    minHeight: 64,
+    padding: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 3,
+    gap: 2,
   },
   divider: { width: 2 },
-  icon: { fontSize: 20 },
-  blockLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase' },
-  blockValue: { fontSize: 13, fontWeight: '700', textAlign: 'center' },
-  blockSub: { fontSize: 11, textAlign: 'center' },
+  icon: { fontSize: 16 },
+  blockLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase' },
+  blockValue: { fontSize: 11, fontWeight: '700', textAlign: 'center' },
+  blockSub: { fontSize: 10, textAlign: 'center' },
   insightBanner: {
     borderRadius: 22,
     borderWidth: 2,
@@ -1843,48 +1845,67 @@ const insStyles = StyleSheet.create({
   },
 });
 
-// ─── Tab strip (medication | cycle) ──────────────────────────────────────────
+// ─── SymptomsView ─────────────────────────────────────────────────────────────
 
-function TabStrip({ active, onChange, theme }: { active: SubTab; onChange: (t: SubTab) => void; theme: any }) {
+function SymptomsView({ theme }: { theme: any }) {
+  const [symptomCounts, setSymptomCounts] = useState<{ label: string; count: number }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const end = new Date().toISOString().slice(0, 10);
+    const startDate = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
+    api.getCycleLogs(startDate, end).then((logs: any[]) => {
+      const counts: Record<string, number> = {};
+      for (const log of (logs ?? [])) {
+        for (const s of (log.symptoms ?? [])) {
+          counts[s] = (counts[s] ?? 0) + 1;
+        }
+      }
+      const sorted = Object.entries(counts)
+        .map(([label, count]) => ({ label, count }))
+        .sort((a, b) => b.count - a.count);
+      setSymptomCounts(sorted);
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={{ padding: 24, alignItems: 'center' }}>
+        <ActivityIndicator color={theme.teal.solid} />
+      </View>
+    );
+  }
+
   return (
-    <View style={[stripStyles.row, { borderBottomColor: theme.cardBorder }]}>
-      {(['medication', 'cycle'] as SubTab[]).map((tab) => (
-        <Pressable
-          key={tab}
-          style={[
-            stripStyles.chip,
-            {
-              backgroundColor: active === tab ? theme.teal.solid : theme.card,
-              borderColor: active === tab ? theme.teal.solid : theme.cardBorder,
-              shadowColor: "rgba(60,40,20,0.1)",
-            },
-          ]}
-          onPress={() => onChange(tab)}
-        >
-          <Text style={[stripStyles.chipText, { color: active === tab ? '#fff' : theme.textSoft, fontWeight: active === tab ? '700' : '400' }]}>
-            {tab === 'medication' ? 'Medication' : 'Cycle'}
+    <ScrollView contentContainerStyle={{ padding: 14, gap: 12, paddingBottom: 100 }} scrollEnabled={false}>
+      {symptomCounts.length === 0 ? (
+        <View style={[{ borderRadius: 22, borderWidth: 2, padding: 20, alignItems: 'center', backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <Text style={{ fontSize: 28, marginBottom: 8 }}>📝</Text>
+          <Text style={{ color: theme.textSoft, fontSize: 14, textAlign: 'center' }}>
+            No symptoms logged yet. Log cycle days to track symptoms over time.
           </Text>
-        </Pressable>
-      ))}
-    </View>
+        </View>
+      ) : (
+        <>
+          <Text style={{ color: theme.textSoft, fontSize: 11, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase' }}>
+            Last 90 days
+          </Text>
+          <View style={[{ borderRadius: 22, borderWidth: 2, backgroundColor: theme.card, borderColor: theme.cardBorder, overflow: 'hidden', shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 3 }]}>
+            {symptomCounts.map(({ label, count }, i) => (
+              <View key={label} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 11, borderTopWidth: i === 0 ? 0 : 1, borderTopColor: theme.cardBorder }}>
+                <Text style={{ color: theme.textStrong, fontSize: 14, fontWeight: '500', textTransform: 'capitalize' }}>{label}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <View style={{ height: 6, width: Math.max(20, Math.min(80, count * 8)), borderRadius: 3, backgroundColor: theme.berry?.solid ?? '#A62A50', opacity: 0.6 }} />
+                  <Text style={{ color: theme.textSoft, fontSize: 12, fontWeight: '700', minWidth: 28, textAlign: 'right' }}>{count}×</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </>
+      )}
+    </ScrollView>
   );
 }
-
-const stripStyles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 8, padding: 12, borderBottomWidth: 1 },
-  chip: {
-    paddingVertical: 7,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    borderWidth: 2,
-    shadowColor: "rgba(60,40,20,0.1)",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  chipText: { fontSize: 13 },
-});
 
 // ─── HealthTabScreen (root) ───────────────────────────────────────────────────
 
@@ -1917,16 +1938,14 @@ export function HealthTabScreen() {
           stickyHeaderIndices={[0]}
         >
           {/* Sticky overview blocks */}
-          <View style={{ backgroundColor: theme.page, padding: 12, paddingBottom: 0 }}>
-            <OverviewBlocks onNavigate={setActiveSubTab} theme={theme} />
+          <View style={{ backgroundColor: theme.page, padding: 12, paddingBottom: 4 }}>
+            <OverviewBlocks onNavigate={setActiveSubTab} activeSubTab={effectiveTab} theme={theme} />
           </View>
-
-          {/* Tab strip */}
-          <TabStrip active={effectiveTab} onChange={setActiveSubTab} theme={theme} />
 
           {/* Active sub-tab content — not full-screen scrollable, rendered inline */}
           {effectiveTab === 'medication' && <MedicationList theme={theme} scrollEnabled={false} />}
           {effectiveTab === 'cycle' && <CycleView theme={theme} />}
+          {effectiveTab === 'symptoms' && <SymptomsView theme={theme} />}
         </ScrollView>
       )}
 

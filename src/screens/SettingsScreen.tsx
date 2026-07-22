@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { ScrollView, View, Text, Pressable, StyleSheet, Alert } from "react-native";
+import { ScrollView, View, Text, Pressable, StyleSheet, Alert, Linking } from "react-native";
 import { LoadingIndicator } from "../components/LoadingIndicator";
 import { useFocusEffect } from "@react-navigation/core";
 import { useNavigation } from "@react-navigation/native";
@@ -8,6 +8,7 @@ import { useTheme } from "../theme/ThemeContext";
 import { PALETTES } from "../theme/palettes";
 import { api } from "../api/client";
 import { logout } from "../lib/auth";
+import { reportError } from "../utils/errorReport";
 
 type Journey = { total_meals: number; total_mood_checkins: number; total_active_days: number; member_since: string | null };
 
@@ -125,6 +126,32 @@ export function SettingsScreen() {
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>HELP</Text>
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
         <MenuRow title="Help & FAQ" onPress={() => nav("Help")} theme={theme} />
+        <View style={[styles.divider, { backgroundColor: theme.cardBorder }]} />
+        <MenuRow
+          title="Report a Bug"
+          subtitle="Send a report to the developer"
+          onPress={() => {
+            Alert.alert(
+              'Report a Bug',
+              'Describe the issue in the email. Include what you were doing when it happened.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Open Email',
+                  onPress: () => void reportError('User-reported bug (no specific error message)', 'Settings → Report a Bug'),
+                },
+              ]
+            );
+          }}
+          theme={theme}
+        />
+        <View style={[styles.divider, { backgroundColor: theme.cardBorder }]} />
+        <MenuRow
+          title="Contact Developer"
+          subtitle="kjsmyre@gmail.com"
+          onPress={() => void Linking.openURL('mailto:kjsmyre@gmail.com?subject=Ripple Wellness')}
+          theme={theme}
+        />
       </View>
 
       {/* Account */}

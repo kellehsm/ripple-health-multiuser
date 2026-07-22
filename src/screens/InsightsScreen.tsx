@@ -200,10 +200,10 @@ export function InsightsScreen() {
         </Pressable>
       </View>
 
-      {/* Filter grid — row 1: first 4, row 2: remaining */}
-      <View style={{ gap: 7, marginBottom: 12 }}>
-        {[TYPE_GROUPS.slice(0, 4), TYPE_GROUPS.slice(4)].map((row, rowIdx) => (
-          <View key={rowIdx} style={{ flexDirection: "row", gap: 7 }}>
+      {/* Filter grid — 3 rows of 3 */}
+      <View style={{ gap: 6, marginBottom: 12 }}>
+        {[TYPE_GROUPS.slice(0, 3), TYPE_GROUPS.slice(3, 6), TYPE_GROUPS.slice(6)].map((row, rowIdx) => (
+          <View key={rowIdx} style={{ flexDirection: "row", gap: 6 }}>
             {row.map((g) => {
               const idx = TYPE_GROUPS.indexOf(g);
               const active = activeGroup === idx;
@@ -345,12 +345,12 @@ function makeStyles(page: string, ink: string, card: string) {
     },
     regenText: { fontSize: 12, fontWeight: "600" },
     filterTab: {
-      paddingHorizontal: 12,
-      paddingVertical: 6,
+      paddingHorizontal: 7,
+      paddingVertical: 5,
       borderRadius: 20,
       borderWidth: 1.5,
     },
-    filterText: { fontSize: 12, fontWeight: "700" },
+    filterText: { fontSize: 11, fontWeight: "700" },
     sectionLabel: {
       fontSize: 10,
       fontWeight: "800",
