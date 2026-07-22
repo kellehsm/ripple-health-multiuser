@@ -71,6 +71,18 @@ class RippleWidgetProvider : AppWidgetProvider() {
 
                     appWidgetManager.updateAppWidget(id, views)
                 }
+            } catch (e: Exception) {
+                Log.e(TAG, "Widget update failed", e)
+                try {
+                    for (id in appWidgetIds) {
+                        val views = RemoteViews(context.packageName, R.layout.ripple_widget)
+                        views.setTextViewText(R.id.widget_glucose, "--")
+                        views.setTextViewText(R.id.widget_steps, "--")
+                        appWidgetManager.updateAppWidget(id, views)
+                    }
+                } catch (inner: Exception) {
+                    Log.e(TAG, "Widget fallback render failed", inner)
+                }
             } finally {
                 pending.finish()
             }
