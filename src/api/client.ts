@@ -2,7 +2,7 @@ import { getToken } from "../lib/auth";
 import { setNetworkOnline } from "../utils/networkState";
 import Constants from "expo-constants";
 
-const BASE_URL: string = (Constants.expoConfig?.extra as any)?.apiBaseUrl ?? "https://app.kels.gg/dev-api";
+const BASE_URL: string = (Constants.expoConfig?.extra as any)?.apiBaseUrl ?? "https://app.kels.gg/dev-api/api";
 
 async function request(path: string, options: RequestInit = {}): Promise<any> {
   const token = await getToken();
