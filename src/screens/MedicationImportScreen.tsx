@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import {
-  View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator, Modal, FlatList,
+  View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator, Modal, FlatList, Linking,
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
 import { useTheme } from '../theme/ThemeContext';
 import { api } from '../api/client';
 import { useNavigation } from '@react-navigation/native';
+
+const TEMPLATE_URL = "https://app.kels.gg/api/medications/import/template";
 
 const APP_FIELDS: Array<{ key: string; label: string }> = [
   { key: 'name',         label: 'Medication name' },
@@ -64,7 +66,14 @@ export function MedicationImportScreen() {
 
       const res = await api.previewMedicationImport(fileBase64, asset.name ?? 'import.csv');
       if (!res?.headers?.length || !res.rows?.length) {
-        Alert.alert('Empty file', 'No data rows found in the selected file.');
+        Alert.alert(
+          'No data found',
+          'The file appears empty or malformed. Download the template to get started with the correct format.',
+          [
+            { text: 'Download Template', onPress: () => Linking.openURL(TEMPLATE_URL) },
+            { text: 'OK', style: 'cancel' },
+          ]
+        );
         return;
       }
 
@@ -73,7 +82,14 @@ export function MedicationImportScreen() {
       setMapping(res.suggestedMapping ?? {});
       setStep('mapping');
     } catch (err: any) {
-      Alert.alert('Error', err?.message ?? 'Failed to read file');
+      Alert.alert(
+        'Could not read file',
+        `${err?.message ?? 'Failed to read file'}\n\nTry downloading the template for the correct format.`,
+        [
+          { text: 'Download Template', onPress: () => Linking.openURL(TEMPLATE_URL) },
+          { text: 'OK', style: 'cancel' },
+        ]
+      );
     } finally {
       setLoading(false);
     }
@@ -122,6 +138,14 @@ export function MedicationImportScreen() {
             disabled={loading}
           >
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>Choose file…</Text>}
+          </Pressable>
+          <Pressable
+            onPress={() => Linking.openURL(TEMPLATE_URL)}
+            style={{ marginTop: 4 }}
+          >
+            <Text style={{ color: theme.teal.fg ?? theme.teal.solid, fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' }}>
+              Download blank template (.xlsx)
+            </Text>
           </Pressable>
         </View>
       )}
