@@ -5,7 +5,6 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.app.PendingIntent
-import android.net.Uri
 import android.util.Log
 import android.widget.RemoteViews
 import org.json.JSONObject
@@ -20,122 +19,106 @@ class RippleWidgetProvider : AppWidgetProvider() {
     companion object {
         private const val TAG = "RippleWidget"
         private const val API = "https://app.kels.gg/api"
-        private const val WIDGET_AUTH_FILE = "widget_auth.json"
+        private const val AUTH_FILE = "widget_auth.json"
     }
 
-    override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
-        val pending = goAsync()
-        Thread {
-            try {
-                val token = readToken(context)
-                val glucose = if (token != null) fetchGlucose(token) else "Sign in"
-                val steps = if (token != null) fetchSteps(token) else "--"
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetIds: IntArray
+    ) {
+        for (id in appWidgetIds) {
+            showPlaceholder(context, appWidgetManager, id)
+            Thread { fetchAndUpdate(context, appWidgetManager, id) }.start()
+        }
+    }
 
-                for (id in appWidgetIds) {
-                    val views = RemoteViews(context.packageName, R.layout.ripple_widget)
-                    views.setTextViewText(R.id.widget_glucose, glucose)
-                    views.setTextViewText(R.id.widget_steps, steps)
+    private fun showPlaceholder(context: Context, manager: AppWidgetManager, id: Int) {
+        try {
+            val views = buildViews(context, "--", "--")
+            manager.updateAppWidget(id, views)
+        } catch (e: Exception) {
+            Log.e(TAG, "placeholder failed", e)
+        }
+    }
 
-                    // Tap widget root to refresh
-                    val refreshIntent = Intent(context, RippleWidgetProvider::class.java).apply {
-                        action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-                        putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
-                    }
-                    val refreshPending = PendingIntent.getBroadcast(
-                        context, 0, refreshIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-                    views.setOnClickPendingIntent(R.id.widget_root, refreshPending)
-
-                    // Water button — deep link into app
-                    val waterIntent = Intent(Intent.ACTION_VIEW, Uri.parse("ripple://log-water")).apply {
-                        setPackage(context.packageName)
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                    }
-                    val waterPending = PendingIntent.getActivity(
-                        context, 1, waterIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-                    views.setOnClickPendingIntent(R.id.btn_water, waterPending)
-
-                    // Meals button — deep link into app
-                    val mealsIntent = Intent(Intent.ACTION_VIEW, Uri.parse("ripple://meals")).apply {
-                        setPackage(context.packageName)
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                    }
-                    val mealsPending = PendingIntent.getActivity(
-                        context, 2, mealsIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-                    views.setOnClickPendingIntent(R.id.btn_meals, mealsPending)
-
-                    appWidgetManager.updateAppWidget(id, views)
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Widget update failed", e)
-                try {
-                    for (id in appWidgetIds) {
-                        val views = RemoteViews(context.packageName, R.layout.ripple_widget)
-                        views.setTextViewText(R.id.widget_glucose, "--")
-                        views.setTextViewText(R.id.widget_steps, "--")
-                        appWidgetManager.updateAppWidget(id, views)
-                    }
-                } catch (inner: Exception) {
-                    Log.e(TAG, "Widget fallback render failed", inner)
-                }
-            } finally {
-                pending.finish()
+    private fun fetchAndUpdate(context: Context, manager: AppWidgetManager, id: Int) {
+        val glucose: String
+        val steps: String
+        try {
+            val token = readToken(context)
+            if (token == null) {
+                glucose = "Sign in"
+                steps = "--"
+            } else {
+                glucose = fetchGlucose(token)
+                steps = fetchSteps(token)
             }
-        }.start()
-    }
-
-    private fun readToken(context: Context): String? {
-        return try {
-            val file = File(context.filesDir, WIDGET_AUTH_FILE)
-            if (!file.exists()) return null
-            val json = JSONObject(file.readText())
-            json.optString("token").takeIf { it.isNotEmpty() }
         } catch (e: Exception) {
-            Log.w(TAG, "readToken failed", e)
-            null
+            Log.e(TAG, "fetch error", e)
+            return
+        }
+
+        try {
+            manager.updateAppWidget(id, buildViews(context, glucose, steps))
+        } catch (e: Exception) {
+            Log.e(TAG, "update error", e)
         }
     }
 
-    private fun fetchGlucose(token: String): String {
-        return try {
-            val conn = URL("$API/glucose/status").openConnection() as HttpsURLConnection
-            conn.connectTimeout = 4000
-            conn.readTimeout = 4000
-            conn.setRequestProperty("Authorization", "Bearer $token")
-            val text = conn.inputStream.bufferedReader().readText()
-            conn.disconnect()
-            val obj = JSONObject(text)
-            if (obj.optBoolean("hasData", false)) {
-                val mg = obj.optInt("mg_dl", 0)
-                val arrow = obj.optString("arrow", "").trim()
-                if (arrow.isNotEmpty()) "$mg $arrow" else "$mg mg/dL"
-            } else "No data"
-        } catch (e: Exception) {
-            Log.w(TAG, "fetchGlucose failed", e)
-            "-- mg/dL"
-        }
+    private fun buildViews(context: Context, glucose: String, steps: String): RemoteViews {
+        val views = RemoteViews(context.packageName, R.layout.ripple_widget)
+        views.setTextViewText(R.id.widget_glucose, glucose)
+        views.setTextViewText(R.id.widget_steps, steps)
+
+        val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            ?: Intent()
+        val pending = PendingIntent.getActivity(
+            context, 0, launch,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        views.setOnClickPendingIntent(R.id.widget_root, pending)
+        return views
     }
 
-    private fun fetchSteps(token: String): String {
-        return try {
-            val today = LocalDate.now().toString()
-            val conn = URL("$API/health-connect/steps?date=$today").openConnection() as HttpsURLConnection
-            conn.connectTimeout = 4000
-            conn.readTimeout = 4000
-            conn.setRequestProperty("Authorization", "Bearer $token")
-            val text = conn.inputStream.bufferedReader().readText()
-            conn.disconnect()
-            val obj = JSONObject(text)
-            val steps = obj.optInt("steps", 0)
-            if (steps > 0) NumberFormat.getNumberInstance().format(steps) else "--"
-        } catch (e: Exception) {
-            Log.w(TAG, "fetchSteps failed", e)
-            "-- steps"
-        }
+    private fun readToken(context: Context): String? = try {
+        val file = File(context.filesDir, AUTH_FILE)
+        if (!file.exists()) null
+        else JSONObject(file.readText()).optString("token").takeIf { it.isNotEmpty() }
+    } catch (e: Exception) {
+        Log.w(TAG, "readToken failed", e)
+        null
+    }
+
+    private fun fetchGlucose(token: String): String = try {
+        val conn = URL("$API/glucose/status").openConnection() as HttpsURLConnection
+        conn.connectTimeout = 4000
+        conn.readTimeout = 4000
+        conn.setRequestProperty("Authorization", "Bearer $token")
+        val obj = JSONObject(conn.inputStream.bufferedReader().readText())
+        conn.disconnect()
+        if (obj.optBoolean("hasData", false)) {
+            val mg = obj.optInt("mg_dl", 0)
+            val arrow = obj.optString("arrow", "").trim()
+            if (arrow.isNotEmpty()) "$mg $arrow" else "$mg mg/dL"
+        } else "--"
+    } catch (e: Exception) {
+        Log.w(TAG, "fetchGlucose failed", e)
+        "--"
+    }
+
+    private fun fetchSteps(token: String): String = try {
+        val today = LocalDate.now().toString()
+        val conn = URL("$API/health-connect/steps?date=$today").openConnection() as HttpsURLConnection
+        conn.connectTimeout = 4000
+        conn.readTimeout = 4000
+        conn.setRequestProperty("Authorization", "Bearer $token")
+        val obj = JSONObject(conn.inputStream.bufferedReader().readText())
+        conn.disconnect()
+        val count = obj.optInt("steps", 0)
+        if (count > 0) NumberFormat.getNumberInstance().format(count) else "--"
+    } catch (e: Exception) {
+        Log.w(TAG, "fetchSteps failed", e)
+        "--"
     }
 }
