@@ -29,6 +29,7 @@ import { resolveLayout, type DashboardLayout, type CardId } from "../constants/d
 import { TooltipBubble } from "../components/TooltipBubble";
 import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
 import { DashboardEditorModal } from "../components/DashboardEditorModal";
+import { FeatureTour, type TourStep } from "../components/FeatureTour";
 import { useFocusEffect } from "@react-navigation/native";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -331,6 +332,22 @@ export function OverviewScreen() {
   const [dashboardLayout, setDashboardLayout] = useState<DashboardLayout>({ order: ["metric_chips","trends_nav","daily_summary","top_insight","timeline","insights","weekly_review","mood_pattern"], hidden: [] });
   const [showTooltip, setShowTooltip] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
+  const [showTour, setShowTour] = useState(false);
+
+  // Tour refs
+  const tourHeaderRef = useRef<View>(null);
+  const tourChipsRef = useRef<View>(null);
+  const tourTrendsRef = useRef<View>(null);
+  const tourTimelineRef = useRef<View>(null);
+  const tourInsightsRef = useRef<View>(null);
+
+  const HOME_TOUR: TourStep[] = [
+    { ref: tourHeaderRef, title: "Your Home Screen", body: "Your daily wellness dashboard. Everything you track rolls up here. Tap the pencil icon to customize which sections appear." },
+    { ref: tourChipsRef,  title: "Key Metrics",      body: "Glucose, steps, sleep, water, meals, and mood — all in one row. Tap the Mood chip to log how you're feeling right now." },
+    { ref: tourTrendsRef, title: "Trends & Insights", body: "Tap here to open the Insights tab and explore patterns across all your data." },
+    { ref: tourTimelineRef, title: "Today's Timeline", body: "Scrub the glucose chart with your finger to see exact readings. Meals, mood check-ins, and spending appear as markers so you can spot patterns." },
+    { ref: tourInsightsRef, title: "Pattern Observations", body: "Observations generated from your data — descriptive only, never prescriptive. They show what happened, not what to do about it." },
+  ];
 
   // Correlation toggle
   const [correlation, setCorrelation] = useState<"sleep" | "spend">("sleep");
@@ -470,6 +487,12 @@ export function OverviewScreen() {
       if (!seen) {
         setShowTooltip(true);
         markTooltipSeen("overview");
+      }
+    });
+    hasSeenTooltip("home-tour").then(seen => {
+      if (!seen) {
+        markTooltipSeen("home-tour");
+        setTimeout(() => setShowTour(true), 600);
       }
     });
   }, []));
@@ -646,7 +669,7 @@ export function OverviewScreen() {
             {[1,2,3,4,5,6].map(i => <SkeletonBox key={i} style={{ width: "31%", height: 84 }} />)}
           </View>
         ) : (
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }} accessibilityLabel="Key metrics">
+          <View ref={tourChipsRef} style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }} accessibilityLabel="Key metrics">
             {chips.map((chip) => (
               <Pressable
                 key={chip.label}
@@ -669,6 +692,7 @@ export function OverviewScreen() {
       case "trends_nav":
         return (
           <Pressable
+            ref={tourTrendsRef}
             onPress={() => navigation.getParent()?.navigate("Insights")}
             style={[styles.card, { backgroundColor: theme.violet.tint }]}
             accessibilityRole="button"
@@ -704,7 +728,7 @@ export function OverviewScreen() {
 
       case "timeline":
         return (
-          <View style={[styles.card, { backgroundColor: glucoseOutOfRange ? theme.red.tint : theme.card }]}>
+          <View ref={tourTimelineRef} style={[styles.card, { backgroundColor: glucoseOutOfRange ? theme.red.tint : theme.card }]}>
             <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Today's timeline</Text>
             {loading ? (
               <SkeletonBox style={{ height: CHART_H, marginBottom: 8 }} />
@@ -865,7 +889,7 @@ export function OverviewScreen() {
             <SkeletonBox style={{ height: 14, width: "75%" }} />
           </View>
         ) : insights.length > 0 ? (
-          <View style={[styles.card, { backgroundColor: theme.card }]}>
+          <View ref={tourInsightsRef} style={[styles.card, { backgroundColor: theme.card }]}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
               <View style={[styles.insightIcon, { backgroundColor: theme.violet.solid }]}>
                 <Ionicons name="bulb-outline" size={14} color={onSolid(theme.violet.solid)} />
@@ -1024,7 +1048,7 @@ export function OverviewScreen() {
         />
       )}
       {/* ── 1. Header ── */}
-      <View style={styles.headerBlock}>
+      <View ref={tourHeaderRef} style={styles.headerBlock}>
         <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
           <View style={{ flex: 1 }}>
             <Text style={[styles.greeting, { color: theme.textStrong }]} accessibilityRole="header">
@@ -1095,6 +1119,11 @@ export function OverviewScreen() {
       layout={dashboardLayout}
       onSave={handleSaveLayout}
       onCancel={() => setShowEditor(false)}
+    />
+    <FeatureTour
+      steps={HOME_TOUR}
+      visible={showTour}
+      onDone={() => setShowTour(false)}
     />
     </View>
   );
