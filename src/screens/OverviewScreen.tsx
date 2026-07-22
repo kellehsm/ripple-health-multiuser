@@ -669,7 +669,7 @@ export function OverviewScreen() {
       case "trends_nav":
         return (
           <Pressable
-            onPress={() => navigation.getParent()?.navigate("Trends")}
+            onPress={() => navigation.getParent()?.navigate("Insights")}
             style={[styles.card, { backgroundColor: theme.violet.tint }]}
             accessibilityRole="button"
             accessibilityLabel="View Trends and Insights"
@@ -1068,35 +1068,10 @@ export function OverviewScreen() {
         onSubmitted={() => { setShowMoodSheet(false); load(); }}
       />
 
-      {/* ── Today's Snapshot ── */}
+      {/* ── Today's Snapshot label ── */}
       {!loading && (
         <>
-          <Text style={{ fontSize: 10, fontWeight: "800", letterSpacing: 0.8, color: theme.textSoft, marginBottom: -4 }}>TODAY'S SNAPSHOT</Text>
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            {/* TIR tile */}
-            <View style={{ flex: 1, backgroundColor: theme.card, borderWidth: 2, borderColor: theme.cardBorder, borderRadius: 20, padding: 12, alignItems: "center" }}>
-              <Text style={{ fontSize: 22, fontWeight: "900", color: theme.textStrong }}>
-                {tirPercent !== null ? tirPercent + "%" : "—"}
-              </Text>
-              <Text style={{ fontSize: 10, fontWeight: "700", color: theme.textSoft, letterSpacing: 0.8, marginTop: 2 }}>Time in Range</Text>
-            </View>
-            {/* Sleep tile */}
-            <View style={{ flex: 1, backgroundColor: theme.card, borderWidth: 2, borderColor: theme.cardBorder, borderRadius: 20, padding: 12, alignItems: "center" }}>
-              <Text style={{ fontSize: 22, fontWeight: "900", color: theme.textStrong }}>
-                {sleepStats && sleepStats.yesterday_seconds > 0
-                  ? fmtSleep(sleepStats.yesterday_seconds)
-                  : "—"}
-              </Text>
-              <Text style={{ fontSize: 10, fontWeight: "700", color: theme.textSoft, letterSpacing: 0.8, marginTop: 2 }}>Sleep</Text>
-            </View>
-            {/* Steps tile */}
-            <View style={{ flex: 1, backgroundColor: theme.card, borderWidth: 2, borderColor: theme.cardBorder, borderRadius: 20, padding: 12, alignItems: "center" }}>
-              <Text style={{ fontSize: 22, fontWeight: "900", color: theme.textStrong }} numberOfLines={1} adjustsFontSizeToFit>
-                {stepsCount !== null ? stepsCount.toLocaleString() : "—"}
-              </Text>
-              <Text style={{ fontSize: 10, fontWeight: "700", color: theme.textSoft, letterSpacing: 0.8, marginTop: 2 }}>Steps</Text>
-            </View>
-          </View>
+          <Text style={{ fontSize: 22, fontWeight: "900", letterSpacing: 0.4, color: theme.textStrong }}>Today's Snapshot</Text>
         </>
       )}
 
