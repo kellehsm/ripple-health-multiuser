@@ -11,11 +11,18 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import { useTabPreferences } from '../hooks/useTabPreferences';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { api } from '../api/client';
 import { LongPressActionMenu } from '../components/LongPressActionMenu';
+import { SectionEditorModal, SectionDef } from '../components/SectionEditorModal';
+
+const HEALTH_SECTIONS: SectionDef[] = [
+  { id: 'cycle_tab',    label: 'Cycle tracking', description: 'Menstrual cycle calendar and logging' },
+  { id: 'symptoms_tab', label: 'Symptoms log',   description: 'Daily symptom tracking' },
+];
 
 // ─── Sub-tab type ────────────────────────────────────────────────────────────
 
@@ -180,10 +187,12 @@ function OverviewBlocks({
   onNavigate,
   activeSubTab,
   theme,
+  hiddenSections,
 }: {
   onNavigate: (t: SubTab) => void;
   activeSubTab: SubTab;
   theme: any;
+  hiddenSections: string[];
 }) {
   const [medications, setMedications] = useState<Medication[]>([]);
   const [prediction, setPrediction] = useState<Prediction | null>(null);
@@ -273,9 +282,12 @@ function OverviewBlocks({
           <Text style={[obStyles.blockValue, { color: theme.teal.fg }]}>{medSummaryLine}</Text>
         </Pressable>
 
-        <View style={[obStyles.divider, { backgroundColor: theme.ink }]} />
+        {!hiddenSections.includes('cycle_tab') && (
+          <View style={[obStyles.divider, { backgroundColor: theme.ink }]} />
+        )}
 
         {/* Cycle block */}
+        {!hiddenSections.includes('cycle_tab') && (
         <Pressable
           style={({ pressed }) => [obStyles.block, { backgroundColor: activeSubTab === 'cycle' ? (theme.purple?.tint ?? '#F3EEFF') : 'transparent', opacity: pressed ? 0.75 : 1 }]}
           onPress={() => onNavigate('cycle')}
@@ -288,10 +300,14 @@ function OverviewBlocks({
           {cyclePhase ? <Text style={[obStyles.blockSub, { color: theme.textSoft }]}>{cyclePhase}</Text> : null}
           {cycleProgressLine ? <Text style={[obStyles.blockSub, { color: theme.textSoft, fontSize: 9 }]}>{cycleProgressLine}</Text> : null}
         </Pressable>
+        )}
 
-        <View style={[obStyles.divider, { backgroundColor: theme.ink }]} />
+        {!hiddenSections.includes('symptoms_tab') && (
+          <View style={[obStyles.divider, { backgroundColor: theme.ink }]} />
+        )}
 
         {/* Symptoms block */}
+        {!hiddenSections.includes('symptoms_tab') && (
         <Pressable
           style={({ pressed }) => [obStyles.block, { backgroundColor: activeSubTab === 'symptoms' ? (theme.berry?.tint ?? '#FEF0F3') : 'transparent', opacity: pressed ? 0.75 : 1 }]}
           onPress={() => onNavigate('symptoms')}
@@ -302,6 +318,7 @@ function OverviewBlocks({
           <Text style={[obStyles.blockLabel, { color: theme.textStrong }]}>Symptoms</Text>
           <Text style={[obStyles.blockValue, { color: theme.textSoft }]}>{symptomLine}</Text>
         </Pressable>
+        )}
       </View>
 
       {insight && (
@@ -1915,6 +1932,20 @@ export function HealthTabScreen() {
   const { medication, cycle } = preferences.health;
   const bothEnabled = medication && cycle;
   const [activeSubTab, setActiveSubTab] = useState<SubTab>(medication ? 'medication' : 'cycle');
+  const [hiddenSections, setHiddenSections] = useState<string[]>([]);
+  const [showSectionEditor, setShowSectionEditor] = useState(false);
+
+  useFocusEffect(useCallback(() => {
+    api.getSettings().then((s: any) => {
+      setHiddenSections(s?.health_hidden_sections ?? []);
+    }).catch(() => {});
+  }, []));
+
+  async function handleSaveSections(newHidden: string[]) {
+    setHiddenSections(newHidden);
+    setShowSectionEditor(false);
+    try { await api.patchSettings({ health_hidden_sections: newHidden }); } catch (_) {}
+  }
 
   if (!medication && !cycle) {
     return (
@@ -1939,22 +1970,36 @@ export function HealthTabScreen() {
         >
           {/* Sticky overview blocks */}
           <View style={{ backgroundColor: theme.page, padding: 12, paddingBottom: 4 }}>
-            <OverviewBlocks onNavigate={setActiveSubTab} activeSubTab={effectiveTab} theme={theme} />
+            <View style={{ flexDirection: "row", justifyContent: "flex-end", marginBottom: 4 }}>
+              <Pressable onPress={() => setShowSectionEditor(true)} hitSlop={10} accessibilityLabel="Customize Health screen">
+                <Ionicons name="pencil-outline" size={17} color={theme.textSoft} />
+              </Pressable>
+            </View>
+            <OverviewBlocks onNavigate={setActiveSubTab} activeSubTab={effectiveTab} theme={theme} hiddenSections={hiddenSections} />
           </View>
 
           {/* Active sub-tab content — not full-screen scrollable, rendered inline */}
           {effectiveTab === 'medication' && <MedicationList theme={theme} scrollEnabled={false} />}
-          {effectiveTab === 'cycle' && <CycleView theme={theme} />}
-          {effectiveTab === 'symptoms' && <SymptomsView theme={theme} />}
+          {effectiveTab === 'cycle' && !hiddenSections.includes('cycle_tab') && <CycleView theme={theme} />}
+          {effectiveTab === 'symptoms' && !hiddenSections.includes('symptoms_tab') && <SymptomsView theme={theme} />}
         </ScrollView>
       )}
 
       {!bothEnabled && (
         <>
           {medication && <MedicationList theme={theme} scrollEnabled={true} />}
-          {cycle && !medication && <CycleView theme={theme} />}
+          {cycle && !medication && !hiddenSections.includes('cycle_tab') && <CycleView theme={theme} />}
         </>
       )}
+
+      <SectionEditorModal
+        visible={showSectionEditor}
+        title="Customize Health"
+        sections={HEALTH_SECTIONS}
+        hidden={hiddenSections}
+        onSave={handleSaveSections}
+        onCancel={() => setShowSectionEditor(false)}
+      />
     </View>
   );
 }
