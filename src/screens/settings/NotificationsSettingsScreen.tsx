@@ -1,10 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { ScrollView, View, Text, Switch, Pressable, StyleSheet, Alert } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { ScrollView, View, Text, Switch, Pressable, StyleSheet, Alert, Platform } from "react-native";
 import { LoadingIndicator } from "../../components/LoadingIndicator";
 import { useTheme } from "../../theme/ThemeContext";
 import { api } from "../../api/client";
 import { getMuteUntil, muteFor, clearMute, untilTomorrow7am, MUTE_PRESETS } from "../../lib/muteNotifications";
 import { useFocusEffect } from "@react-navigation/native";
+let notifee: any;
+let IntentLauncher: any;
+try { notifee = require("@notifee/react-native").default; } catch { notifee = null; }
+try { IntentLauncher = require("expo-intent-launcher"); } catch { IntentLauncher = null; }
 
 type SmartNotifs = {
   meal_reminders?: { enabled?: boolean; breakfast?: any; lunch?: any; dinner?: any };
@@ -70,6 +74,7 @@ export function NotificationsSettingsScreen() {
   const [saving, setSaving] = useState(false);
   const [muteUntilMs, setMuteUntilMs] = useState<number | null>(null);
   const [cycleEnabled, setCycleEnabled] = useState(true);
+  const [batteryOptEnabled, setBatteryOptEnabled] = useState<boolean | null>(null);
 
   useEffect(() => {
     api.getSettings().then((s) => {
@@ -80,8 +85,11 @@ export function NotificationsSettingsScreen() {
   }, []);
 
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       api.getTabPreferences().then((p: any) => setCycleEnabled(p?.health?.cycle ?? false)).catch(() => {});
+      if (Platform.OS === "android" && notifee) {
+        notifee.isBatteryOptimizationEnabled().then((on: boolean) => setBatteryOptEnabled(on)).catch(() => {});
+      }
     }, [])
   );
 
@@ -152,6 +160,33 @@ export function NotificationsSettingsScreen() {
           </View>
         )}
       </View>
+
+      {/* Battery optimization */}
+      {Platform.OS === "android" && (
+        <>
+          <Text style={[styles.groupLabel, { color: theme.textSoft }]}>BATTERY</Text>
+          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+            <Text style={[styles.desc, { color: theme.textSoft }]}>
+              Battery optimization can delay or block background notifications. Exempt Ripple to keep reminders reliable.
+            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", paddingVertical: 4 }}>
+              <Text style={{ color: theme.textStrong, flex: 1 }}>
+                Battery optimization {batteryOptEnabled === false ? "✓ exempt (good)" : batteryOptEnabled === true ? "⚠ restricted" : ""}
+              </Text>
+              <Pressable
+                onPress={() => {
+                  IntentLauncher?.startActivityAsync?.("android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS", { data: "package:com.kellehs.wellness" })
+                    .then(() => notifee?.isBatteryOptimizationEnabled().then((on: boolean) => setBatteryOptEnabled(on)).catch(() => {}))
+                    .catch(() => Alert.alert("Unavailable", "Could not open battery settings."));
+                }}
+                style={[styles.chip, { borderColor: theme.teal.bar, backgroundColor: theme.teal.tint ?? theme.card, paddingHorizontal: 14, paddingVertical: 7 }]}
+              >
+                <Text style={{ color: theme.teal.fg, fontWeight: "700", fontSize: 12 }}>Open settings</Text>
+              </Pressable>
+            </View>
+          </View>
+        </>
+      )}
 
       {/* Meal reminders */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>MEAL REMINDERS</Text>
