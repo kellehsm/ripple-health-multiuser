@@ -148,6 +148,8 @@ export function FinanceScreen() {
   const [showTour, setShowTour] = useState(false);
   const tourTotalsRef = useRef<View>(null);
   const tourBreakdownRef = useRef<View>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollOffsetRef = useRef(0);
 
   const FINANCE_TOUR: TourStep[] = [
     { ref: tourTotalsRef,    title: "Spending Total", body: "Switch between Today and This Week. Tap the + button to log a new expense. Plaid users see transactions sync automatically." },
@@ -362,12 +364,15 @@ export function FinanceScreen() {
     <>
       <LinearGradient colors={[theme.page, theme.gradientEnd]} style={{ flex: 1 }}>
       <ScrollView
+        ref={scrollViewRef}
         style={{ backgroundColor: "transparent" }}
         contentContainerStyle={s.content}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={theme.purple.solid} />
         }
+        scrollEventThrottle={16}
+        onScroll={(e) => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; }}
       >
         {showTooltip && (
           <TooltipBubble
@@ -737,7 +742,7 @@ export function FinanceScreen() {
           </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
       </Modal>
-      <FeatureTour steps={FINANCE_TOUR} visible={showTour} onDone={() => setShowTour(false)} />
+      <FeatureTour steps={FINANCE_TOUR} visible={showTour} onDone={() => setShowTour(false)} scrollRef={scrollViewRef} scrollY={scrollOffsetRef.current} />
     </>
   );
 }

@@ -672,6 +672,8 @@ export function MealsScreen() {
   const [showTour, setShowTour] = useState(false);
   const tourLogRef = useRef<View>(null);
   const tourHistoryRef = useRef<View>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollOffsetRef = useRef(0);
 
   const MEALS_TOUR: TourStep[] = [
     { ref: tourLogRef,     title: "Log a Meal",   body: "Search thousands of foods, scan a barcode, or pick from your saved usuals. Tap a meal type first to categorise it." },
@@ -1143,9 +1145,12 @@ export function MealsScreen() {
     <View style={{ flex: 1 }}>
     <LinearGradient colors={[theme.page, theme.gradientEnd]} style={{ flex: 1 }}>
     <ScrollView
+      ref={scrollViewRef}
       style={{ backgroundColor: "transparent" }}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
+      scrollEventThrottle={16}
+      onScroll={(e) => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; }}
     >
       {showTooltip && (
         <TooltipBubble
@@ -1639,7 +1644,7 @@ export function MealsScreen() {
         theme={theme}
       />
     )}
-    <FeatureTour steps={MEALS_TOUR} visible={showTour} onDone={() => setShowTour(false)} />
+    <FeatureTour steps={MEALS_TOUR} visible={showTour} onDone={() => setShowTour(false)} scrollRef={scrollViewRef} scrollY={scrollOffsetRef.current} />
     </View>
   );
 }

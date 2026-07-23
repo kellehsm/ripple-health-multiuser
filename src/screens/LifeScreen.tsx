@@ -105,6 +105,8 @@ export function LifeScreen() {
   const [showTour, setShowTour] = useState(false);
   const tourBooksRef = useRef<View>(null);
   const tourHobbiesRef = useRef<View>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollOffsetRef = useRef(0);
 
   const LIFE_TOUR: TourStep[] = [
     { ref: tourBooksRef,   title: "Books & Reading", body: "Add books you're reading and log your progress. Search by title or author, and track pages or chapters." },
@@ -413,9 +415,12 @@ export function LifeScreen() {
     <View style={{ flex: 1 }}>
     <LinearGradient colors={[theme.page, theme.gradientEnd]} style={{ flex: 1 }}>
     <ScrollView
+      ref={scrollViewRef}
       style={{ backgroundColor: "transparent" }}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
+      scrollEventThrottle={16}
+      onScroll={(e) => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; }}
     >
       {showTooltip && (
         <TooltipBubble
@@ -743,7 +748,7 @@ export function LifeScreen() {
       onSave={handleSaveSections}
       onCancel={() => setShowSectionEditor(false)}
     />
-    <FeatureTour steps={LIFE_TOUR} visible={showTour} onDone={() => setShowTour(false)} />
+    <FeatureTour steps={LIFE_TOUR} visible={showTour} onDone={() => setShowTour(false)} scrollRef={scrollViewRef} scrollY={scrollOffsetRef.current} />
     </View>
   );
 }
