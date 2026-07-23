@@ -4,10 +4,13 @@ import {
   RefreshControl, Alert, Modal, KeyboardAvoidingView, Platform,
   TouchableWithoutFeedback, Keyboard,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "../theme/ThemeContext";
+import { coloredShadow } from "../theme/styleUtils";
+import { IconBadge } from "../components/IconBadge";
 import { api } from "../api/client";
 import { LoadingIndicator } from "../components/LoadingIndicator";
 import { EmptyState } from "../components/EmptyState";
@@ -356,8 +359,9 @@ export function FinanceScreen() {
 
   return (
     <>
+      <LinearGradient colors={[theme.page, "#EDE9E0"]} style={{ flex: 1 }}>
       <ScrollView
-        style={{ backgroundColor: theme.page }}
+        style={{ backgroundColor: "transparent" }}
         contentContainerStyle={s.content}
         keyboardShouldPersistTaps="handled"
         refreshControl={
@@ -396,6 +400,7 @@ export function FinanceScreen() {
         {/* Total card */}
         {!hiddenSections.includes('totals') && (
         <View ref={tourTotalsRef} style={[s.card, { backgroundColor: theme.purple.tint, borderColor: theme.purple.solid }]}>
+          <View style={{ height: 4, backgroundColor: theme.purple.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -16, marginTop: -16 }} />
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
             <View>
               <Text style={[s.label, { color: theme.purple.sub }]}>
@@ -422,6 +427,7 @@ export function FinanceScreen() {
         {/* Category breakdown chart */}
         {categoryTotals.length > 0 && !hiddenSections.includes('breakdown') && (
           <View ref={tourBreakdownRef} style={[s.card, { borderColor: theme.cardBorder }]}>
+            <View style={{ height: 4, backgroundColor: theme.purple.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -16, marginTop: -16 }} />
             <Text style={[s.cardTitle, { color: theme.textStrong }]}>Where it went</Text>
             <View style={{ gap: 11, marginTop: 6 }}>
               {categoryTotals.map(([cat, amt]) => {
@@ -506,7 +512,9 @@ export function FinanceScreen() {
                       ]}
                       accessibilityRole="button"
                     >
-                      <View style={{ flex: 1, gap: 3 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+                        <IconBadge name="card-outline" color={color} bgColor={color + "20"} size={16} containerSize={32} borderRadius={8} />
+                        <View style={{ flex: 1, gap: 3 }}>
                         <Text style={[s.merchant, { color: theme.textStrong }]} numberOfLines={1}>
                           {e.merchant_name ?? cat}
                         </Text>
@@ -522,6 +530,7 @@ export function FinanceScreen() {
                         {e.notes ? (
                           <Text style={[s.txNotes, { color: theme.textSoft }]} numberOfLines={1}>{e.notes}</Text>
                         ) : null}
+                        </View>
                       </View>
                       <Text style={[s.txAmt, { color: theme.purple.sub }]}>{formatAmount(Number(e.amount))}</Text>
                     </Pressable>
@@ -534,6 +543,7 @@ export function FinanceScreen() {
 
         <View style={{ height: 32 }} />
       </ScrollView>
+      </LinearGradient>
 
       {/* Add modal */}
       <Modal
@@ -732,13 +742,7 @@ export function FinanceScreen() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function makeStyles(ink: string, card: string, border: string) {
-  const shadowCard = {
-    shadowColor: "rgba(60,40,20,0.1)",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12 as const,
-    shadowRadius: 14,
-    elevation: 4,
-  };
+  const shadowCard = coloredShadow("#7B3FBF");
   return StyleSheet.create({
     content:     { padding: 16, gap: 12, paddingBottom: 40 },
     toggle:      { flexDirection: "row", borderRadius: 22, borderWidth: 2, overflow: "hidden", ...shadowCard },
@@ -747,7 +751,7 @@ function makeStyles(ink: string, card: string, border: string) {
     card:        { borderRadius: 26, borderWidth: 2, padding: 16, backgroundColor: card, ...shadowCard, gap: 4 },
     cardTitle:   { fontSize: 15, fontWeight: "800", marginBottom: 2 },
     label:       { fontSize: 10, fontWeight: "800", letterSpacing: 0.8, marginBottom: 2 },
-    totalAmt:    { fontSize: 38, fontWeight: "900", lineHeight: 44 },
+    totalAmt:    { fontSize: 48, fontWeight: "900", lineHeight: 56 },
     sublabel:    { fontSize: 12, marginTop: 2 },
     addBtn: {
       width: 38, height: 38, borderRadius: 19, borderWidth: 2,

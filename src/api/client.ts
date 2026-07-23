@@ -220,6 +220,9 @@ export const api = {
   frequentMeals: function () {
     return request("/meals/frequent");
   },
+  getMealImpactScores: function () {
+    return request("/meals/impact-scores");
+  },
 
   // ── Spending ──────────────────────────────────────────────────────────────
   spending: function (since?: string) {

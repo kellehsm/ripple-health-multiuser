@@ -12,6 +12,7 @@ import {
   Dimensions,
   RefreshControl
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { LoadingIndicator } from "../components/LoadingIndicator";
 import * as Haptics from "expo-haptics";
 import notifee from "@notifee/react-native";
@@ -19,6 +20,8 @@ import Svg, { Polyline, Text as SvgText } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
 import { onSolid } from "../theme/colorUtils";
+import { coloredShadow } from "../theme/styleUtils";
+import { IconBadge } from "../components/IconBadge";
 import { api } from "../api/client";
 
 import { BarcodeScannerModal } from "../components/BarcodeScannerModal";
@@ -714,6 +717,7 @@ export function MealsScreen() {
   const [pendingFood, setPendingFood] = useState<PendingFood | null>(null);
   const [editingMealId, setEditingMealId] = useState<string | null>(null);
   const [frequentMeals, setFrequentMeals] = useState<FrequentMeal[]>([]);
+  const [impactScores, setImpactScores] = useState<Record<string, number>>({});
   const [refreshing, setRefreshing] = useState(false);
   const [expandedMealId, setExpandedMealId] = useState<string | null>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -768,6 +772,15 @@ export function MealsScreen() {
       .catch(function () {});
     api.recipes()
       .then(function (data: Recipe[]) { setRecipes(Array.isArray(data) ? data : []); })
+      .catch(function () {});
+    api.getMealImpactScores()
+      .then(function (data: { scores: Array<{ meal_name: string; avg_spike: number }> }) {
+        if (data?.scores) {
+          const map: Record<string, number> = {};
+          data.scores.forEach(function (s) { map[s.meal_name] = s.avg_spike; });
+          setImpactScores(map);
+        }
+      })
       .catch(function () {});
   }, [loadMeals, loadSubstances]);
 
@@ -1127,8 +1140,9 @@ export function MealsScreen() {
 
   return (
     <View style={{ flex: 1 }}>
+    <LinearGradient colors={[theme.page, "#EDE9E0"]} style={{ flex: 1 }}>
     <ScrollView
-      style={{ backgroundColor: theme.page }}
+      style={{ backgroundColor: "transparent" }}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
     >
@@ -1182,6 +1196,7 @@ export function MealsScreen() {
 
       {/* Log a meal card */}
       <View ref={tourLogRef} style={[styles.card, { backgroundColor: theme.coral.tint }]}>
+        <View style={{ height: 4, backgroundColor: theme.coral.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Log a meal</Text>
 
         {/* Frequent meals + recipes */}
@@ -1220,6 +1235,21 @@ export function MealsScreen() {
                 <Text style={styles.secondaryBtnText}>+ RECIPE</Text>
               </Pressable>
             </View>
+            {(function () {
+              const highSpikeMeal = frequentMeals.reduce<{ name: string; spike: number } | null>(function (best, m) {
+                const s = impactScores[m.name];
+                if (s == null || s <= 40) return best;
+                if (!best || s > best.spike) return { name: m.name, spike: s };
+                return best;
+              }, null);
+              return highSpikeMeal ? (
+                <View style={{ backgroundColor: "#fef3c7", borderRadius: 12, borderWidth: 1.5, borderColor: "#f59e0b", padding: 8, marginBottom: 8, flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <Text style={{ fontSize: 11, color: "#92400e" }}>
+                    {"💡 A short walk after " + highSpikeMeal.name + " may help with glucose"}
+                  </Text>
+                </View>
+              ) : null;
+            })()}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.frequentRow}>
               {recipes.map(function (recipe) {
                 return (
@@ -1243,13 +1273,22 @@ export function MealsScreen() {
               })}
               {frequentMeals.map(function (meal, i) {
                 const cc = chipColors(i, theme);
+                const spike = impactScores[meal.name];
+                const badgeBg = spike == null ? null : spike <= 20 ? "#22c55e" : spike <= 40 ? "#f59e0b" : "#ef4444";
                 return (
                   <Pressable
                     key={meal.source_food_id ?? meal.name + i}
                     onPress={function () { handleSelectFrequent(meal); }}
                     style={[styles.frequentChip, { backgroundColor: cc.bg }]}
                   >
-                    <Text style={{ color: cc.fg, fontSize: 13, fontWeight: "700" }} numberOfLines={1}>{meal.name}</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                      <Text style={{ color: cc.fg, fontSize: 13, fontWeight: "700" }} numberOfLines={1}>{meal.name}</Text>
+                      {spike != null && badgeBg != null ? (
+                        <View style={{ backgroundColor: badgeBg, borderRadius: 8, paddingHorizontal: 5, paddingVertical: 1 }}>
+                          <Text style={{ color: "#ffffff", fontSize: 10, fontWeight: "800" }}>{spike > 0 ? "+" : ""}{spike}↑</Text>
+                        </View>
+                      ) : null}
+                    </View>
                     {(meal.calories != null || meal.carbs_g != null) ? (
                       <Text style={{ color: cc.sub, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
                         {meal.calories != null ? meal.calories + " cal" : meal.carbs_g + "g carbs"}
@@ -1365,7 +1404,8 @@ export function MealsScreen() {
 
       {/* Alcohol */}
       {!hiddenSections.includes('booze') && (
-      <View style={[styles.card, { backgroundColor: theme.purple.tint, borderColor: theme.cardBorder }]}>
+      <View style={[styles.card, { backgroundColor: theme.purple.tint, borderColor: theme.cardBorder, ...coloredShadow("#7B3FBF") }]}>
+        <View style={{ height: 4, backgroundColor: theme.purple.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Alcohol</Text>
 
         {subTotals.standard_drinks > 0 && (
@@ -1454,9 +1494,7 @@ export function MealsScreen() {
                 : "alcohol";
               return (
                 <View key={entry.id} style={[styles.resultRow, { borderColor: ink }]}>
-                  <View style={[styles.mealIconTile, { backgroundColor: theme.purple.solid, width: 32, height: 32 }]}>
-                    <Ionicons name="wine-outline" size={14} color={onSolid(theme.purple.solid)} />
-                  </View>
+                  <IconBadge name="wine-outline" color={onSolid(theme.purple.solid)} bgColor={theme.purple.solid} size={14} containerSize={32} borderRadius={8} />
                   <View style={{ flex: 1, marginLeft: 8 }}>
                     <Text style={{ color: theme.textStrong, fontSize: 13, fontWeight: "600" }} numberOfLines={1}>{entry.name || "Alcohol"}</Text>
                     <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 1 }}>{detail}</Text>
@@ -1474,6 +1512,7 @@ export function MealsScreen() {
 
       {/* Today's meals list */}
       <View ref={tourHistoryRef} style={[styles.card, { backgroundColor: theme.coral.tint }]}>
+        <View style={{ height: 4, backgroundColor: theme.coral.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Today's meals</Text>
 
         {mealsError ? (
@@ -1498,9 +1537,7 @@ export function MealsScreen() {
               <View key={meal.id} style={[styles.mealCard, { borderColor: ink, backgroundColor: mealTintColor(meal.meal_type, theme) }]}>
                 <View style={styles.mealContent}>
                   {/* Colored icon tile */}
-                  <View style={[styles.mealIconTile, { backgroundColor: mealColor }]}>
-                    <Ionicons name="restaurant" size={16} color={onSolid(mealColor)} />
-                  </View>
+                  <IconBadge name="restaurant" color={onSolid(mealColor)} bgColor={mealColor} size={16} containerSize={40} borderRadius={12} />
 
                   <Pressable
                     style={styles.mealMain}
@@ -1592,6 +1629,7 @@ export function MealsScreen() {
         onCancel={() => setShowSectionEditor(false)}
       />
     </ScrollView>
+    </LinearGradient>
     {undoMeal && (
       <UndoBanner
         message={undoMeal.type === "meal" ? `"${(undoMeal.data as Meal).name}" removed` : `"${(undoMeal.data as SubstanceEntry).name}" removed`}
@@ -1631,11 +1669,7 @@ function makeStyles(ink: string, card: string, border: string) {
     borderWidth: 2,
     borderColor: border,
     padding: 14,
-    shadowColor: "rgba(60,40,20,0.1)",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    elevation: 4,
+    ...coloredShadow("#E8654E"),
   },
   cardTitle: { fontSize: 19, fontWeight: "800", marginBottom: 8 },
 

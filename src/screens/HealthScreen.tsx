@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { ScrollView, View, Text, Pressable, TextInput, StyleSheet, Dimensions, Platform, Alert, RefreshControl } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { LoadingIndicator } from "../components/LoadingIndicator";
 import { useNavigation } from "@react-navigation/native";
 import { useFocusEffect } from "@react-navigation/core";
@@ -11,6 +12,7 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
 import { useTheme } from "../theme/ThemeContext";
 import { onSolid } from "../theme/colorUtils";
+import { coloredShadow } from "../theme/styleUtils";
 import { Ionicons } from "@expo/vector-icons";
 import { MetricCard } from "../components/MetricCard";
 import { DefinedTerm } from "../components/DefinedTerm";
@@ -521,8 +523,9 @@ export function HealthScreen() {
 
   return (
     <View style={{ flex: 1 }}>
+    <LinearGradient colors={[theme.page, "#EDE9E0"]} style={{ flex: 1 }}>
     <ScrollView
-      style={{ backgroundColor: theme.page }}
+      style={{ backgroundColor: "transparent" }}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
     >
@@ -625,7 +628,8 @@ export function HealthScreen() {
       ) : null}
 
       {/* Glucose chart card */}
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder, ...coloredShadow("#CE7A92") }]}>
+        <View style={{ height: 4, backgroundColor: "#CE7A92", borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
         <View style={styles.cardHeaderRow}>
           <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Glucose</Text>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1, justifyContent: "flex-end", flexWrap: "wrap" }}>
@@ -968,7 +972,8 @@ export function HealthScreen() {
         const peakBpm = hrValues.length ? Math.max(...hrValues) : null;
         const HR_RANGE_OPTIONS = [3, 6, 12, 24];
         return (
-          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder, ...coloredShadow("#CE7A92") }]}>
+            <View style={{ height: 4, backgroundColor: "#CE7A92", borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
             <View style={styles.cardHeaderRow}>
               <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Heart Rate</Text>
               {peakBpm !== null ? (
@@ -1015,6 +1020,7 @@ export function HealthScreen() {
 
 
     </ScrollView>
+    </LinearGradient>
     {staleBannerMessage ? (
       <StaleSyncBanner
         message={staleBannerMessage}
@@ -1034,11 +1040,7 @@ function makeStyles(ink: string, card: string) {
     borderRadius: 22,
     borderWidth: 2,
     padding: 14,
-    shadowColor: "rgba(60,40,20,0.1)",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    elevation: 4,
+    ...coloredShadow("#3FA0A6"),
   },
   cardHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
   cardTitle: { fontSize: 19, fontWeight: "800" },
@@ -1090,7 +1092,7 @@ function makeStyles(ink: string, card: string) {
     shadowRadius: 12,
     elevation: 3,
   },
-  glucoseCurrentValue: { fontSize: 26, fontWeight: "800" },
+  glucoseCurrentValue: { fontSize: 52, fontWeight: "900" },
   glucoseMinAgo: { fontSize: 11, marginTop: 2 },
   deltaBadge: {
     borderWidth: 2,

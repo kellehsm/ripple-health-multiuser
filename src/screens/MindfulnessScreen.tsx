@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Animated
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { LoadingIndicator } from "../components/LoadingIndicator";
 import { RippleLoader } from "../components/RippleLoader";
 import * as Haptics from "expo-haptics";
@@ -445,8 +446,9 @@ export function MindfulnessScreen() {
   }
 
   return (
+    <LinearGradient colors={[theme.page, "#EDE9E0"]} style={{ flex: 1 }}>
     <ScrollView
-      style={{ backgroundColor: theme.page }}
+      style={{ backgroundColor: "transparent" }}
       contentContainerStyle={{ padding: 16 }}
       keyboardShouldPersistTaps="handled"
     >
@@ -470,6 +472,7 @@ export function MindfulnessScreen() {
         </Animated.View>
       )}
     </ScrollView>
+    </LinearGradient>
   );
 }
 

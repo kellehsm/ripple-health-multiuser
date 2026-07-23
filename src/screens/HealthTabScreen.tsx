@@ -14,6 +14,8 @@ import {
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
+import { coloredShadow } from '../theme/styleUtils';
+import { IconBadge } from '../components/IconBadge';
 import { useTabPreferences } from '../hooks/useTabPreferences';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { api } from '../api/client';
@@ -355,11 +357,11 @@ const obStyles = StyleSheet.create({
     borderRadius: 26,
     borderWidth: 2,
     overflow: 'hidden',
-    shadowColor: "rgba(60,40,20,0.1)",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    elevation: 4,
+    shadowColor: "#3FA0A6",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 6,
   },
   block: {
     flex: 1,
@@ -916,7 +918,8 @@ function MedicationList({ theme, scrollEnabled = true }: { theme: any; scrollEna
           {Object.entries(buckets).map(([bucket, meds]) => {
             if (meds.length === 0) return null;
             return (
-              <View key={bucket} style={[medStyles.bucket, { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: "rgba(60,40,20,0.1)" }]}>
+              <View key={bucket} style={[medStyles.bucket, { backgroundColor: theme.card, borderColor: theme.cardBorder, ...coloredShadow(theme.teal.solid) }]}>
+                <View style={{ height: 4, backgroundColor: theme.teal.solid, borderRadius: 4, marginBottom: 8, marginHorizontal: -14, marginTop: -14 }} />
                 <View style={medStyles.bucketHeader}>
                   <Text style={[medStyles.bucketLabel, { color: theme.textStrong }]}>{BUCKET_LABELS[bucket]}</Text>
                   <Pressable onPress={() => markAllTaken(bucket)}>
@@ -1040,10 +1043,10 @@ function MedicationList({ theme, scrollEnabled = true }: { theme: any; scrollEna
                 ]}
               >
               <View
-                style={[medStyles.medCard, { backgroundColor: theme.card, borderColor: theme.cardBorder, shadowColor: "rgba(60,40,20,0.1)" }]}
+                style={[medStyles.medCard, { backgroundColor: theme.card, borderColor: theme.cardBorder, ...coloredShadow(theme.teal.solid) }]}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
-                  <View style={[medStyles.colorDot, { backgroundColor: med.color_category?.color_hex ?? '#D1D5DB' }]} />
+                  <IconBadge name="medical-outline" color={med.color_category?.color_hex ?? '#3FA0A6'} bgColor={(med.color_category?.color_hex ?? '#3FA0A6') + '22'} size={16} containerSize={32} borderRadius={8} />
                   <View style={{ flex: 1, gap: 2 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Text style={[medStyles.medName, { color: theme.textStrong, flex: 1 }]}>{med.name}</Text>
@@ -1172,10 +1175,7 @@ const medStyles = StyleSheet.create({
     borderRadius: 26,
     borderWidth: 2,
     overflow: 'hidden',
-    shadowColor: "rgba(60,40,20,0.1)",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
+    // colored shadow applied inline via coloredShadow()
     elevation: 4,
   },
   bucketHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14, paddingBottom: 10 },
@@ -1190,21 +1190,18 @@ const medStyles = StyleSheet.create({
     paddingVertical: 11,
     paddingHorizontal: 16,
     alignItems: 'center',
-    shadowColor: "rgba(60,40,20,0.1)",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
+    shadowColor: "#3FA0A6",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
     shadowRadius: 12,
-    elevation: 3,
+    elevation: 6,
   },
   medCard: {
     borderRadius: 22,
     borderWidth: 2,
     padding: 14,
     gap: 4,
-    shadowColor: "rgba(60,40,20,0.1)",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
+    // colored shadow applied inline via coloredShadow()
     elevation: 3,
   },
   fab: {
