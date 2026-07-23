@@ -9,6 +9,7 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
@@ -65,6 +66,9 @@ interface Medication {
   prescriber: MedPrescriber | null;
   color_category: ColorCategory | null;
   slots: MedSlot[];
+  frequency?: "daily" | "weekly";
+  day_of_week?: number | null;
+  is_prn?: boolean;
 }
 
 type MedStatus = 'active' | 'new' | 'expiring' | 'refill_needed';
@@ -223,8 +227,14 @@ function OverviewBlocks({
     }).finally(() => setLoading(false));
   }, []);
 
-  const totalSlots = medications.reduce((acc, m) => acc + m.slots.length, 0);
-  const takenSlots = medications.reduce((acc, m) => acc + m.slots.filter((s) => s.dose_log !== null).length, 0);
+  const todayDow = new Date().getDay(); // 0=Sun,1=Mon,...,6=Sat
+  const scheduledMeds = medications.filter((m) => {
+    if (m.is_prn) return false;
+    if (m.frequency === 'weekly') return m.day_of_week === todayDow;
+    return true;
+  });
+  const totalSlots = scheduledMeds.reduce((acc, m) => acc + m.slots.length, 0);
+  const takenSlots = scheduledMeds.reduce((acc, m) => acc + m.slots.filter((s) => s.dose_log !== null).length, 0);
 
   const medSummaryLine = totalSlots === 0
     ? 'No schedule'
@@ -394,6 +404,9 @@ function AddMedicationModal({
     selectedCatId: string | null;
     selectedTimes: string[];
     customTime: string;
+    frequency?: "daily" | "weekly";
+    dayOfWeek?: number | null;
+    isPrn?: boolean;
   };
   editId?: string;
 }) {
@@ -414,6 +427,9 @@ function AddMedicationModal({
   const [saving, setSaving] = useState(false);
   const [brandName, setBrandName] = useState('');
   const [genericName, setGenericName] = useState('');
+  const [frequency, setFrequency] = useState<"daily" | "weekly">(initialValues?.frequency ?? "daily");
+  const [dayOfWeek, setDayOfWeek] = useState<number | null>(initialValues?.dayOfWeek ?? null);
+  const [isPrn, setIsPrn] = useState(initialValues?.isPrn ?? false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -459,9 +475,12 @@ function AddMedicationModal({
         refill_date: refillDate.trim() || null,
         color_category_id: selectedCatId,
         prescriber_id,
-        slots,
+        slots: isPrn ? [] : slots,
         brand_name: brandName.trim() || null,
         generic_name: genericName.trim() || null,
+        frequency,
+        day_of_week: frequency === 'weekly' ? dayOfWeek : null,
+        is_prn: isPrn,
       };
 
       if (isEdit && editId) {
@@ -548,22 +567,93 @@ function AddMedicationModal({
               </>
             )}
 
-            <Text style={[modalStyles.label, { color: theme.textSoft }]}>Schedule</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {['morning', 'midday', 'evening', 'custom'].map((t) => (
-                <Pressable key={t} style={[modalStyles.timeChip, {
-                    backgroundColor: selectedTimes.includes(t) ? theme.teal.solid : theme.page, borderColor: ink }]}
-                  onPress={() => toggleTime(t)}>
-                  <Text style={{ color: selectedTimes.includes(t) ? '#fff' : theme.textSoft, fontWeight: '600', fontSize: 13 }}>
-                    {t.charAt(0).toUpperCase() + t.slice(1)}
-                  </Text>
-                </Pressable>
-              ))}
+            {/* PRN toggle */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={[modalStyles.label, { color: theme.textSoft }]}>PRN / As Needed</Text>
+              <Pressable
+                onPress={() => setIsPrn((v) => !v)}
+                style={[modalStyles.timeChip, {
+                  backgroundColor: isPrn ? '#F59E0B' : theme.page,
+                  borderColor: isPrn ? '#F59E0B' : ink,
+                  paddingVertical: 5,
+                  paddingHorizontal: 12,
+                }]}
+              >
+                <Text style={{ color: isPrn ? '#fff' : theme.textSoft, fontWeight: '700', fontSize: 13 }}>
+                  {isPrn ? 'PRN ON' : 'Off'}
+                </Text>
+              </Pressable>
             </View>
-            {selectedTimes.includes('custom') && (
-              <TextInput style={[modalStyles.input, { borderColor: ink, color: theme.textStrong, backgroundColor: theme.page }]}
-                placeholder="Custom time (HH:MM)" placeholderTextColor={theme.textSoft} value={customTime} onChangeText={setCustomTime} />
+            {isPrn && (
+              <Text style={{ color: theme.textSoft, fontSize: 12, fontStyle: 'italic' }}>
+                This med won't affect your adherence score.
+              </Text>
             )}
+
+            {!isPrn && (
+              <>
+                <Text style={[modalStyles.label, { color: theme.textSoft }]}>Schedule</Text>
+
+                {/* Frequency toggle */}
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {(['daily', 'weekly'] as const).map((f) => (
+                    <Pressable
+                      key={f}
+                      style={[modalStyles.timeChip, {
+                        backgroundColor: frequency === f ? theme.teal.solid : theme.page,
+                        borderColor: frequency === f ? theme.teal.solid : ink,
+                      }]}
+                      onPress={() => setFrequency(f)}
+                    >
+                      <Text style={{ color: frequency === f ? '#fff' : theme.textSoft, fontWeight: '600', fontSize: 13 }}>
+                        {f.charAt(0).toUpperCase() + f.slice(1)}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+
+                {frequency === 'weekly' ? (
+                  <>
+                    <Text style={{ color: theme.textSoft, fontSize: 12 }}>Pick a day of week:</Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, idx) => (
+                        <Pressable
+                          key={day}
+                          style={[modalStyles.timeChip, {
+                            backgroundColor: dayOfWeek === idx ? theme.teal.solid : theme.page,
+                            borderColor: dayOfWeek === idx ? theme.teal.solid : ink,
+                          }]}
+                          onPress={() => setDayOfWeek(dayOfWeek === idx ? null : idx)}
+                        >
+                          <Text style={{ color: dayOfWeek === idx ? '#fff' : theme.textSoft, fontWeight: '600', fontSize: 13 }}>
+                            {day}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                      {['morning', 'midday', 'evening', 'custom'].map((t) => (
+                        <Pressable key={t} style={[modalStyles.timeChip, {
+                            backgroundColor: selectedTimes.includes(t) ? theme.teal.solid : theme.page, borderColor: ink }]}
+                          onPress={() => toggleTime(t)}>
+                          <Text style={{ color: selectedTimes.includes(t) ? '#fff' : theme.textSoft, fontWeight: '600', fontSize: 13 }}>
+                            {t.charAt(0).toUpperCase() + t.slice(1)}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                    {selectedTimes.includes('custom') && (
+                      <TextInput style={[modalStyles.input, { borderColor: ink, color: theme.textStrong, backgroundColor: theme.page }]}
+                        placeholder="Custom time (HH:MM)" placeholderTextColor={theme.textSoft} value={customTime} onChangeText={setCustomTime} />
+                    )}
+                  </>
+                )}
+              </>
+            )}
+
             <Pressable style={[modalStyles.saveBtn, { backgroundColor: theme.teal.solid, borderColor: ink }]} onPress={save} disabled={saving}>
               <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>{saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Save Medication'}</Text>
             </Pressable>
@@ -712,6 +802,8 @@ function MedicationList({ theme, scrollEnabled = true }: { theme: any; scrollEna
   const [showEditModal, setShowEditModal] = useState(false);
   const [infoMed, setInfoMed] = useState<Medication | null>(null);
   const [refresh, setRefresh] = useState(0);
+  const [celebSlotId, setCelebSlotId] = useState<string | null>(null);
+  const celebAnim = useRef(new Animated.Value(0)).current;
 
   const load = useCallback(async () => {
     try {
@@ -726,8 +818,13 @@ function MedicationList({ theme, scrollEnabled = true }: { theme: any; scrollEna
 
   useEffect(() => { load(); }, [load, refresh]);
 
+  const todayDowList = new Date().getDay(); // 0=Sun,...,6=Sat
   const buckets: Record<string, Medication[]> = { morning: [], midday: [], evening: [], custom: [] };
   for (const med of medications) {
+    // PRN meds appear in the "My Medications" list but not the schedule buckets
+    if (med.is_prn) continue;
+    // Weekly meds only appear in schedule on their designated day
+    if (med.frequency === 'weekly' && med.day_of_week !== todayDowList) continue;
     for (const slot of med.slots) {
       const bucket = ['morning', 'midday', 'evening'].includes(slot.time_of_day) ? slot.time_of_day : 'custom';
       if (!buckets[bucket].find((m) => m.id === med.id)) {
@@ -745,12 +842,22 @@ function MedicationList({ theme, scrollEnabled = true }: { theme: any; scrollEna
     }
   }
 
+  function runCelebration(slotId: string) {
+    setCelebSlotId(slotId);
+    celebAnim.setValue(0);
+    Animated.sequence([
+      Animated.timing(celebAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+      Animated.timing(celebAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+    ]).start(() => setCelebSlotId(null));
+  }
+
   async function toggleSlot(slot: MedSlot) {
     try {
       if (slot.dose_log) {
         await api.deleteDoseLog(slot.dose_log.id);
       } else {
         await api.markSelectedTaken([slot.id]);
+        runCelebration(slot.id);
       }
       setRefresh((r) => r + 1);
     } catch (err: any) {
@@ -824,6 +931,8 @@ function MedicationList({ theme, scrollEnabled = true }: { theme: any; scrollEna
                   if (!slot) return null;
                   const taken = slot.dose_log !== null;
                   const isSelected = selectedSlotIds.includes(slot.id);
+                  const isCelebrating = celebSlotId === slot.id;
+                  const DOW_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                   return (
                     <Pressable
                       key={med.id + slot.id}
@@ -836,20 +945,57 @@ function MedicationList({ theme, scrollEnabled = true }: { theme: any; scrollEna
                         }
                       }}
                     >
-                      <View style={[medStyles.circle, { borderColor: taken ? theme.teal.solid : theme.cardBorder, backgroundColor: taken ? theme.teal.solid : 'transparent' }]}>
-                        {taken && <Text style={{ color: '#fff', fontSize: 11 }}>✓</Text>}
-                        {selectMode && !taken && (
-                          <View style={[medStyles.selectBox, { borderColor: theme.ink, backgroundColor: isSelected ? theme.teal.solid : 'transparent' }]}>
-                            {isSelected && <Text style={{ color: '#fff', fontSize: 10 }}>✓</Text>}
-                          </View>
+                      <View style={{ position: 'relative' }}>
+                        <View style={[medStyles.circle, { borderColor: taken ? theme.teal.solid : theme.cardBorder, backgroundColor: taken ? theme.teal.solid : 'transparent' }]}>
+                          {taken && <Text style={{ color: '#fff', fontSize: 11 }}>✓</Text>}
+                          {selectMode && !taken && (
+                            <View style={[medStyles.selectBox, { borderColor: theme.ink, backgroundColor: isSelected ? theme.teal.solid : 'transparent' }]}>
+                              {isSelected && <Text style={{ color: '#fff', fontSize: 10 }}>✓</Text>}
+                            </View>
+                          )}
+                        </View>
+                        {isCelebrating && (
+                          <>
+                            {[
+                              { top: -10, left: -10 },
+                              { top: -12, left: 8 },
+                              { top: -6, left: 22 },
+                              { top: 8, left: 24 },
+                            ].map((pos, i) => (
+                              <Animated.View
+                                key={i}
+                                style={{
+                                  position: 'absolute',
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: 4,
+                                  backgroundColor: theme.teal.solid,
+                                  top: pos.top,
+                                  left: pos.left,
+                                  opacity: celebAnim,
+                                  transform: [{ scale: celebAnim }],
+                                }}
+                              />
+                            ))}
+                          </>
                         )}
                       </View>
                       {med.color_category && (
                         <View style={[medStyles.colorDot, { backgroundColor: med.color_category.color_hex }]} />
                       )}
                       <View style={{ flex: 1 }}>
-                        <Text style={[medStyles.medName, { color: taken ? theme.textSoft : theme.textStrong }]}>{med.name}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Text style={[medStyles.medName, { color: taken ? theme.textSoft : theme.textStrong }]}>{med.name}</Text>
+                          {med.is_prn && (
+                            <View style={{ backgroundColor: '#F59E0B', borderRadius: 6, paddingHorizontal: 5, paddingVertical: 1 }}>
+                              <Text style={{ color: '#78350F', fontSize: 10, fontWeight: '700' }}>PRN</Text>
+                            </View>
+                          )}
+                        </View>
                         {med.dosage ? <Text style={{ color: theme.textSoft, fontSize: 12 }}>{med.dosage}</Text> : null}
+                        {med.frequency === 'weekly' && med.day_of_week != null && (
+                          <Text style={{ color: theme.textSoft, fontSize: 11 }}>Weekly — {DOW_NAMES[med.day_of_week]}</Text>
+                        )}
                       </View>
                     </Pressable>
                   );
@@ -901,6 +1047,11 @@ function MedicationList({ theme, scrollEnabled = true }: { theme: any; scrollEna
                   <View style={{ flex: 1, gap: 2 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Text style={[medStyles.medName, { color: theme.textStrong, flex: 1 }]}>{med.name}</Text>
+                      {med.is_prn && (
+                        <View style={{ backgroundColor: '#F59E0B', borderRadius: 6, paddingHorizontal: 5, paddingVertical: 2 }}>
+                          <Text style={{ color: '#78350F', fontSize: 10, fontWeight: '700' }}>PRN</Text>
+                        </View>
+                      )}
                       {/* Info button */}
                       <Pressable
                         onPress={() => setInfoMed(med)}
@@ -919,9 +1070,17 @@ function MedicationList({ theme, scrollEnabled = true }: { theme: any; scrollEna
                     {brandGenericLine && <Text style={{ color: theme.textSoft, fontSize: 12 }}>{brandGenericLine}</Text>}
                     {med.purpose && <Text style={{ color: theme.textSoft, fontSize: 12 }}>Purpose: {med.purpose}</Text>}
                     {med.prescriber && <Text style={{ color: theme.textSoft, fontSize: 12 }}>Dr. {med.prescriber.name}</Text>}
-                    <Text style={{ color: theme.textSoft, fontSize: 12 }}>
-                      {med.slots.map((s) => s.time_of_day).join(', ') || 'No schedule'}
-                    </Text>
+                    {med.is_prn ? (
+                      <Text style={{ color: theme.textSoft, fontSize: 12 }}>As needed (PRN)</Text>
+                    ) : med.frequency === 'weekly' ? (
+                      <Text style={{ color: theme.textSoft, fontSize: 12 }}>
+                        Weekly — {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][med.day_of_week ?? 0] ?? 'No day set'}
+                      </Text>
+                    ) : (
+                      <Text style={{ color: theme.textSoft, fontSize: 12 }}>
+                        {med.slots.map((s) => s.time_of_day).join(', ') || 'No schedule'}
+                      </Text>
+                    )}
                     {refillDays !== null && (
                       <Text style={{ color: refillDays <= 0 ? theme.coral.solid : theme.textSoft, fontSize: 12 }}>
                         {refillDays <= 0 ? 'Refill overdue' : `Refill in ${refillDays} day${refillDays !== 1 ? 's' : ''}`}
@@ -987,6 +1146,9 @@ function MedicationList({ theme, scrollEnabled = true }: { theme: any; scrollEna
             selectedCatId: editMed.color_category?.id ?? null,
             selectedTimes: editMed.slots.map((s) => s.time_of_day),
             customTime: editMed.slots.find((s) => s.time_of_day === 'custom')?.specific_time ?? '',
+            frequency: editMed.frequency ?? 'daily',
+            dayOfWeek: editMed.day_of_week ?? null,
+            isPrn: editMed.is_prn ?? false,
           }}
           onClose={() => { setShowEditModal(false); setEditMed(null); }}
           onSaved={() => { setShowEditModal(false); setEditMed(null); setRefresh((r) => r + 1); }}
