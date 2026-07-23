@@ -24,11 +24,12 @@ export type Theme = {
   group: string;
   isDark: boolean;
 
-  ink: string;         // borders, shadows, outlines
-  cream: string;       // subtlest background
-  page: string;        // main screen background
-  card: string;        // card / surface
-  cardBorder: string;  // card borders / dividers
+  ink: string;          // borders, shadows, outlines
+  cream: string;        // subtlest background
+  page: string;         // main screen background
+  gradientEnd: string;  // far end of per-screen background gradient
+  card: string;         // card / surface
+  cardBorder: string;   // card borders / dividers
   textStrong: string;  // headings, primary values
   textSoft: string;    // labels, captions, placeholders
 

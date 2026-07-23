@@ -17,24 +17,16 @@ function cfn(solid: string, sub: string, bg: string, fg: string, tint: string): 
 // 1. Bright Companion — warm cream + OKLCH-based accent hues
 const morningMist: Theme = {
   id: "morning-mist", name: "Morning Mist", group: "Light", isDark: false,
-  // Warm near-black for text/icon ink; neutral warm for card borders
-  ink: "#1C2B3A", cream: "#FAF5EE", page: "#F5ECDF", card: "#FEFCF8", cardBorder: "#C4B5A5",
+  ink: "#1C2B3A", cream: "#FAF5EE", page: "#F5ECDF", gradientEnd: "#EDE5D5", card: "#FEFCF8", cardBorder: "#C4B5A5",
   textStrong: "#1C2B3A", textSoft: "#5C6D7E",
   primary: "#2870C8", success: "#1A9870", warning: "#B88820", danger: "#C02840",
   glucoseHigh: "#C02840", glucoseLow: "#2870C8",
-  // hue 165 green  — steps / activity / hobbies / books
   teal:   cf("#1A9870", "#0E6848", "#D8F5EB", "#1C2B3A", "#D8F5EB", "#1A9870"),
-  // hue 38 orange  — food / meals
   coral:  cfn("#C85C28", "#A04018", "#FBEACC", "#1C2B3A", "#FBEACC"),
-  // hue 228 blue   — water
   blue:   cfn("#2870C8", "#1858A8", "#DAE8FA", "#1C2B3A", "#DAE8FA"),
-  // hue 82 amber   — sleep
   amber:  cfn("#B88820", "#906808", "#F8EEC8", "#1C2B3A", "#F8EEC8"),
-  // hue 302 purple — finance / spending
   purple: cfn("#7830B8", "#581898", "#ECD8FA", "#1C2B3A", "#ECD8FA"),
-  // hue 356 red    — glucose / heart rate (in-range)
   berry:  cf("#C02840", "#901828", "#FAE0E4", "#1C2B3A", "#FAE0E4", "#C02840"),
-  // hue 296 violet — mood
   violet: cfn("#7838B8", "#581898", "#ECD8FA", "#1C2B3A", "#ECD8FA"),
   red:    cfn("#C02840", "#901828", "#FAE0E4", "#1C2B3A", "#FAE0E4"),
   pink:   cfn("#C02840", "#901828", "#FAE0E4", "#1C2B3A", "#FAE0E4"),
@@ -45,17 +37,17 @@ const morningMist: Theme = {
 // 2. Pale sage + botanical greens, terracotta, ochre
 const paleSage: Theme = {
   id: "pale-sage", name: "Pale Sage", group: "Light", isDark: false,
-  ink: "#1E2C18", cream: "#F2F7F0", page: "#E8EFE5", card: "#F6FAF4", cardBorder: "#9AB88E",
+  ink: "#1E2C18", cream: "#F2F7F0", page: "#E8EFE5", gradientEnd: "#DDE6D8", card: "#F6FAF4", cardBorder: "#9AB88E",
   textStrong: "#1E2C18", textSoft: "#4A5E40",
   primary: "#4A7A3A", success: "#3A6A2A", warning: "#A07020", danger: "#8B3020",
   glucoseHigh: "#8B3020", glucoseLow: "#4A6A8A",
-  teal:   cf("#2E7A28", "#1A5A14", "#BDD5B4", "#1A3A10", "#C8E0BF"),          // steps — forest green
-  coral:  cfn("#B86848", "#985038", "#EDD8C8", "#5A2810", "#F0E0D0"),         // meals — terracotta
-  blue:   cfn("#3A6A8A", "#1A4A68", "#C8D8E8", "#0A1A30", "#D2E0EC"),         // water — slate blue
-  amber:  cfn("#8A7030", "#6A5218", "#E5D8A8", "#3A2808", "#EAE0B8"),         // sleep — warm ochre
-  purple: cfn("#6A5890", "#4A3870", "#D8D0EE", "#281848", "#E0D8F2"),         // finance — dusty lavender
-  berry:  cf("#925068", "#723050", "#EDD0DA", "#480E28", "#F0D5E0"),           // glucose — rose berry
-  violet: cfn("#7858B0", "#5838A0", "#DDD0F0", "#2A1048", "#E5D8F5"),         // mood — muted violet
+  teal:   cf("#2E7A28", "#1A5A14", "#BDD5B4", "#1A3A10", "#C8E0BF"),
+  coral:  cfn("#B86848", "#985038", "#EDD8C8", "#5A2810", "#F0E0D0"),
+  blue:   cfn("#3A6A8A", "#1A4A68", "#C8D8E8", "#0A1A30", "#D2E0EC"),
+  amber:  cfn("#8A7030", "#6A5218", "#E5D8A8", "#3A2808", "#EAE0B8"),
+  purple: cfn("#6A5890", "#4A3870", "#D8D0EE", "#281848", "#E0D8F2"),
+  berry:  cf("#925068", "#723050", "#EDD0DA", "#480E28", "#F0D5E0"),
+  violet: cfn("#7858B0", "#5838A0", "#DDD0F0", "#2A1048", "#E5D8F5"),
   red:    cfn("#9B3020", "#7A1808", "#F0CCC0", "#4A0808", "#F5D5C8"),
   pink:   cfn("#925068", "#723050", "#EDD0DA", "#480E28", "#F0D5E0"),
   green:  cfn("#2E7A28", "#1A5A14", "#BDD5B4", "#1A3A10", "#C8E0BF"),
@@ -65,17 +57,17 @@ const paleSage: Theme = {
 // 3. Soft blush + warm pastels: copper, tangerine, amber gold, mauve
 const blushHour: Theme = {
   id: "blush-hour", name: "Blush Hour", group: "Light", isDark: false,
-  ink: "#2A1810", cream: "#FAF4F2", page: "#F5EDE8", card: "#FFF8F5", cardBorder: "#C4907E",
+  ink: "#2A1810", cream: "#FAF4F2", page: "#F5EDE8", gradientEnd: "#EDE3DC", card: "#FFF8F5", cardBorder: "#C4907E",
   textStrong: "#2A1810", textSoft: "#7A5040",
   primary: "#C06040", success: "#5A8848", warning: "#C07820", danger: "#9B2828",
   glucoseHigh: "#9B2828", glucoseLow: "#4A7AA8",
-  teal:   cf("#B85E30", "#964018", "#F0D8C0", "#5A2010", "#F5E0C8"),           // steps — warm copper
-  coral:  cfn("#D87030", "#B85010", "#FAE0C8", "#5A2208", "#FDE8D0"),         // meals — tangerine
-  blue:   cfn("#5870B8", "#385898", "#D5DCEC", "#182040", "#DBE0F2"),         // water — rose blue
-  amber:  cfn("#C09028", "#A07010", "#F5E8B8", "#5A3808", "#FAF0C5"),         // sleep — warm amber gold
-  purple: cfn("#8860A8", "#684888", "#EAD8EA", "#401040", "#F0E0F0"),         // finance — soft mauve
-  berry:  cf("#B03860", "#903050", "#F0C8D5", "#500A20", "#F5D0DC"),           // glucose — deep berry
-  violet: cfn("#9060C0", "#7040A0", "#EAD8F5", "#3A0E48", "#F0E0F8"),         // mood — warm violet
+  teal:   cf("#B85E30", "#964018", "#F0D8C0", "#5A2010", "#F5E0C8"),
+  coral:  cfn("#D87030", "#B85010", "#FAE0C8", "#5A2208", "#FDE8D0"),
+  blue:   cfn("#5870B8", "#385898", "#D5DCEC", "#182040", "#DBE0F2"),
+  amber:  cfn("#C09028", "#A07010", "#F5E8B8", "#5A3808", "#FAF0C5"),
+  purple: cfn("#8860A8", "#684888", "#EAD8EA", "#401040", "#F0E0F0"),
+  berry:  cf("#B03860", "#903050", "#F0C8D5", "#500A20", "#F5D0DC"),
+  violet: cfn("#9060C0", "#7040A0", "#EAD8F5", "#3A0E48", "#F0E0F8"),
   red:    cfn("#B03030", "#901818", "#F8D0D0", "#580808", "#FADADA"),
   pink:   cfn("#B03860", "#903050", "#F0C8D5", "#500A20", "#F5D0DC"),
   green:  cfn("#5A8848", "#407030", "#D0E8C8", "#182010", "#D8EDD0"),
@@ -85,17 +77,17 @@ const blushHour: Theme = {
 // 4. Cool ivory + jewel tones: sapphire, ruby rose, amethyst, indigo
 const jewelLight: Theme = {
   id: "jewel-light", name: "Jewel Light", group: "Light", isDark: false,
-  ink: "#12183A", cream: "#F2F4FA", page: "#EEF0F5", card: "#FAFBFF", cardBorder: "#A8B4D0",
+  ink: "#12183A", cream: "#F2F4FA", page: "#EEF0F5", gradientEnd: "#E4E8F2", card: "#FAFBFF", cardBorder: "#A8B4D0",
   textStrong: "#12183A", textSoft: "#485880",
   primary: "#2A5CC8", success: "#1A7A50", warning: "#D46C00", danger: "#C02040",
   glucoseHigh: "#C02040", glucoseLow: "#1A5CB8",
-  teal:   cf("#1A5CB8", "#0A3A90", "#C0D4F0", "#001850", "#CCE0F8"),           // steps — sapphire
-  coral:  cfn("#C83060", "#A01040", "#F5C8DC", "#580010", "#FAD5E4"),         // meals — ruby rose
-  blue:   cfn("#1890C8", "#0A6898", "#C0E0F0", "#003850", "#CCE8F5"),         // water — ocean blue
-  amber:  cfn("#8040C0", "#6020A0", "#E0C8F5", "#300848", "#E8D0FA"),         // sleep — amethyst
-  purple: cfn("#6028A0", "#401880", "#DDD0F0", "#200848", "#E5D5F8"),         // finance — deep violet
-  berry:  cf("#C02850", "#980830", "#F5C8D5", "#480010", "#FAD0DC"),           // glucose — jewel ruby
-  violet: cfn("#6848D0", "#4828B0", "#DDD8F8", "#180850", "#E5E0FA"),         // mood — indigo
+  teal:   cf("#1A5CB8", "#0A3A90", "#C0D4F0", "#001850", "#CCE0F8"),
+  coral:  cfn("#C83060", "#A01040", "#F5C8DC", "#580010", "#FAD5E4"),
+  blue:   cfn("#1890C8", "#0A6898", "#C0E0F0", "#003850", "#CCE8F5"),
+  amber:  cfn("#8040C0", "#6020A0", "#E0C8F5", "#300848", "#E8D0FA"),
+  purple: cfn("#6028A0", "#401880", "#DDD0F0", "#200848", "#E5D5F8"),
+  berry:  cf("#C02850", "#980830", "#F5C8D5", "#480010", "#FAD0DC"),
+  violet: cfn("#6848D0", "#4828B0", "#DDD8F8", "#180850", "#E5E0FA"),
   red:    cfn("#C02040", "#A00020", "#FAD0D8", "#580010", "#FAD5DA"),
   pink:   cfn("#C02850", "#980830", "#F5C8D5", "#480010", "#FAD0DC"),
   green:  cfn("#1A7A50", "#0A5830", "#C0E0D0", "#003818", "#CCE8D8"),
@@ -105,17 +97,17 @@ const jewelLight: Theme = {
 // 5. Cool gray + saturated primary accents: teal, burnt orange, strong blue
 const cleanSlate: Theme = {
   id: "clean-slate", name: "Clean Slate", group: "Light", isDark: false,
-  ink: "#1A1A1A", cream: "#F3F3F3", page: "#EBEBEB", card: "#F7F7F7", cardBorder: "#A0A0A0",
+  ink: "#1A1A1A", cream: "#F3F3F3", page: "#EBEBEB", gradientEnd: "#E0E0E0", card: "#F7F7F7", cardBorder: "#A0A0A0",
   textStrong: "#1A1A1A", textSoft: "#555555",
   primary: "#2080E0", success: "#20A040", warning: "#E08000", danger: "#D02020",
   glucoseHigh: "#D02020", glucoseLow: "#2080E0",
-  teal:   cf("#007898", "#005878", "#C0E0EA", "#002840", "#CAEBF2"),           // steps — teal blue
-  coral:  cfn("#D05020", "#A83010", "#FAD8C8", "#5A1808", "#FDE0D0"),         // meals — burnt orange
-  blue:   cfn("#1878D8", "#0058B8", "#C0D8F5", "#002060", "#CCE0F8"),         // water — strong blue
-  amber:  cfn("#C08020", "#A06010", "#F5E8C0", "#503808", "#FAF0C8"),         // sleep — golden yellow
-  purple: cfn("#6838B8", "#4818A0", "#E0D0F5", "#280848", "#E8D8FA"),         // finance — bold purple
-  berry:  cf("#C01858", "#A00038", "#F5C8D8", "#580018", "#FAD0E0"),           // glucose — vivid berry
-  violet: cfn("#7838B8", "#5818A0", "#E8D0F5", "#2C0848", "#EED8FA"),         // mood — bright violet
+  teal:   cf("#007898", "#005878", "#C0E0EA", "#002840", "#CAEBF2"),
+  coral:  cfn("#D05020", "#A83010", "#FAD8C8", "#5A1808", "#FDE0D0"),
+  blue:   cfn("#1878D8", "#0058B8", "#C0D8F5", "#002060", "#CCE0F8"),
+  amber:  cfn("#C08020", "#A06010", "#F5E8C0", "#503808", "#FAF0C8"),
+  purple: cfn("#6838B8", "#4818A0", "#E0D0F5", "#280848", "#E8D8FA"),
+  berry:  cf("#C01858", "#A00038", "#F5C8D8", "#580018", "#FAD0E0"),
+  violet: cfn("#7838B8", "#5818A0", "#E8D0F5", "#2C0848", "#EED8FA"),
   red:    cfn("#D02020", "#B00808", "#FAD0D0", "#5A0808", "#FAD5D5"),
   pink:   cfn("#C01858", "#A00038", "#F5C8D8", "#580018", "#FAD0E0"),
   green:  cfn("#20A040", "#108028", "#C0E8CC", "#083818", "#CCF0D5"),
@@ -124,127 +116,127 @@ const cleanSlate: Theme = {
 
 // ─── DARK THEMES ──────────────────────────────────────────────────────────────
 
-// 6. Charcoal steel + bright teal/coral/berry family adapted for dark contrast
-const midnightSteel: Theme = {
-  id: "midnight-steel", name: "Midnight Steel", group: "Dark", isDark: true,
-  ink: "#9ABACF", cream: "#1A1E24", page: "#161A20", card: "#1E242C", cardBorder: "#5A80A0",
-  textStrong: "#EAF2FA", textSoft: "#8AAABB",
-  primary: "#6AAAD8", success: "#40C088", warning: "#E09A18", danger: "#F06060",
-  glucoseHigh: "#F06060", glucoseLow: "#60C8E8",
-  teal:   cf("#60CCE8", "#38A8C0", "#0A2A30", "#C0F0FF", "#0A2A30"),           // steps — bright teal
-  coral:  cfn("#F08888", "#C86060", "#3A1818", "#FFB8A8", "#3A1818"),         // meals — warm coral
-  blue:   cfn("#6AAAD8", "#4888B8", "#0A1E36", "#A8D8F8", "#0A1E36"),         // water — steel blue
-  amber:  cfn("#E0B848", "#B89028", "#201800", "#FFE098", "#181200"),         // sleep — bright amber
-  purple: cfn("#A878F0", "#8058D0", "#180E30", "#D8C0FF", "#120A28"),         // finance — vivid purple
-  berry:  cf("#E888A8", "#C06888", "#2E0E1C", "#FFB8D0", "#280A18"),          // glucose — rose berry
-  violet: cfn("#C098F8", "#9878D8", "#20103A", "#E8D0FF", "#18082E"),         // mood — bright lavender
-  red:    cfn("#F06060", "#D03838", "#3A0A0A", "#FFB0B0", "#2E0808"),
-  pink:   cfn("#E888A8", "#C06888", "#2E0E1C", "#FFB8D0", "#280A18"),
-  green:  cfn("#48C890", "#309870", "#082A1A", "#A0F0C8", "#061E12"),
-  brown:  { solid: "#C09878", sub: "#A07858", tint: "#1C1008" },
+// 6. Obsidian — OLED true-black with jewel-tone accent pops
+const obsidian: Theme = {
+  id: "obsidian", name: "Obsidian", group: "Dark", isDark: true,
+  ink: "#909090", cream: "#1C1C1C", page: "#0B0B0B", gradientEnd: "#1A1A1A", card: "#181818", cardBorder: "#333333",
+  textStrong: "#F5F5F5", textSoft: "#888888",
+  primary: "#38D090", success: "#38D090", warning: "#E0A030", danger: "#E85050",
+  glucoseHigh: "#E85050", glucoseLow: "#5098F0",
+  teal:   cf("#38D090", "#20B070", "#0A2018", "#A0FFD0", "#081A12"),  // emerald — steps/activity
+  coral:  cfn("#E89840", "#C07820", "#201808", "#FFD0A0", "#181204"), // amber gold — meals
+  blue:   cfn("#5098F0", "#3078D0", "#081428", "#A0C8FF", "#060E1C"), // sapphire — water
+  amber:  cfn("#E0B030", "#C09010", "#201800", "#FFE880", "#181400"), // gold — sleep
+  purple: cfn("#B068F0", "#9048D0", "#180A28", "#E0B8FF", "#100620"), // violet — finance
+  berry:  cf("#E84870", "#C02850", "#200810", "#FFB0C8", "#180608"),  // rose — glucose
+  violet: cfn("#8888FF", "#6868E0", "#0C0C28", "#C8C8FF", "#08081E"), // indigo — mood
+  red:    cfn("#E85050", "#C03030", "#200808", "#FFAAAA", "#180606"),
+  pink:   cfn("#E84870", "#C02850", "#200810", "#FFB0C8", "#180608"),
+  green:  cfn("#38D090", "#20B070", "#0A2018", "#A0FFD0", "#081A12"),
+  brown:  { solid: "#909090", sub: "#707070", tint: "#1A1A1A" },
 };
 
-// 7. Deep navy + cyan, gold, neon magenta
-const deepNavy: Theme = {
-  id: "deep-navy", name: "Deep Navy", group: "Dark", isDark: true,
-  ink: "#80B0D8", cream: "#0E1422", page: "#0A0E18", card: "#10182A", cardBorder: "#5888B8",
-  textStrong: "#EEF4FF", textSoft: "#8AAAD0",
-  primary: "#00C8FF", success: "#00E878", warning: "#FFB800", danger: "#FF5050",
-  glucoseHigh: "#FF5080", glucoseLow: "#00A8FF",
-  teal:   cf("#00D8FF", "#00A8D0", "#002830", "#A0F4FF", "#002030"),           // steps — bright cyan
-  coral:  cfn("#FF60A0", "#D03878", "#200818", "#FFB0D0", "#180510"),         // meals — neon magenta
-  blue:   cfn("#20A0F0", "#0078C8", "#001830", "#90D8FF", "#001020"),         // water — ocean blue
-  amber:  cfn("#FFB800", "#D09000", "#201800", "#FFE898", "#181000"),         // sleep — gold
-  purple: cfn("#B878FF", "#9050F0", "#180828", "#DDB8FF", "#100620"),         // finance — electric purple
-  berry:  cf("#FF3090", "#D00868", "#200010", "#FFA0D0", "#180008"),           // glucose — neon pink
-  violet: cfn("#8888FF", "#6060E0", "#100830", "#C8C8FF", "#080520"),         // mood — electric blue-violet
-  red:    cfn("#FF5050", "#D02828", "#200808", "#FFA8A8", "#180606"),
-  pink:   cfn("#FF3090", "#D00868", "#200010", "#FFA0D0", "#180008"),
-  green:  cfn("#00F088", "#00C868", "#002214", "#90FFD0", "#001A0E"),
-  brown:  { solid: "#90A0B8", sub: "#708098", tint: "#081018" },
+// 7. Arctic — ice-deep steel blue with crisp frost accents
+const arctic: Theme = {
+  id: "arctic", name: "Arctic", group: "Dark", isDark: true,
+  ink: "#6090B8", cream: "#101C28", page: "#0C1018", gradientEnd: "#182030", card: "#141E2A", cardBorder: "#28405A",
+  textStrong: "#E8F4FF", textSoft: "#7898B8",
+  primary: "#60C8F8", success: "#40D888", warning: "#F8D050", danger: "#F87870",
+  glucoseHigh: "#F87870", glucoseLow: "#40C0F8",
+  teal:   cf("#40D8C8", "#28B8A8", "#041E1C", "#90FFEE", "#021612"),  // glacial teal — steps
+  coral:  cfn("#F89880", "#D07060", "#201208", "#FFCAB8", "#180C04"), // ice salmon — meals
+  blue:   cfn("#60C8F8", "#40A8D8", "#081C30", "#B0E8FF", "#060E20"), // ice blue — water
+  amber:  cfn("#F8D050", "#D0A830", "#1E1800", "#FFF0A0", "#161000"), // arctic gold — sleep
+  purple: cfn("#9878F8", "#7858D8", "#0E0828", "#D0B8FF", "#080620"), // frost violet — finance
+  berry:  cf("#F87898", "#D05878", "#1E0810", "#FFBAD0", "#160608"),  // rose ice — glucose
+  violet: cfn("#A898F8", "#8878E0", "#0E0A28", "#D8D0FF", "#080620"), // glacial lavender — mood
+  red:    cfn("#F87870", "#D05850", "#200808", "#FFC0B8", "#180606"),
+  pink:   cfn("#F87898", "#D05878", "#1E0810", "#FFBAD0", "#160608"),
+  green:  cfn("#40D888", "#28B868", "#041C10", "#90FFB8", "#021408"),
+  brown:  { solid: "#8090A8", sub: "#607080", tint: "#101820" },
 };
 
-// 8. Deep plum + rose, amber, bright mint
-const velvetDusk: Theme = {
-  id: "velvet-dusk", name: "Velvet Dusk", group: "Dark", isDark: true,
-  ink: "#C090E0", cream: "#160C20", page: "#120818", card: "#1A1028", cardBorder: "#9860C8",
-  textStrong: "#F5EEFF", textSoft: "#B888D0",
-  primary: "#E060C0", success: "#40D890", warning: "#E0A828", danger: "#FF5070",
-  glucoseHigh: "#FF5070", glucoseLow: "#70B0FF",
-  teal:   cf("#F070B0", "#C84888", "#280E1E", "#FFB0D8", "#200A18"),           // steps — vivid rose
-  coral:  cfn("#F0A050", "#C87830", "#201408", "#FFD090", "#180E04"),         // meals — amber orange
-  blue:   cfn("#28F0D0", "#10C8A8", "#041C18", "#90FFEE", "#021410"),         // water — bright mint
-  amber:  cfn("#E0B838", "#B89018", "#1C1408", "#FFE888", "#140E04"),         // sleep — warm amber
-  purple: cfn("#C888FF", "#A068E0", "#180A28", "#E8C8FF", "#100618"),         // finance — bright lavender
-  berry:  cf("#FF7898", "#E05070", "#200810", "#FFC0D0", "#180608"),           // glucose — rose coral
-  violet: cfn("#D070F8", "#A848D8", "#1A0828", "#F0B0FF", "#120520"),         // mood — vivid violet
-  red:    cfn("#FF5070", "#D02850", "#200810", "#FFA8B8", "#180608"),
-  pink:   cfn("#FF7898", "#E05070", "#200810", "#FFC0D0", "#180608"),
-  green:  cfn("#50E8A0", "#28C080", "#041C10", "#98FFC8", "#021408"),
-  brown:  { solid: "#D0A0B8", sub: "#A88098", tint: "#1C0A14" },
+// 8. Volcanic — warm coal black with ember and lava accents
+const volcanic: Theme = {
+  id: "volcanic", name: "Volcanic", group: "Dark", isDark: true,
+  ink: "#A08060", cream: "#1C1210", page: "#0E0A08", gradientEnd: "#1E1208", card: "#1C1210", cardBorder: "#3A2218",
+  textStrong: "#FFF0E0", textSoft: "#A08070",
+  primary: "#F07030", success: "#50C878", warning: "#F0B830", danger: "#F04848",
+  glucoseHigh: "#F04848", glucoseLow: "#4090F0",
+  teal:   cf("#F08838", "#D06818", "#1E0E04", "#FFD0A0", "#160804"),  // ember orange — steps
+  coral:  cfn("#F0A040", "#D08020", "#1E1208", "#FFD8A0", "#160C04"), // molten amber — meals
+  blue:   cfn("#5898F0", "#3878D0", "#081628", "#B0D0FF", "#060E1C"), // cool blue — water
+  amber:  cfn("#F0C028", "#C09808", "#1C1600", "#FFE880", "#141000"), // fire gold — sleep
+  purple: cfn("#C070E0", "#A050C0", "#180A28", "#F0A8FF", "#100618"), // cooled lava violet — finance
+  berry:  cf("#F04848", "#D02828", "#200808", "#FFA0A0", "#180606"),  // hot red — glucose
+  violet: cfn("#B068D8", "#9048B8", "#160828", "#E0A8FF", "#0E0620"), // ash violet — mood
+  red:    cfn("#F04848", "#D02828", "#200808", "#FFAAAA", "#180606"),
+  pink:   cfn("#F06880", "#D04860", "#200810", "#FFAAC0", "#180608"),
+  green:  cfn("#50C878", "#30A858", "#081A10", "#A0FFCC", "#041208"),
+  brown:  { solid: "#C09060", sub: "#A07040", tint: "#1C1008" },
 };
 
-// 9. Deep forest + lime green, sky blue, warm amber
-const forestNight: Theme = {
-  id: "forest-night", name: "Forest Night", group: "Dark", isDark: true,
-  ink: "#80C060", cream: "#0C1A0C", page: "#080E08", card: "#0E1810", cardBorder: "#508840",
-  textStrong: "#EEFAE0", textSoft: "#90C078",
-  primary: "#88D840", success: "#60E080", warning: "#F0A030", danger: "#F05840",
-  glucoseHigh: "#F06840", glucoseLow: "#60C8F8",
-  teal:   cf("#88E850", "#60C030", "#0A1808", "#C8FF88", "#081208"),           // steps — bright lime
-  coral:  cfn("#F8B050", "#D08830", "#1C0E04", "#FFE098", "#140A02"),         // meals — warm amber
-  blue:   cfn("#60D0F8", "#38B0D8", "#041820", "#B0F0FF", "#021012"),         // water — sky blue
-  amber:  cfn("#F0D048", "#C8A828", "#181400", "#FFF890", "#100E00"),         // sleep — golden yellow
-  purple: cfn("#D890FF", "#B068E0", "#180A28", "#F0C8FF", "#100620"),         // finance — orchid
-  berry:  cf("#F87858", "#D05838", "#1E0A04", "#FFC0A8", "#160602"),           // glucose — coral orange
-  violet: cfn("#C0A8F0", "#9888D0", "#100A20", "#E8D8FF", "#0A0614"),         // mood — soft lavender
-  red:    cfn("#F05840", "#D03020", "#1C0806", "#FFA890", "#140604"),
-  pink:   cfn("#F87858", "#D05838", "#1E0A04", "#FFC0A8", "#160602"),
-  green:  cfn("#60F090", "#38D068", "#041808", "#B0FFCC", "#021004"),
-  brown:  { solid: "#B0A880", sub: "#908860", tint: "#100C08" },
+// 9. Abyssal — deep ocean floor with bioluminescent highlights
+const abyssal: Theme = {
+  id: "abyssal", name: "Abyssal", group: "Dark", isDark: true,
+  ink: "#408870", cream: "#0C1C18", page: "#060E0C", gradientEnd: "#0C1E18", card: "#0E1C18", cardBorder: "#1C3828",
+  textStrong: "#D8FFE8", textSoft: "#60A888",
+  primary: "#00E8C0", success: "#30D870", warning: "#F0C840", danger: "#F06060",
+  glucoseHigh: "#F06060", glucoseLow: "#00C0F0",
+  teal:   cf("#00F0C8", "#00C8A0", "#001C18", "#A0FFEE", "#001410"),  // bioluminescent cyan — steps
+  coral:  cfn("#F08898", "#C06878", "#1E0810", "#FFBACA", "#160608"), // anemone pink — meals
+  blue:   cfn("#20C8F8", "#00A8D8", "#021A28", "#90F0FF", "#010E18"), // deep ocean blue — water
+  amber:  cfn("#E8C840", "#C0A020", "#1A1600", "#FFF080", "#121000"), // phosphor yellow — sleep
+  purple: cfn("#A060E8", "#8040C8", "#100A28", "#D0A8FF", "#0A0620"), // deep sea purple — finance
+  berry:  cf("#F07090", "#C85070", "#200810", "#FFB0C8", "#180608"),  // seafloor coral — glucose
+  violet: cfn("#8898E8", "#6878C8", "#0A0C28", "#C8D0FF", "#080820"), // bioluminescent blue — mood
+  red:    cfn("#F06060", "#D04040", "#200808", "#FFAAAA", "#180606"),
+  pink:   cfn("#F07090", "#C85070", "#200810", "#FFB0C8", "#180608"),
+  green:  cfn("#30D870", "#18B850", "#041A0C", "#90FFC0", "#021208"),
+  brown:  { solid: "#408060", sub: "#306050", tint: "#0A1810" },
 };
 
-// 10. Espresso brown + terracotta, sage green, dusty blue
-const espresso: Theme = {
-  id: "espresso", name: "Espresso", group: "Dark", isDark: true,
-  ink: "#C8A070", cream: "#120E0A", page: "#0E0908", card: "#18120E", cardBorder: "#A07848",
-  textStrong: "#FAF0DC", textSoft: "#B89870",
-  primary: "#E88040", success: "#60C880", warning: "#D8A828", danger: "#E87070",
-  glucoseHigh: "#E86050", glucoseLow: "#78B8F0",
-  teal:   cf("#F08848", "#C86828", "#1C0E08", "#FFD0A0", "#140A04"),           // steps — terracotta
-  coral:  cfn("#E88050", "#C06030", "#1C0E08", "#FFC090", "#140A04"),         // meals — burnt sienna
-  blue:   cfn("#78B8F0", "#5098D0", "#0A1422", "#C0DCFF", "#080E18"),         // water — dusty blue
-  amber:  cfn("#78C888", "#58A868", "#0A1A0E", "#B8F0C8", "#080E0A"),         // sleep — sage green
-  purple: cfn("#C090B8", "#A07098", "#180A18", "#F0D0E8", "#100610"),         // finance — dusty mauve
-  berry:  cf("#E88070", "#C06050", "#1C0E0A", "#FFC0B0", "#140A06"),           // glucose — muted rose
-  violet: cfn("#A090D8", "#8070B8", "#100A1C", "#D8C8FF", "#0A0614"),         // mood — dusty violet
-  red:    cfn("#E87070", "#C05050", "#1C0808", "#FFB8B8", "#140606"),
-  pink:   cfn("#E88070", "#C06050", "#1C0E0A", "#FFC0B0", "#140A06"),
-  green:  cfn("#68D090", "#48B070", "#0A1A0E", "#B0F0C8", "#081208"),
-  brown:  { solid: "#D8B888", sub: "#B09068", tint: "#1A1208" },
+// 10. Nebula — deep space purple-black with cosmic color bursts
+const nebula: Theme = {
+  id: "nebula", name: "Nebula", group: "Dark", isDark: true,
+  ink: "#7878C8", cream: "#0E0E20", page: "#08080E", gradientEnd: "#141428", card: "#10101E", cardBorder: "#28285A",
+  textStrong: "#F0EEFF", textSoft: "#9090C0",
+  primary: "#A080FF", success: "#40E0A0", warning: "#F0D060", danger: "#FF5878",
+  glucoseHigh: "#FF5878", glucoseLow: "#40B0FF",
+  teal:   cf("#40E0C0", "#20C0A0", "#041A18", "#A0FFF0", "#021210"),  // cosmic teal — steps
+  coral:  cfn("#FF80B0", "#E06090", "#1E0818", "#FFB8D0", "#160610"), // nebula magenta — meals
+  blue:   cfn("#60B8FF", "#3898E0", "#081428", "#B8DCFF", "#060E1C"), // stellar blue — water
+  amber:  cfn("#F0D060", "#D0B040", "#1C1800", "#FFF0A0", "#141000"), // supernova gold — sleep
+  purple: cfn("#C090FF", "#A070E0", "#180830", "#E8C8FF", "#100620"), // cosmic purple — finance
+  berry:  cf("#FF5878", "#E03858", "#1E0810", "#FFB0C8", "#160608"),  // stellar red-pink — glucose
+  violet: cfn("#D080FF", "#B060E8", "#1A0630", "#F0B8FF", "#100424"), // nebula violet — mood
+  red:    cfn("#FF5878", "#E03858", "#1E0810", "#FFB0C8", "#160608"),
+  pink:   cfn("#FF80B0", "#E06090", "#1E0818", "#FFB8D0", "#160610"),
+  green:  cfn("#40E0A0", "#20C080", "#041A10", "#A0FFD8", "#021208"),
+  brown:  { solid: "#9080D0", sub: "#7060B0", tint: "#10101C" },
 };
 
 // ─── Exports ──────────────────────────────────────────────────────────────────
 
 export const PALETTES: Record<string, Theme> = {
-  "morning-mist":   morningMist,
-  "pale-sage":      paleSage,
-  "blush-hour":     blushHour,
-  "jewel-light":    jewelLight,
-  "clean-slate":    cleanSlate,
-  "midnight-steel": midnightSteel,
-  "deep-navy":      deepNavy,
-  "velvet-dusk":    velvetDusk,
-  "forest-night":   forestNight,
-  "espresso":       espresso,
+  "morning-mist": morningMist,
+  "pale-sage":    paleSage,
+  "blush-hour":   blushHour,
+  "jewel-light":  jewelLight,
+  "clean-slate":  cleanSlate,
+  "obsidian":     obsidian,
+  "arctic":       arctic,
+  "volcanic":     volcanic,
+  "abyssal":      abyssal,
+  "nebula":       nebula,
 };
 
 export const PALETTE_GROUPS: Record<string, string[]> = {
   "Light Themes": ["morning-mist", "pale-sage", "blush-hour", "jewel-light", "clean-slate"],
-  "Dark Themes":  ["midnight-steel", "deep-navy", "velvet-dusk", "forest-night", "espresso"],
+  "Dark Themes":  ["obsidian", "arctic", "volcanic", "abyssal", "nebula"],
 };
 
 export const DEFAULT_PALETTE_ID = "morning-mist";
 
 export const lightTheme = morningMist;
-export const darkTheme = midnightSteel;
+export const darkTheme = obsidian;

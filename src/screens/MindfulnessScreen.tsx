@@ -446,7 +446,7 @@ export function MindfulnessScreen() {
   }
 
   return (
-    <LinearGradient colors={[theme.page, "#EDE9E0"]} style={{ flex: 1 }}>
+    <LinearGradient colors={[theme.page, theme.gradientEnd]} style={{ flex: 1 }}>
     <ScrollView
       style={{ backgroundColor: "transparent" }}
       contentContainerStyle={{ padding: 16 }}

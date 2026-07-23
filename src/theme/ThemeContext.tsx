@@ -4,7 +4,7 @@ import * as SecureStore from "expo-secure-store";
 import type { Theme } from "./theme";
 import { PALETTES, DEFAULT_PALETTE_ID } from "./palettes";
 
-const DEFAULT_DARK_PALETTE_ID = "midnight-steel";
+const DEFAULT_DARK_PALETTE_ID = "obsidian";
 
 const STORAGE_KEY = "ripple_palette_id";
 
@@ -45,7 +45,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const mode: "light" | "dark" = theme.isDark ? "dark" : "light";
 
   const toggle = useCallback(() => {
-    setPalette(theme.isDark ? "morning-mist" : "midnight-steel");
+    setPalette(theme.isDark ? "morning-mist" : "obsidian");
   }, [theme.isDark, setPalette]);
 
   return (

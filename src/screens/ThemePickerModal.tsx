@@ -19,11 +19,11 @@ const BEST_FOR: Record<string, string> = {
   "blush-hour":     "Copper, tangerine & mauve — cozy warm pastels",
   "jewel-light":    "Sapphire, ruby & amethyst — crisp jewel contrast",
   "clean-slate":    "Pure grays & bold saturated accents — clean & modern",
-  "midnight-steel": "Steel blue darks, bright teal & lavender — focused",
-  "deep-navy":      "Deep navy, neon cyan & electric purple — AMOLED",
-  "velvet-dusk":    "Deep plum, vivid rose & bright mint — evening glow",
-  "forest-night":   "Dark forest, lime & sky blue — earthy night mode",
-  "espresso":       "Rich espresso, terracotta & sage — warm dark comfort",
+  "obsidian":  "True black, emerald & amber jewels — OLED premium",
+  "arctic":    "Ice-deep navy, frost cyan & arctic gold — sharp & crisp",
+  "volcanic":  "Warm coal black, ember orange & lava — raw intensity",
+  "abyssal":   "Deep ocean floor, bioluminescent cyan & seafloor coral",
+  "nebula":    "Deep space, cosmic magenta & supernova gold — dramatic",
 };
 
 type Props = {
