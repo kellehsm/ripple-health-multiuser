@@ -1363,10 +1363,10 @@ export function MealsScreen() {
         ) : null}
       </View>
 
-      {/* Booze */}
+      {/* Alcohol */}
       {!hiddenSections.includes('booze') && (
       <View style={[styles.card, { backgroundColor: theme.purple.tint, borderColor: theme.cardBorder }]}>
-        <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Booze</Text>
+        <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Alcohol</Text>
 
         {subTotals.standard_drinks > 0 && (
           <View style={[styles.totalBlock, { backgroundColor: theme.purple.solid, marginBottom: 10 }]}>
