@@ -207,11 +207,12 @@ export function OnboardingFlow({ onComplete, replayMode }: { onComplete: () => v
   function HomePreview() {
     return (
       <View style={styles.preview}>
+        {/* Top glance chips: Mood, Glucose, Steps */}
         <View style={{ flexDirection: "row", gap: 8 }}>
           {[
-            { label: "Mood", value: "🙂", sub: "Calm" },
+            { label: "Mood", value: "😊", sub: "Good" },
             { label: "Glucose", value: "118", sub: "mg/dL stable" },
-            { label: "Steps", value: "7,421", sub: "today" },
+            { label: "Steps", value: "6,240", sub: "today" },
           ].map((item) => (
             <View key={item.label} style={[styles.glanceChip, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
               <Text style={{ fontSize: 20, textAlign: "center" }}>{item.value}</Text>
@@ -220,21 +221,37 @@ export function OnboardingFlow({ onComplete, replayMode }: { onComplete: () => v
             </View>
           ))}
         </View>
+        {/* Mini timeline strip */}
+        <View style={[styles.bookCard, { backgroundColor: theme.card, borderColor: theme.cardBorder, paddingVertical: 10, gap: 6 }]}>
+          {[
+            { icon: "🍜", label: "Lunch", time: "12:45 pm" },
+            { icon: "😊", label: "Mood", time: "2:00 pm" },
+            { icon: "💧", label: "Water", time: "3:00 pm" },
+          ].map((entry) => (
+            <View key={entry.label} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Text style={{ fontSize: 14 }}>{entry.icon}</Text>
+              <Text style={{ fontSize: 12, fontWeight: "700", color: ink, flex: 1 }}>{entry.label}</Text>
+              <Text style={{ fontSize: 11, color: theme.textSoft }}>{entry.time}</Text>
+            </View>
+          ))}
+        </View>
+        {/* Insight card */}
         <View style={[styles.insightCard, { backgroundColor: theme.berry.bg, borderColor: theme.berry.sub }]}>
-          <Text style={{ fontSize: 18 }}>✨</Text>
+          <Text style={{ fontSize: 16 }}>✨</Text>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.insightTitle, { color: theme.berry.sub }]}>Today's summary</Text>
-            <Text style={[styles.insightText, { color: ink }]}>Glucose stable after lunch. Steps on track for your weekly goal.</Text>
+            <Text style={[styles.insightTitle, { color: theme.berry.sub }]}>Glucose insight</Text>
+            <Text style={[styles.insightText, { color: ink }]}>Stable after morning walks — 5 days in a row</Text>
           </View>
         </View>
+        {/* Water + Sleep chips */}
         <View style={{ flexDirection: "row", gap: 8 }}>
           {[
-            { label: "Water", value: "5 / 8", color: theme.blue?.solid ?? "#3B82F6" },
-            { label: "Sleep", value: "7h 30m", color: theme.amber?.solid ?? "#F59E0B" },
+            { label: "Water", value: "6 / 8 glasses", color: theme.blue?.solid ?? "#3B82F6" },
+            { label: "Sleep", value: "7h 15m", color: theme.amber?.solid ?? "#F59E0B" },
           ].map((chip) => (
             <View key={chip.label} style={[styles.miniChip, { backgroundColor: theme.card, borderColor: chip.color }]}>
               <View style={[styles.miniChipDot, { backgroundColor: chip.color }]} />
-              <Text style={[styles.miniChipValue, { color: ink }]}>{chip.value}</Text>
+              <Text style={[styles.miniChipValue, { color: ink, fontSize: 12 }]}>{chip.value}</Text>
               <Text style={[styles.statChipSub, { color: theme.textSoft }]}>{chip.label}</Text>
             </View>
           ))}
@@ -246,12 +263,19 @@ export function OnboardingFlow({ onComplete, replayMode }: { onComplete: () => v
   function HealthPreview() {
     const chips = [
       { label: "Glucose", value: "118", unit: "mg/dL", sub: "stable", color: theme.berry.solid },
-      { label: "Steps", value: "7,421", unit: "steps", sub: "today", color: theme.teal.solid },
-      { label: "Sleep", value: "7h 30m", unit: "", sub: "last night", color: theme.amber?.solid ?? "#F59E0B" },
-      { label: "Heart Rate", value: "62", unit: "BPM", sub: "resting", color: theme.coral.solid },
+      { label: "Steps", value: "6,240", unit: "/ 8,000", sub: "today", color: theme.teal.solid },
+      { label: "Sleep", value: "7h 15m", unit: "", sub: "last night", color: theme.amber?.solid ?? "#F59E0B" },
+      { label: "Heart Rate", value: "64", unit: "BPM", sub: "resting", color: theme.coral.solid },
+    ];
+    const bars = [
+      { day: "Mon", h: 28, color: theme.teal.solid },
+      { day: "Tue", h: 44, color: theme.teal.solid },
+      { day: "Wed", h: 36, color: theme.teal.solid },
+      { day: "Thu", h: 52, color: theme.teal.solid },
     ];
     return (
       <View style={styles.preview}>
+        {/* 4 stat chips in 2×2 grid */}
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
           {chips.map((c) => (
             <View key={c.label} style={[styles.statChip, { backgroundColor: theme.card, borderColor: c.color }]}>
@@ -263,17 +287,35 @@ export function OnboardingFlow({ onComplete, replayMode }: { onComplete: () => v
             </View>
           ))}
         </View>
+        {/* Mini bar chart Mon–Thu */}
+        <View style={[styles.bookCard, { backgroundColor: theme.card, borderColor: theme.cardBorder, paddingVertical: 10 }]}>
+          <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 10, height: 56, justifyContent: "center" }}>
+            {bars.map((b) => (
+              <View key={b.day} style={{ alignItems: "center", gap: 4 }}>
+                <View style={{ width: 22, height: b.h, borderRadius: 4, backgroundColor: b.color, opacity: 0.85 }} />
+                <Text style={{ fontSize: 10, color: theme.textSoft, fontWeight: "600" }}>{b.day}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+        {/* TIR badge */}
+        <View style={[styles.weekBadge, { backgroundColor: theme.berry.bg, borderColor: theme.berry.sub }]}>
+          <Text style={{ fontSize: 15 }}>🎯</Text>
+          <Text style={[styles.weekBadgeText, { color: theme.berry.sub, fontWeight: "800" }]}>TIR: 82% today</Text>
+        </View>
       </View>
     );
   }
 
   function MealsPreview() {
     const rows = [
-      { name: "Oatmeal with berries", type: "Breakfast", cal: "312 cal", color: theme.teal.solid },
-      { name: "Chicken salad wrap", type: "Lunch", cal: "480 cal", color: theme.coral.solid },
+      { name: "Greek yogurt + granola", type: "Breakfast", cal: "280 cal", color: theme.teal.solid },
+      { name: "Salmon bowl", type: "Lunch", cal: "520 cal", color: theme.coral.solid },
+      { name: "Grilled chicken...", type: "Dinner", cal: "— cal", color: theme.amber?.solid ?? "#F59E0B" },
     ];
     return (
       <View style={styles.preview}>
+        {/* 3 meal rows */}
         {rows.map((r) => (
           <View key={r.name} style={[styles.mealRow, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
             <View style={[styles.mealDot, { backgroundColor: r.color }]} />
@@ -283,11 +325,12 @@ export function OnboardingFlow({ onComplete, replayMode }: { onComplete: () => v
             </View>
           </View>
         ))}
+        {/* Macro chips */}
         <View style={{ flexDirection: "row", gap: 8 }}>
           {[
-            { label: "Carbs", g: "82g", color: theme.coral.solid },
-            { label: "Protein", g: "48g", color: theme.teal.solid },
-            { label: "Fat", g: "24g", color: theme.amber?.solid ?? "#F59E0B" },
+            { label: "Carbs", g: "94g", color: theme.coral.solid },
+            { label: "Protein", g: "76g", color: theme.teal.solid },
+            { label: "Fat", g: "32g", color: theme.amber?.solid ?? "#F59E0B" },
           ].map((m) => (
             <View key={m.label} style={[styles.macroChip, { borderColor: m.color, backgroundColor: theme.card }]}>
               <Text style={{ fontSize: 14, fontWeight: "800", color: ink }}>{m.g}</Text>
@@ -295,8 +338,9 @@ export function OnboardingFlow({ onComplete, replayMode }: { onComplete: () => v
             </View>
           ))}
         </View>
+        {/* Caffeine badge */}
         <View style={[styles.substanceBadge, { backgroundColor: theme.coral.bg, borderColor: theme.coral.sub }]}>
-          <Text style={[styles.substanceBadgeText, { color: theme.coral.sub }]}>☕ 95 mg caffeine · 🍺 1 drink</Text>
+          <Text style={[styles.substanceBadgeText, { color: theme.coral.sub }]}>☕ 140mg caffeine</Text>
         </View>
       </View>
     );
@@ -305,35 +349,46 @@ export function OnboardingFlow({ onComplete, replayMode }: { onComplete: () => v
   function HobbiesPreview() {
     return (
       <View style={styles.preview}>
+        {/* Book card */}
         <View style={[styles.bookCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.bookTitle, { color: ink }]} numberOfLines={1}>Atomic Habits</Text>
-              <Text style={[styles.bookAuthor, { color: theme.textSoft }]}>James Clear</Text>
+              <Text style={[styles.bookTitle, { color: ink }]} numberOfLines={1}>The Almanack of Naval Ravikant</Text>
+              <Text style={[styles.bookAuthor, { color: theme.textSoft }]}>Eric Jorgenson</Text>
             </View>
             <Text style={{ fontSize: 22 }}>📖</Text>
           </View>
           <View style={[styles.progressTrack, { backgroundColor: theme.cardBorder }]}>
-            <View style={[styles.progressFill, { backgroundColor: theme.blue?.solid ?? "#3B82F6", width: "62%" }]} />
+            <View style={[styles.progressFill, { backgroundColor: theme.blue?.solid ?? "#3B82F6", width: "38%" }]} />
           </View>
-          <Text style={[styles.progressLabel, { color: theme.textSoft }]}>62% complete · 124 pages left</Text>
+          <Text style={[styles.progressLabel, { color: theme.textSoft }]}>38% complete</Text>
         </View>
+        {/* Guitar hobby row */}
         <View style={[styles.hobbyRow, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={[styles.hobbyIcon, { backgroundColor: theme.blue?.bg ?? "#EFF6FF" }]}>
             <Text style={{ fontSize: 20 }}>🎸</Text>
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.hobbyName, { color: ink }]}>Guitar</Text>
-            <Text style={[styles.hobbyMeta, { color: theme.textSoft }]}>45 min today · 6 day streak 🔥</Text>
+            <Text style={[styles.hobbyMeta, { color: theme.textSoft }]}>30 min today · 4 day streak 🔥</Text>
           </View>
         </View>
+        {/* Running hobby row */}
         <View style={[styles.hobbyRow, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={[styles.hobbyIcon, { backgroundColor: theme.teal.bg }]}>
             <Text style={{ fontSize: 20 }}>🏃</Text>
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.hobbyName, { color: ink }]}>Running</Text>
-            <Text style={[styles.hobbyMeta, { color: theme.textSoft }]}>Rest day · 3 day streak</Text>
+            <Text style={[styles.hobbyMeta, { color: theme.textSoft }]}>4.2 km this morning</Text>
+          </View>
+        </View>
+        {/* Journal preview */}
+        <View style={[styles.insightCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+          <Text style={{ fontSize: 16 }}>📝</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.insightTitle, { color: ink }]}>Journal</Text>
+            <Text style={[styles.insightText, { color: theme.textSoft }]}>Felt productive today...</Text>
           </View>
         </View>
       </View>
@@ -342,53 +397,84 @@ export function OnboardingFlow({ onComplete, replayMode }: { onComplete: () => v
 
   function InsightsPreview() {
     const cards = [
-      { icon: "📈", title: "Glucose spikes after pasta", sub: "3 of last 4 meals with pasta", color: theme.berry },
-      { icon: "💤", title: "Better sleep → better mood", sub: "clear pattern across 2 weeks", color: theme.violet ?? theme.blue! },
+      {
+        icon: "🍝",
+        title: "Pasta raises glucose 35+ mg/dL",
+        sub: "seen 4 of last 5 times",
+        bg: theme.berry.bg,
+        border: theme.berry.sub,
+        titleColor: theme.berry.sub,
+      },
+      {
+        icon: "😴",
+        title: "7+ hours sleep → better mood",
+        sub: "9 of 12 occurrences",
+        bg: (theme.violet as any)?.bg ?? theme.purple.tint,
+        border: (theme.violet as any)?.sub ?? theme.purple.solid,
+        titleColor: (theme.violet as any)?.sub ?? theme.purple.solid,
+      },
+      {
+        icon: "💸",
+        title: "Spending spikes on Fridays",
+        sub: "avg $42 vs $18 other days",
+        bg: theme.purple.tint,
+        border: theme.purple.solid,
+        titleColor: theme.purple.solid,
+      },
     ];
     return (
       <View style={styles.preview}>
         {cards.map((ins, i) => (
-          <View key={i} style={[styles.insightCard, { backgroundColor: ins.color.bg, borderColor: ins.color.sub }]}>
-            <Text style={{ fontSize: 22 }}>{ins.icon}</Text>
+          <View key={i} style={[styles.insightCard, { backgroundColor: ins.bg, borderColor: ins.border }]}>
+            <Text style={{ fontSize: 18 }}>{ins.icon}</Text>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.insightTitle, { color: ins.color.sub }]}>{ins.title}</Text>
+              <Text style={[styles.insightTitle, { color: ins.titleColor }]}>{ins.title}</Text>
               <Text style={[styles.insightText, { color: theme.textSoft }]}>{ins.sub}</Text>
             </View>
           </View>
         ))}
+        {/* Weekly Wrap banner */}
         <View style={[styles.weekBadge, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <Text style={{ fontSize: 16 }}>📊</Text>
-          <Text style={[styles.weekBadgeText, { color: ink }]}>Weekly recap ready — tap to review your trends</Text>
+          <Text style={[styles.weekBadgeText, { color: ink }]}>Weekly Wrap — tap to review your trends</Text>
         </View>
       </View>
     );
   }
 
   function FinancePreview() {
+    const purple = theme.purple?.solid ?? "#7B3FBF";
     return (
       <View style={styles.preview}>
+        {/* Budget card with progress bar */}
         <View style={[styles.bookCard, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
             <Text style={[styles.bookTitle, { color: ink }]}>Monthly Budget</Text>
-            <Text style={[styles.bookAuthor, { color: theme.textSoft }]}>$1,340 / $2,000</Text>
+            <Text style={[styles.bookAuthor, { color: theme.textSoft }]}>$1,180 / $2,000</Text>
           </View>
           <View style={[styles.progressTrack, { backgroundColor: theme.cardBorder, marginTop: 10 }]}>
-            <View style={[styles.progressFill, { backgroundColor: theme.purple?.solid ?? "#7B3FBF", width: "67%" }]} />
+            <View style={[styles.progressFill, { backgroundColor: purple, width: "59%" }]} />
           </View>
-          <Text style={[styles.progressLabel, { color: theme.textSoft }]}>67% used · $660 remaining — on track</Text>
+          <Text style={[styles.progressLabel, { color: theme.textSoft }]}>59% used · $820 remaining</Text>
         </View>
+        {/* Category rows */}
         {[
-          { cat: "Groceries", amt: "$420", pct: "31%", color: theme.teal.solid },
-          { cat: "Dining Out", amt: "$210", pct: "16%", color: theme.coral.solid },
-          { cat: "Subscriptions", amt: "$85", pct: "6%", color: theme.purple?.solid ?? "#7B3FBF" },
+          { cat: "Groceries", amt: "$340", color: theme.teal.solid },
+          { cat: "Dining Out", amt: "$195", color: theme.coral.solid },
+          { cat: "Transport", amt: "$145", color: theme.amber?.solid ?? "#F59E0B" },
+          { cat: "Entertainment", amt: "$85", color: purple },
         ].map((row) => (
           <View key={row.cat} style={[styles.mealRow, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
             <View style={[styles.categoryDot, { backgroundColor: row.color }]} />
             <Text style={[styles.mealName, { color: ink, flex: 1 }]}>{row.cat}</Text>
-            <Text style={[styles.mealMeta, { color: theme.textSoft }]}>{row.pct}</Text>
-            <Text style={[styles.mealName, { color: ink, marginLeft: 8 }]}>{row.amt}</Text>
+            <Text style={[styles.mealName, { color: ink }]}>{row.amt}</Text>
           </View>
         ))}
+        {/* Mood correlation badge */}
+        <View style={[styles.weekBadge, { backgroundColor: theme.purple.tint, borderColor: purple }]}>
+          <Text style={{ fontSize: 15 }}>💡</Text>
+          <Text style={[styles.weekBadgeText, { color: purple, fontWeight: "700" }]}>Spending up on low-mood days</Text>
+        </View>
       </View>
     );
   }
