@@ -420,6 +420,9 @@ export const api = {
     const qs = new URLSearchParams({ key, compare_to: compareTo, ...(days ? { days: String(days) } : {}) });
     return request("/analytics/context-correlation?" + qs.toString());
   },
+  crossMetric: function () {
+    return request("/analytics/cross-metric");
+  },
   journey: function () {
     return request("/analytics/journey");
   },
