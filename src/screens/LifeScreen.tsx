@@ -24,6 +24,7 @@ import { HOBBY_LIST } from "../lib/hobbyList";
 import { TooltipBubble } from "../components/TooltipBubble";
 import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
 import { SectionEditorModal, SectionDef } from "../components/SectionEditorModal";
+import { FeatureTour, TourStep } from "../components/FeatureTour";
 
 const LIFE_SECTIONS: SectionDef[] = [
   { id: 'books',       label: 'Books & Reading', description: 'Currently reading list and book search' },
@@ -97,6 +98,14 @@ export function LifeScreen() {
   const [showTooltip, setShowTooltip] = useState(false);
   const [hiddenSections, setHiddenSections] = useState<string[]>([]);
   const [showSectionEditor, setShowSectionEditor] = useState(false);
+  const [showTour, setShowTour] = useState(false);
+  const tourBooksRef = useRef<View>(null);
+  const tourHobbiesRef = useRef<View>(null);
+
+  const LIFE_TOUR: TourStep[] = [
+    { ref: tourBooksRef,   title: "Books & Reading", body: "Add books you're reading and log your progress. Search by title or author, and track pages or chapters." },
+    { ref: tourHobbiesRef, title: "Hobbies",          body: "Log time spent on any hobby. Stats compare this week to last so you can see if you're keeping up with things you enjoy." },
+  ];
 
   useFocusEffect(useCallback(() => {
     if (prefsLoading) return;
@@ -108,6 +117,9 @@ export function LifeScreen() {
         setShowTooltip(true);
         markTooltipSeen("life");
       }
+    });
+    hasSeenTooltip("life-tour").then(seen => {
+      if (!seen) { markTooltipSeen("life-tour"); setTimeout(() => setShowTour(true), 600); }
     });
     api.getSettings().then((s: any) => {
       setHiddenSections(s?.life_hidden_sections ?? []);
@@ -439,7 +451,7 @@ export function LifeScreen() {
 
       {/* Add a book card + Currently reading */}
       {!hiddenSections.includes('books') && (<>
-      <View style={[styles.card, { backgroundColor: theme.card }]}>
+      <View ref={tourBooksRef} style={[styles.card, { backgroundColor: theme.card }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Add a book</Text>
         <View style={styles.searchRow}>
           <TextInput
@@ -574,7 +586,7 @@ export function LifeScreen() {
 
       {/* Hobbies section — add form + individual cards */}
       {!hiddenSections.includes('hobbies') && (<>
-      <View style={[styles.card, { backgroundColor: theme.coral.tint }]}>
+      <View ref={tourHobbiesRef} style={[styles.card, { backgroundColor: theme.coral.tint }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Hobbies</Text>
         <View style={styles.searchRow}>
           <TextInput
@@ -721,6 +733,7 @@ export function LifeScreen() {
       onSave={handleSaveSections}
       onCancel={() => setShowSectionEditor(false)}
     />
+    <FeatureTour steps={LIFE_TOUR} visible={showTour} onDone={() => setShowTour(false)} />
     </View>
   );
 }
@@ -803,7 +816,7 @@ function makeStyles(ink: string, card: string, border: string) {
     shadowRadius: 10,
     elevation: 2,
   },
-  coverThumb: { width: 54, height: 78, borderRadius: 6 },
+  coverThumb: { width: 80, height: 116, borderRadius: 6 },
 
   bookRow: { flexDirection: "row", gap: 12 },
   bookTitle: { fontSize: 15, fontWeight: "800", marginBottom: 2 },
@@ -821,11 +834,11 @@ function makeStyles(ink: string, card: string, border: string) {
 
   quickBtnRow: { flexDirection: "row", gap: 6, marginTop: 10 },
   quickBtn: {
-    borderRadius: 16,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: ink,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     backgroundColor: "#fff",
     shadowColor: "rgba(60,40,20,0.1)",
     shadowOffset: { width: 0, height: 6 },
@@ -833,7 +846,7 @@ function makeStyles(ink: string, card: string, border: string) {
     shadowRadius: 10,
     elevation: 2,
   },
-  quickBtnText: { fontSize: 11, fontWeight: "800", color: ink, letterSpacing: 0.3 },
+  quickBtnText: { fontSize: 10, fontWeight: "800", color: ink, letterSpacing: 0.3 },
 
   manualRow: { flexDirection: "row", gap: 8, marginTop: 6, flexWrap: "wrap" },
   manualInput: {

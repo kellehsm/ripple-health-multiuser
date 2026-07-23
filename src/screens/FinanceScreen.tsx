@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useRef } from "react";
 import {
   ScrollView, View, Text, TextInput, Pressable, StyleSheet,
   RefreshControl, Alert, Modal, KeyboardAvoidingView, Platform,
@@ -15,6 +15,7 @@ import { toast } from "../lib/toast";
 import { TooltipBubble } from "../components/TooltipBubble";
 import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
 import { SectionEditorModal, SectionDef } from "../components/SectionEditorModal";
+import { FeatureTour, TourStep } from "../components/FeatureTour";
 
 const FINANCE_SECTIONS: SectionDef[] = [
   { id: 'totals',       label: 'Total spent',              description: 'Spending total card with add button' },
@@ -140,6 +141,14 @@ export function FinanceScreen() {
   const [hiddenSections, setHiddenSections] = useState<string[]>([]);
   const [showSectionEditor, setShowSectionEditor] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [showTour, setShowTour] = useState(false);
+  const tourTotalsRef = useRef<View>(null);
+  const tourBreakdownRef = useRef<View>(null);
+
+  const FINANCE_TOUR: TourStep[] = [
+    { ref: tourTotalsRef,    title: "Spending Total", body: "Switch between Today and This Week. Tap the + button to log a new expense. Plaid users see transactions sync automatically." },
+    { ref: tourBreakdownRef, title: "Where It Went",  body: "Your spending broken down by category with proportional bars. Categories are editable on each transaction." },
+  ];
   const [entries, setEntries] = useState<SpendingEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -201,6 +210,9 @@ export function FinanceScreen() {
           setShowTooltip(true);
           markTooltipSeen("finance");
         }
+      });
+      hasSeenTooltip("finance-tour").then(seen => {
+        if (!seen) { markTooltipSeen("finance-tour"); setTimeout(() => setShowTour(true), 600); }
       });
       api.getSettings().then((s: any) => {
         setHiddenSections(s?.finance_hidden_sections ?? []);
@@ -383,7 +395,7 @@ export function FinanceScreen() {
 
         {/* Total card */}
         {!hiddenSections.includes('totals') && (
-        <View style={[s.card, { backgroundColor: theme.purple.tint, borderColor: theme.purple.solid }]}>
+        <View ref={tourTotalsRef} style={[s.card, { backgroundColor: theme.purple.tint, borderColor: theme.purple.solid }]}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
             <View>
               <Text style={[s.label, { color: theme.purple.sub }]}>
@@ -409,7 +421,7 @@ export function FinanceScreen() {
 
         {/* Category breakdown chart */}
         {categoryTotals.length > 0 && !hiddenSections.includes('breakdown') && (
-          <View style={[s.card, { borderColor: theme.cardBorder }]}>
+          <View ref={tourBreakdownRef} style={[s.card, { borderColor: theme.cardBorder }]}>
             <Text style={[s.cardTitle, { color: theme.textStrong }]}>Where it went</Text>
             <View style={{ gap: 11, marginTop: 6 }}>
               {categoryTotals.map(([cat, amt]) => {
@@ -712,6 +724,7 @@ export function FinanceScreen() {
           </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
       </Modal>
+      <FeatureTour steps={FINANCE_TOUR} visible={showTour} onDone={() => setShowTour(false)} />
     </>
   );
 }
