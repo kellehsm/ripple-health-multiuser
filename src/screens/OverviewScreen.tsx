@@ -343,6 +343,8 @@ export function OverviewScreen() {
   const tourTrendsRef = useRef<View>(null);
   const tourTimelineRef = useRef<View>(null);
   const tourInsightsRef = useRef<View>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollOffsetRef = useRef(0);
 
   const HOME_TOUR: TourStep[] = [
     { ref: tourHeaderRef, title: "Your Home Screen", body: "Your daily wellness dashboard. Everything you track rolls up here. Tap the pencil icon to customize which sections appear." },
@@ -1045,10 +1047,13 @@ export function OverviewScreen() {
     <View style={{ flex: 1 }}>
     <LinearGradient colors={[theme.page, theme.gradientEnd]} style={{ flex: 1 }}>
     <ScrollView
+      ref={scrollViewRef}
       style={{ backgroundColor: "transparent" }}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
       accessibilityLabel="Today dashboard"
+      scrollEventThrottle={16}
+      onScroll={(e) => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; }}
     >
       {showTooltip && (
         <TooltipBubble
@@ -1134,6 +1139,8 @@ export function OverviewScreen() {
       steps={HOME_TOUR}
       visible={showTour}
       onDone={() => setShowTour(false)}
+      scrollRef={scrollViewRef}
+      scrollY={scrollOffsetRef.current}
     />
     </View>
   );

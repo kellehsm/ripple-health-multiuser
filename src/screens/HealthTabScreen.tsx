@@ -2098,6 +2098,8 @@ export function HealthTabScreen() {
   const [showTour, setShowTour] = useState(false);
   const tourOverviewRef = useRef<View>(null);
   const tourContentRef = useRef<View>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollOffsetRef = useRef(0);
 
   const HEALTH_TOUR_STEPS: TourStep[] = [
     { ref: tourOverviewRef, title: "Health Hub", body: "Switch between Medications, Cycle tracking, and Symptoms using the tiles at the top." },
@@ -2135,10 +2137,13 @@ export function HealthTabScreen() {
     <View style={{ flex: 1, backgroundColor: theme.page }}>
       {bothEnabled && (
         <ScrollView
+          ref={scrollViewRef}
           style={{ flex: 1 }}
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
           stickyHeaderIndices={[0]}
+          scrollEventThrottle={16}
+          onScroll={(e) => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; }}
         >
           {/* Sticky overview blocks */}
           <View style={{ backgroundColor: theme.page, padding: 12, paddingBottom: 4 }}>
@@ -2176,7 +2181,7 @@ export function HealthTabScreen() {
         onSave={handleSaveSections}
         onCancel={() => setShowSectionEditor(false)}
       />
-      <FeatureTour steps={HEALTH_TOUR_STEPS} visible={showTour} onDone={() => setShowTour(false)} />
+      <FeatureTour steps={HEALTH_TOUR_STEPS} visible={showTour} onDone={() => setShowTour(false)} scrollRef={scrollViewRef} scrollY={scrollOffsetRef.current} />
     </View>
   );
 }

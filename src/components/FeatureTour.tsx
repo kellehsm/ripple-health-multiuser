@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Modal,
   View,
@@ -6,6 +6,7 @@ import {
   Pressable,
   Dimensions,
   StyleSheet,
+  ScrollView,
 } from "react-native";
 import { useTheme } from "../theme/ThemeContext";
 
@@ -25,15 +26,17 @@ type Props = {
   steps: TourStep[];
   visible: boolean;
   onDone: () => void;
+  scrollRef?: React.RefObject<ScrollView | any>;
+  scrollY?: number;
 };
 
-export function FeatureTour({ steps, visible, onDone }: Props) {
+export function FeatureTour({ steps, visible, onDone, scrollRef, scrollY }: Props) {
   const { theme } = useTheme();
   const [idx, setIdx] = useState(0);
   const [spot, setSpot] = useState<Spot | null>(null);
+  const savedScrollY = useRef(0);
 
-  const measure = useCallback(() => {
-    const step = steps[idx];
+  const doMeasure = useCallback((step: TourStep) => {
     if (!step?.ref?.current) { setSpot(null); return; }
     step.ref.current.measure(
       (_x: number, _y: number, w: number, h: number, px: number, py: number) => {
@@ -44,13 +47,42 @@ export function FeatureTour({ steps, visible, onDone }: Props) {
         }
       }
     );
-  }, [steps, idx]);
+  }, []);
+
+  const measure = useCallback(() => {
+    const step = steps[idx];
+    if (!step?.ref?.current) { setSpot(null); return; }
+
+    if (scrollRef?.current) {
+      step.ref.current.measureLayout(
+        scrollRef.current,
+        (_lx: number, ly: number) => {
+          // Scroll so element sits ~120px from top of scroll view
+          const scrollTarget = Math.max(0, ly - 120);
+          scrollRef.current!.scrollTo({ y: scrollTarget, animated: true });
+          // Wait for scroll animation to settle then measure window position
+          setTimeout(() => doMeasure(step), 380);
+        },
+        // measureLayout failed (element not in this scroll view) — fall back
+        () => setTimeout(() => doMeasure(step), 150)
+      );
+    } else {
+      setTimeout(() => doMeasure(step), 150);
+    }
+  }, [steps, idx, scrollRef, doMeasure]);
 
   useEffect(() => {
     if (!visible) { setIdx(0); setSpot(null); return; }
-    const t = setTimeout(measure, 150);
-    return () => clearTimeout(t);
-  }, [visible, idx, measure]);
+    // Save the scroll position once at the start of the tour (step 0)
+    if (idx === 0) savedScrollY.current = scrollY ?? 0;
+    measure();
+  }, [visible, idx, measure, scrollY]);
+
+  function handleDone() {
+    // Restore scroll position to where the user was before the tour started
+    scrollRef?.current?.scrollTo({ y: savedScrollY.current, animated: true });
+    onDone();
+  }
 
   if (!visible) return null;
 
@@ -58,7 +90,7 @@ export function FeatureTour({ steps, visible, onDone }: Props) {
   const isLast = idx === steps.length - 1;
 
   function next() {
-    if (isLast) onDone();
+    if (isLast) handleDone();
     else setIdx(i => i + 1);
   }
 
@@ -75,9 +107,9 @@ export function FeatureTour({ steps, visible, onDone }: Props) {
   const DIM = "rgba(0,0,0,0.72)";
 
   return (
-    <Modal transparent visible animationType="fade" onRequestClose={onDone} statusBarTranslucent>
+    <Modal transparent visible animationType="fade" onRequestClose={handleDone} statusBarTranslucent>
       {/* ── Dimmed overlay: 4 views frame the spotlight, full-dim if no spot ── */}
-      <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
+      <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
         {spot ? (
           <>
             <View style={{ position: "absolute", top: 0, left: 0, right: 0, height: spot.y, backgroundColor: DIM }} />
@@ -95,12 +127,12 @@ export function FeatureTour({ steps, visible, onDone }: Props) {
             />
           </>
         ) : (
-          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: DIM }]} />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: DIM }]} />
         )}
       </View>
 
       {/* Tap backdrop to advance */}
-      <Pressable style={StyleSheet.absoluteFillObject} onPress={next} />
+      <Pressable style={StyleSheet.absoluteFill} onPress={next} />
 
       {/* ── Tooltip card ── */}
       <View
@@ -113,7 +145,7 @@ export function FeatureTour({ steps, visible, onDone }: Props) {
           <Text style={[styles.counter, { color: theme.textSoft }]}>
             {idx + 1} of {steps.length}
           </Text>
-          <Pressable onPress={onDone} hitSlop={12}>
+          <Pressable onPress={handleDone} hitSlop={12}>
             <Text style={[styles.skip, { color: theme.textSoft }]}>Skip</Text>
           </Pressable>
         </View>
