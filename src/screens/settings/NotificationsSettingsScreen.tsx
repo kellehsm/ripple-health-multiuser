@@ -230,10 +230,6 @@ export function NotificationsSettingsScreen() {
           onChange={(v) => save({ water_reminder: { ...sn.water_reminder, enabled: v } })} theme={theme} />
         {sn.water_reminder?.enabled === true && (
           <>
-            <Text style={[styles.subLabel, { color: theme.textStrong }]}>Daily goal</Text>
-            <HourChips hours={[6, 7, 8, 9, 10, 12]} current={sn.water_reminder?.goal ?? 8}
-              onSelect={(g) => save({ water_reminder: { ...sn.water_reminder, goal: g } })}
-              accentColor={theme.blue.sub} theme={theme} />
             <Text style={[styles.subLabel, { color: theme.textStrong }]}>Start at</Text>
             <HourChips hours={[7, 8, 9, 10]} current={sn.water_reminder?.start_hour ?? 9}
               onSelect={(h) => save({ water_reminder: { ...sn.water_reminder, start_hour: h } })}
