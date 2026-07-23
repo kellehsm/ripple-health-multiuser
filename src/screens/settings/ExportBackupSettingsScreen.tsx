@@ -76,7 +76,7 @@ export function ExportBackupSettingsScreen() {
         client_id: GOOGLE_CLIENT_ID, redirect_uri: redirectUri, response_type: "code",
         scope: "https://www.googleapis.com/auth/drive.file", access_type: "offline", prompt: "consent", state: userId,
       }).toString();
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, "wellnessfresh://oauth");
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, "ripple://oauth");
       if (result.type === "success" && result.url.includes("status=connected")) {
         await loadDriveStatus();
         Alert.alert("Connected", "Google Drive backup is set up. Nightly backups will run at 2 AM.");
