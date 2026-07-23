@@ -30,7 +30,14 @@ class RippleWidgetProvider : AppWidgetProvider() {
     ) {
         for (id in appWidgetIds) {
             showPlaceholder(context, appWidgetManager, id)
-            Thread { fetchAndUpdate(context, appWidgetManager, id) }.start()
+            val pending = goAsync()
+            Thread {
+                try {
+                    fetchAndUpdate(context, appWidgetManager, id)
+                } finally {
+                    pending.finish()
+                }
+            }.start()
         }
     }
 
@@ -44,22 +51,16 @@ class RippleWidgetProvider : AppWidgetProvider() {
     }
 
     private fun fetchAndUpdate(context: Context, manager: AppWidgetManager, id: Int) {
+        val token = readToken(context)
         val glucose: String
         val steps: String
-        try {
-            val token = readToken(context)
-            if (token == null) {
-                glucose = "Sign in"
-                steps = "--"
-            } else {
-                glucose = fetchGlucose(token)
-                steps = fetchSteps(token)
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "fetch error", e)
-            return
+        if (token == null) {
+            glucose = "Sign in"
+            steps = "--"
+        } else {
+            glucose = fetchGlucose(token)
+            steps = fetchSteps(token)
         }
-
         try {
             manager.updateAppWidget(id, buildViews(context, glucose, steps))
         } catch (e: Exception) {
@@ -125,9 +126,14 @@ class RippleWidgetProvider : AppWidgetProvider() {
 
     private fun fetchGlucose(token: String): String = try {
         val conn = URL("$API/glucose/status").openConnection() as HttpsURLConnection
-        conn.connectTimeout = 4000
-        conn.readTimeout = 4000
+        conn.connectTimeout = 5000
+        conn.readTimeout = 5000
         conn.setRequestProperty("Authorization", "Bearer $token")
+        val code = conn.responseCode
+        if (code == 401 || code == 403) {
+            conn.disconnect()
+            return "Auth err"
+        }
         val obj = JSONObject(conn.inputStream.bufferedReader().readText())
         conn.disconnect()
         if (obj.optBoolean("hasData", false)) {
@@ -137,7 +143,7 @@ class RippleWidgetProvider : AppWidgetProvider() {
         } else "--"
     } catch (e: Exception) {
         Log.w(TAG, "fetchGlucose failed", e)
-        "--"
+        "Err"
     }
 
     private fun fetchSteps(token: String): String = try {

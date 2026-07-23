@@ -24,11 +24,15 @@ function withAndroidWidget(config) {
       // Rewrite package declaration to match the actual app package
       let ktContent = fs.readFileSync(path.join(SRC, 'RippleWidgetProvider.kt'), 'utf8');
       ktContent = ktContent.replace(/^package .+$/m, `package ${pkgName}`);
+      // Inject the correct API base URL for this build profile (dev vs prod)
+      const apiBaseUrl = (mod.extra?.apiBaseUrl ?? 'https://app.kels.gg/api').replace(/\/$/, '');
+      ktContent = ktContent.replace(/private const val API = "[^"]*"/, `private const val API = "${apiBaseUrl}"`);
       fs.writeFileSync(path.join(ktDir, 'RippleWidgetProvider.kt'), ktContent);
 
       const layoutDir = path.join(root, 'app/src/main/res/layout');
       fs.mkdirSync(layoutDir, { recursive: true });
       fs.copyFileSync(path.join(SRC, 'ripple_widget.xml'), path.join(layoutDir, 'ripple_widget.xml'));
+      fs.copyFileSync(path.join(SRC, 'ripple_widget_preview.xml'), path.join(layoutDir, 'ripple_widget_preview.xml'));
 
       const drawableDir = path.join(root, 'app/src/main/res/drawable');
       fs.mkdirSync(drawableDir, { recursive: true });
