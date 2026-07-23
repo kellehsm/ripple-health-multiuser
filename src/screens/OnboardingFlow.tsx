@@ -138,7 +138,7 @@ export function OnboardingFlow({ onComplete, replayMode }: { onComplete: () => v
           state: userId,
         }).toString();
 
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, "wellnessfresh://oauth");
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, "ripple://oauth");
       if (result.type === "success" && result.url.includes("status=connected")) {
         advance();
       } else if (result.type === "success" && result.url.includes("status=error")) {
