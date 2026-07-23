@@ -721,6 +721,7 @@ export function MealsScreen() {
   const [editingMealId, setEditingMealId] = useState<string | null>(null);
   const [frequentMeals, setFrequentMeals] = useState<FrequentMeal[]>([]);
   const [impactScores, setImpactScores] = useState<Record<string, number>>({});
+  const [foodReport, setFoodReport] = useState<Array<{ meal_name: string; avg_spike: number; sample_count: number }>>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedMealId, setExpandedMealId] = useState<string | null>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -777,11 +778,12 @@ export function MealsScreen() {
       .then(function (data: Recipe[]) { setRecipes(Array.isArray(data) ? data : []); })
       .catch(function () {});
     api.getMealImpactScores()
-      .then(function (data: { scores: Array<{ meal_name: string; avg_spike: number }> }) {
+      .then(function (data: { scores: Array<{ meal_name: string; avg_spike: number; sample_count: number }> }) {
         if (data?.scores) {
           const map: Record<string, number> = {};
           data.scores.forEach(function (s) { map[s.meal_name] = s.avg_spike; });
           setImpactScores(map);
+          setFoodReport(data.scores);
         }
       })
       .catch(function () {});
@@ -1602,6 +1604,74 @@ export function MealsScreen() {
         )}
       </ShadowCard>
       </View>
+
+      {/* Food Report card — only renders when we have enough data */}
+      {foodReport.length >= 3 && (function () {
+        const sorted = [...foodReport].sort((a, b) => b.avg_spike - a.avg_spike);
+        const spiky = sorted.slice(0, 5);
+        const stable = [...foodReport].sort((a, b) => a.avg_spike - b.avg_spike).slice(0, 5).filter(s => s.avg_spike <= 30);
+        const maxSpike = spiky[0]?.avg_spike ?? 1;
+        return (
+          <ShadowCard size="card" bg={theme.card} accent={theme.berry.solid} rotate={0.4}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <Ionicons name="analytics-outline" size={18} color={theme.berry.solid} />
+              <Text style={[styles.cardTitle, { color: theme.textStrong, marginBottom: 0 }]}>Food Report</Text>
+            </View>
+
+            {/* Highest spiking */}
+            <Text style={[styles.sectionLabel, { color: theme.coral.sub, marginBottom: 8 }]}>SPIKES GLUCOSE MOST</Text>
+            <View style={{ gap: 8, marginBottom: 16 }}>
+              {spiky.map(function (item, i) {
+                const barW = Math.max(6, Math.round((item.avg_spike / maxSpike) * 100));
+                const isHigh = item.avg_spike > 50;
+                const barColor = isHigh ? theme.coral.solid : item.avg_spike > 25 ? theme.amber?.solid ?? "#f59e0b" : theme.teal.solid;
+                return (
+                  <View key={item.meal_name} style={{ gap: 4 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1 }}>
+                        <Text style={{ color: theme.textSoft, fontSize: 10, fontWeight: "800", width: 14 }}>{i + 1}</Text>
+                        <Text style={{ color: theme.textStrong, fontSize: 13, fontWeight: "700", flex: 1 }} numberOfLines={1}>{item.meal_name}</Text>
+                      </View>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                        <Text style={{ color: barColor, fontSize: 13, fontWeight: "900" }}>+{item.avg_spike}</Text>
+                        <Text style={{ color: theme.textSoft, fontSize: 10 }}>mg/dL</Text>
+                        <Text style={{ color: theme.textSoft, fontSize: 10, marginLeft: 4 }}>×{item.sample_count}</Text>
+                      </View>
+                    </View>
+                    <View style={{ height: 5, backgroundColor: theme.cardBorder, borderRadius: 3, overflow: "hidden" }}>
+                      <View style={{ height: 5, width: barW + "%", backgroundColor: barColor, borderRadius: 3 }} />
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+
+            {/* Most stable */}
+            {stable.length > 0 && (
+              <>
+                <Text style={[styles.sectionLabel, { color: theme.teal.sub, marginBottom: 8 }]}>STAYS STABLE</Text>
+                <View style={{ gap: 6 }}>
+                  {stable.map(function (item, i) {
+                    return (
+                      <View key={item.meal_name} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                        <Ionicons name="checkmark-circle" size={14} color={theme.teal.solid} />
+                        <Text style={{ color: theme.textStrong, fontSize: 13, fontWeight: "700", flex: 1 }} numberOfLines={1}>{item.meal_name}</Text>
+                        <Text style={{ color: theme.teal.solid, fontSize: 12, fontWeight: "800" }}>+{item.avg_spike}</Text>
+                        <Text style={{ color: theme.textSoft, fontSize: 10 }}>mg/dL</Text>
+                        <Text style={{ color: theme.textSoft, fontSize: 10, marginLeft: 2 }}>×{item.sample_count}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </>
+            )}
+
+            <Text style={{ color: theme.textSoft, fontSize: 10, marginTop: 14, lineHeight: 14 }}>
+              Average glucose rise 45–105 min after eating. Based on {foodReport.length} foods across your history.
+            </Text>
+          </ShadowCard>
+        );
+      })()}
 
       <BarcodeScannerModal
         visible={scannerVisible}
