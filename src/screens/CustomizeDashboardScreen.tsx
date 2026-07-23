@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 3,
   },
-  label: { fontSize: 14, fontWeight: "800", marginBottom: 2 },
+  label: { fontSize: 14, fontWeight: "900", marginBottom: 2 },
   desc: { fontSize: 11, lineHeight: 15 },
   controls: { flexDirection: "row", alignItems: "center", gap: 4 },
   arrowBtn: {

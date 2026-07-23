@@ -3,6 +3,7 @@ import { Animated, PanResponder, View, Text, Pressable, StyleSheet } from "react
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
 import { onSolid } from "../theme/colorUtils";
+import { ShadowCard } from "./ShadowCard";
 
 export type Confidence = "low" | "moderate" | "high" | "very_high";
 
@@ -310,9 +311,10 @@ export function InsightCard({ insight, onDismiss, compact = false }: InsightCard
 
   return (
     <Animated.View style={{ transform: [{ translateX }] }} {...panResponder.panHandlers}>
+    <ShadowCard size="tile">
     <Pressable
       onPress={() => setExpanded(e => !e)}
-      style={[styles.card, { backgroundColor: card, borderColor: ink, shadowColor: "rgba(60,40,20,0.1)" }]}
+      style={{ flex: 1 }}
       accessibilityRole="button"
       accessibilityLabel={insight.title}
     >
@@ -387,20 +389,12 @@ export function InsightCard({ insight, onDismiss, compact = false }: InsightCard
         </View>
       )}
     </Pressable>
+    </ShadowCard>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: 26,
-    borderWidth: 2,
-    padding: 14,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 3,
-  },
   headerRow: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -416,7 +410,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "800",
     lineHeight: 19,
   },
   metaRow: {

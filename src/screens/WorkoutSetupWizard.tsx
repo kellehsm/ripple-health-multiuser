@@ -127,7 +127,7 @@ function StepHeader({ step, title, subtitle, theme }: {
           />
         ))}
       </View>
-      <Text style={{ color: theme.textSoft, fontSize: 11, fontWeight: '800', letterSpacing: 1, marginBottom: 6 }}>
+      <Text style={{ color: theme.textSoft, fontSize: 9, fontWeight: '900', letterSpacing: 0.6, marginBottom: 6 }}>
         STEP {step + 1} OF 8
       </Text>
       <Text style={{ color: theme.textStrong, fontSize: 22, fontWeight: '900', lineHeight: 28 }}>{title}</Text>
@@ -355,7 +355,7 @@ export function WorkoutSetupWizard({ onComplete }: Props) {
         style={{ backgroundColor: theme.page }}
         contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
       >
-        <Text style={{ color: theme.textStrong, fontSize: 22, fontWeight: '900', marginBottom: 4 }}>
+        <Text style={{ color: theme.textStrong, fontSize: 22, fontWeight: '900', letterSpacing: -0.8, marginBottom: 4 }}>
           Your starter plan
         </Text>
         <Text style={{ color: theme.textSoft, fontSize: 13, marginBottom: 20, lineHeight: 18 }}>

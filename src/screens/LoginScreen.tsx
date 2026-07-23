@@ -16,6 +16,7 @@ import { LoginLogo } from "../components/LoginLogo";
 import { api } from "../api/client";
 import { setToken } from "../lib/auth";
 import { useTheme } from "../theme/ThemeContext";
+import { ShadowCard } from "../components/ShadowCard";
 
 interface Props {
   onLoginSuccess: () => void;
@@ -247,9 +248,9 @@ export function LoginScreen({ onLoginSuccess, onShowSignup }: Props) {
 
 const styles = StyleSheet.create({
   label: {
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 1.2,
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.6,
     marginBottom: 6,
     textTransform: "uppercase",
   },

@@ -521,8 +521,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderBottomWidth: 2,
   },
-  timerLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2 },
-  timer: { fontSize: 32, fontWeight: '800', fontVariant: ['tabular-nums'], marginTop: 2 },
+  timerLabel: { fontSize: 9, fontWeight: '900', letterSpacing: 0.6, textTransform: 'uppercase' },
+  timer: { fontSize: 32, fontWeight: '900', fontVariant: ['tabular-nums'], marginTop: 2, letterSpacing: -1 },
   startBtn: {
     borderRadius: 16,
     borderWidth: 2,

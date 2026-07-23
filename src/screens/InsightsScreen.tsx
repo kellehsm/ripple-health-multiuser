@@ -331,7 +331,7 @@ function makeStyles(page: string, ink: string, card: string) {
   return StyleSheet.create({
     content: { padding: 16, gap: 12 },
     headerBlock: { gap: 4, marginBottom: 4 },
-    heading: { fontSize: 24, fontWeight: "900" },
+    heading: { fontSize: 26, fontWeight: "900", letterSpacing: -0.8 },
     subheading: { fontSize: 13, lineHeight: 18 },
     regenBtn: {
       flexDirection: "row",
@@ -352,10 +352,11 @@ function makeStyles(page: string, ink: string, card: string) {
     },
     filterText: { fontSize: 11, fontWeight: "700" },
     sectionLabel: {
-      fontSize: 10,
-      fontWeight: "800",
-      letterSpacing: 0.8,
+      fontSize: 9,
+      fontWeight: "900",
+      letterSpacing: 0.6,
       marginBottom: 6,
+      textTransform: "uppercase",
     },
     emptyCard: {
       borderRadius: 22,

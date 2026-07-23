@@ -333,9 +333,9 @@ export function SignupScreen({ onSignupSuccess, onBackToLogin }: Props) {
 
 const styles = StyleSheet.create({
   label: {
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 1.2,
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.6,
     marginBottom: 6,
     textTransform: "uppercase",
   },

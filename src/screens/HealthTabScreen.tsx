@@ -23,6 +23,7 @@ import { LongPressActionMenu } from '../components/LongPressActionMenu';
 import { SectionEditorModal, SectionDef } from '../components/SectionEditorModal';
 import { FeatureTour, TourStep } from '../components/FeatureTour';
 import { hasSeenTooltip, markTooltipSeen } from '../utils/tooltipSeen';
+import { ShadowCard } from '../components/ShadowCard';
 
 const HEALTH_SECTIONS: SectionDef[] = [
   { id: 'cycle_tab',    label: 'Cycle tracking', description: 'Menstrual cycle calendar and logging' },
@@ -336,8 +337,8 @@ function OverviewBlocks({
       </View>
 
       {insight && (
-        <View style={[obStyles.insightBanner, { backgroundColor: theme.purple?.tint ?? '#F3EEFF', borderColor: theme.purple?.sub ?? '#9B6DFF' }]}>
-          <Text style={{ color: theme.purple?.fg ?? '#5B21B6', fontSize: 13, fontWeight: '600', lineHeight: 18 }}>
+        <ShadowCard size="tile" bg={theme.purple?.tint ?? '#F3EEFF'} accent={theme.purple?.sub ?? '#9B6DFF'} rotate={0.5} padding={14}>
+          <Text style={{ color: theme.purple?.fg ?? '#5B21B6', fontSize: 13, fontWeight: '700', lineHeight: 18 }}>
             {insight.text}
           </Text>
           {insight.confidence === 'tentative' && (
@@ -345,7 +346,7 @@ function OverviewBlocks({
               Based on limited data — may change as more cycles are logged.
             </Text>
           )}
-        </View>
+        </ShadowCard>
       )}
     </View>
   );
@@ -355,12 +356,12 @@ const obStyles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     borderRadius: 26,
-    borderWidth: 2,
+    borderWidth: 2.5,
     overflow: 'hidden',
-    shadowColor: "#3FA0A6",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
+    shadowColor: "rgba(60,40,20,0.1)",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
     elevation: 6,
   },
   block: {
@@ -373,7 +374,7 @@ const obStyles = StyleSheet.create({
   },
   divider: { width: 2 },
   icon: { fontSize: 16 },
-  blockLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase' },
+  blockLabel: { fontSize: 9, fontWeight: '900', letterSpacing: 0.6, textTransform: 'uppercase' },
   blockValue: { fontSize: 11, fontWeight: '700', textAlign: 'center' },
   blockSub: { fontSize: 10, textAlign: 'center' },
   insightBanner: {
@@ -919,7 +920,6 @@ function MedicationList({ theme, scrollEnabled = true }: { theme: any; scrollEna
             if (meds.length === 0) return null;
             return (
               <View key={bucket} style={[medStyles.bucket, { backgroundColor: theme.card, borderColor: theme.cardBorder, ...coloredShadow(theme.teal.solid) }]}>
-                <View style={{ height: 4, backgroundColor: theme.teal.solid, borderRadius: 4, marginBottom: 8, marginHorizontal: -14, marginTop: -14 }} />
                 <View style={medStyles.bucketHeader}>
                   <Text style={[medStyles.bucketLabel, { color: theme.textStrong }]}>{BUCKET_LABELS[bucket]}</Text>
                   <Pressable onPress={() => markAllTaken(bucket)}>

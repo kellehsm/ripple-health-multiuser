@@ -19,6 +19,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../theme/ThemeContext";
 import { onSolid } from "../theme/colorUtils";
 import { coloredShadow } from "../theme/styleUtils";
+import { ShadowCard } from "../components/ShadowCard";
 import { api } from "../api/client";
 import { DailySummaryCard, type DailySummaryData } from "../components/DailySummaryCard";
 import { InsightCard, type Insight } from "../components/InsightCard";
@@ -696,20 +697,20 @@ export function OverviewScreen() {
           <Pressable
             ref={tourTrendsRef}
             onPress={() => navigation.getParent()?.navigate("Insights")}
-            style={[styles.card, { backgroundColor: theme.violet.tint, ...coloredShadow(theme.violet.solid) }]}
             accessibilityRole="button"
             accessibilityLabel="View Trends and Insights"
           >
-            <View style={{ height: 4, backgroundColor: theme.violet.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.cardTitle, { color: theme.violet.fg }]}>Trends & Insights</Text>
-                <Text style={{ color: theme.violet.sub, fontSize: 12, lineHeight: 17, marginTop: 4 }}>
-                  See how sleep, spending & glucose relate to your mood
-                </Text>
+            <ShadowCard size="card" bg={theme.violet.tint} accent={theme.violet.solid} rotate={0.5}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.cardTitle, { color: theme.violet.fg }]}>Trends & Insights</Text>
+                  <Text style={{ color: theme.violet.sub, fontSize: 12, lineHeight: 17, marginTop: 4, fontWeight: "600" }}>
+                    See how sleep, spending & glucose relate to your mood
+                  </Text>
+                </View>
+                <Ionicons name="stats-chart" size={28} color={theme.violet.sub} style={{ marginLeft: 12 }} />
               </View>
-              <Ionicons name="stats-chart" size={28} color={theme.violet.sub} style={{ marginLeft: 12 }} />
-            </View>
+            </ShadowCard>
           </Pressable>
         );
 
@@ -731,8 +732,8 @@ export function OverviewScreen() {
 
       case "timeline":
         return (
-          <View ref={tourTimelineRef} style={[styles.card, { backgroundColor: glucoseOutOfRange ? theme.red.tint : theme.card, ...coloredShadow(theme.berry.solid) }]}>
-            <View style={{ height: 4, backgroundColor: theme.berry.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
+          <View ref={tourTimelineRef}>
+          <ShadowCard size="card" bg={glucoseOutOfRange ? theme.red.tint : theme.card} accent={theme.berry.solid}>
             <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Today's timeline</Text>
             {loading ? (
               <SkeletonBox style={{ height: CHART_H, marginBottom: 8 }} />
@@ -882,19 +883,20 @@ export function OverviewScreen() {
                 ) : null}
               </>
             )}
+          </ShadowCard>
           </View>
         );
 
       case "insights":
         return loading ? (
-          <View style={[styles.card, { backgroundColor: theme.card }]}>
+          <ShadowCard size="card">
             <SkeletonBox style={{ height: 18, width: "40%", marginBottom: 12 }} />
             <SkeletonBox style={{ height: 14, width: "90%", marginBottom: 8 }} />
             <SkeletonBox style={{ height: 14, width: "75%" }} />
-          </View>
+          </ShadowCard>
         ) : insights.length > 0 ? (
-          <View ref={tourInsightsRef} style={[styles.card, { backgroundColor: theme.card, ...coloredShadow(theme.violet.solid) }]}>
-            <View style={{ height: 4, backgroundColor: theme.violet.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
+          <View ref={tourInsightsRef}>
+          <ShadowCard size="card" accent={theme.violet.solid}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
               <View style={[styles.insightIcon, { backgroundColor: theme.violet.solid }]}>
                 <Ionicons name="bulb-outline" size={14} color={onSolid(theme.violet.solid)} />
@@ -904,9 +906,10 @@ export function OverviewScreen() {
             {insights.map((obs, i) => (
               <View key={i} style={styles.insightRow}>
                 <View style={[styles.insightDot, { backgroundColor: theme.violet.solid }]} />
-                <Text style={{ color: theme.textStrong, fontSize: 13, lineHeight: 18, flex: 1 }}>{obs}</Text>
+                <Text style={{ color: theme.textStrong, fontSize: 13, lineHeight: 18, flex: 1, fontWeight: "600" }}>{obs}</Text>
               </View>
             ))}
+          </ShadowCard>
           </View>
         ) : null;
 
@@ -914,7 +917,7 @@ export function OverviewScreen() {
         return (
           <>
             {showRecap && digest ? (
-              <View style={[styles.card, { backgroundColor: theme.teal.tint }]}>
+              <ShadowCard size="card" bg={theme.teal.tint} accent={theme.teal.solid}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                   <Text style={[styles.cardTitle, { color: theme.teal.fg }]}>Your week</Text>
                   <Pressable onPress={() => setRecapDismissed(true)} accessibilityLabel="Dismiss weekly recap">
@@ -932,10 +935,9 @@ export function OverviewScreen() {
                     {digest.hobbies.this_week_sessions} hobby session{digest.hobbies.this_week_sessions === 1 ? "" : "s"}
                   </Text>
                 ) : null}
-              </View>
+              </ShadowCard>
             ) : null}
-            <View style={[styles.card, { backgroundColor: theme.card, ...coloredShadow(theme.teal.solid) }]}>
-              <View style={{ height: 4, backgroundColor: theme.teal.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
+            <ShadowCard size="card" accent={theme.teal.solid}>
               <Text style={[styles.cardTitle, { color: theme.textStrong }]}>7-day review</Text>
               {loading ? (
                 <View style={{ gap: 8, marginTop: 10 }}>
@@ -982,13 +984,13 @@ export function OverviewScreen() {
                   <Text style={[styles.emptyText, { color: theme.textSoft }]}>Keep logging meals, steps, and mood — your weekly recap appears here after a few days</Text>
                 </View>
               )}
-            </View>
+            </ShadowCard>
           </>
         );
 
       case "mood_pattern":
         return weeklyData.length > 0 ? (
-          <View style={[styles.card, { backgroundColor: theme.card }]}>
+          <ShadowCard size="card">
             <Text style={[styles.cardTitle, { color: theme.textStrong }]}>7-day mood pattern</Text>
             <Text style={{ color: theme.textSoft, fontSize: 11, marginBottom: 8 }}>
               Same days side by side — draw your own conclusions.
@@ -1031,7 +1033,7 @@ export function OverviewScreen() {
                 );
               })}
             </Svg>
-          </View>
+          </ShadowCard>
         ) : null;
 
       default:
@@ -1144,8 +1146,8 @@ function makeStyles(ink: string, card: string, border: string) {
     content: { padding: 16, gap: 12 },
 
     headerBlock: { marginBottom: 4 },
-    greeting: { fontSize: 22, fontWeight: "800", marginBottom: 2 },
-    dateText: { fontSize: 13, marginBottom: 8 },
+    greeting: { fontSize: 26, fontWeight: "900", letterSpacing: -0.8, marginBottom: 2 },
+    dateText: { fontSize: 13, marginBottom: 8, fontWeight: "600" },
     streakPill: {
       flexDirection: "row",
       alignSelf: "flex-start",
@@ -1179,8 +1181,8 @@ function makeStyles(ink: string, card: string, border: string) {
       marginBottom: 6,
     },
     chipValue: { fontSize: 20, fontWeight: "900", lineHeight: 22, marginBottom: 1 },
-    chipSub: { fontSize: 10, lineHeight: 13 },
-    chipLabel: { fontSize: 9, fontWeight: "800", letterSpacing: 0.6, marginTop: 4 },
+    chipSub: { fontSize: 10, lineHeight: 13, fontWeight: "600" },
+    chipLabel: { fontSize: 9, fontWeight: "900", letterSpacing: 0.6, marginTop: 4, textTransform: "uppercase" },
 
     card: {
       borderRadius: 22,
@@ -1190,7 +1192,7 @@ function makeStyles(ink: string, card: string, border: string) {
       ...coloredShadow("#3FA0A6"),
     },
     cardTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
-    cardTitle: { fontSize: 19, fontWeight: "800" },
+    cardTitle: { fontSize: 19, fontWeight: "900", letterSpacing: -0.5 },
 
     dueNowPill: {
       borderWidth: 2,

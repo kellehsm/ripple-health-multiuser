@@ -11,6 +11,7 @@ import {
 import { LoadingIndicator } from "../components/LoadingIndicator";
 import Svg, { Circle, Line, Rect, Text as SvgText } from "react-native-svg";
 import { useTheme } from "../theme/ThemeContext";
+import { ShadowCard } from "../components/ShadowCard";
 import { api } from "../api/client";
 import { useFocusEffect } from "@react-navigation/native";
 import { TooltipBubble } from "../components/TooltipBubble";
@@ -194,7 +195,7 @@ function CorrCard({ title, xLabel, yLabel, xs, ys, insight, dotColor, lineColor,
   const badge = badgeColors(r, theme);
 
   return (
-    <View style={[s.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+    <ShadowCard size="card" accent={dotColor}>
       <View style={s.cardHead}>
         <Text style={[s.cardTitle, { color: theme.textStrong }]}>{title}</Text>
         {!isNaN(r) && (
@@ -222,7 +223,7 @@ function CorrCard({ title, xLabel, yLabel, xs, ys, insight, dotColor, lineColor,
           <Text style={[s.insight, { color: theme.textSoft }]}>{insight}</Text>
         </>
       )}
-    </View>
+    </ShadowCard>
   );
 }
 
@@ -497,7 +498,7 @@ export function TrendsScreen() {
           )}
 
           {ctxObs.length > 0 && (
-            <View style={[s.card, { borderColor: theme.cardBorder }]}>
+            <ShadowCard size="card" accent={theme.amber.solid}>
               <Text style={[s.cardTitle, { color: theme.textStrong }]}>Context Patterns</Text>
               <Text style={[s.cardSubtitle, { color: theme.textSoft }]}>
                 Based on energy, stress, and social battery you logged during check-ins.
@@ -513,7 +514,7 @@ export function TrendsScreen() {
                   </Text>
                 </View>
               ))}
-            </View>
+            </ShadowCard>
           )}
 
           <View style={{ alignItems: "center" }}>
@@ -553,7 +554,7 @@ function makeStyles(ink: string, card: string) {
   periodNote: { fontSize: 13, marginLeft: 2 },
   card: { borderRadius: 26, borderWidth: 2, padding: 16, gap: 10, backgroundColor: card, ...shadow },
   cardHead:   { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 8 },
-  cardTitle:  { fontSize: 17, fontWeight: "800", flex: 1 },
+  cardTitle:  { fontSize: 17, fontWeight: "900", letterSpacing: -0.5, flex: 1 },
   badge:      { borderRadius: 20, borderWidth: 2, borderColor: ink, paddingHorizontal: 10, paddingVertical: 4, flexShrink: 1 },
   badgeTxt:   { fontSize: 11, fontWeight: "700" },
   axisRow:    { flexDirection: "row", justifyContent: "space-between", marginBottom: -4 },

@@ -13,6 +13,7 @@ import { runOnJS } from "react-native-reanimated";
 import { useTheme } from "../theme/ThemeContext";
 import { onSolid } from "../theme/colorUtils";
 import { coloredShadow } from "../theme/styleUtils";
+import { ShadowCard } from "../components/ShadowCard";
 import { Ionicons } from "@expo/vector-icons";
 import { MetricCard } from "../components/MetricCard";
 import { DefinedTerm } from "../components/DefinedTerm";
@@ -628,8 +629,7 @@ export function HealthScreen() {
       ) : null}
 
       {/* Glucose chart card */}
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder, ...coloredShadow("#CE7A92") }]}>
-        <View style={{ height: 4, backgroundColor: "#CE7A92", borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
+      <ShadowCard size="hero" accent={theme.berry.solid} rotate={-0.5} padding={14}>
         <View style={styles.cardHeaderRow}>
           <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Glucose</Text>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1, justifyContent: "flex-end", flexWrap: "wrap" }}>
@@ -949,7 +949,7 @@ export function HealthScreen() {
             Last reading {status.minutesSinceReading} min ago — sensor may be disconnected.
           </Text>
         ) : null}
-      </View>
+      </ShadowCard>
 
       {/* Heart Rate chart card */}
       {(() => {
@@ -972,8 +972,7 @@ export function HealthScreen() {
         const peakBpm = hrValues.length ? Math.max(...hrValues) : null;
         const HR_RANGE_OPTIONS = [3, 6, 12, 24];
         return (
-          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder, ...coloredShadow("#CE7A92") }]}>
-            <View style={{ height: 4, backgroundColor: "#CE7A92", borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
+          <ShadowCard size="card" accent={theme.berry.solid} padding={14}>
             <View style={styles.cardHeaderRow}>
               <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Heart Rate</Text>
               {peakBpm !== null ? (
@@ -1014,7 +1013,7 @@ export function HealthScreen() {
                 <Polyline points={hrPoints} fill="none" stroke={theme.berry.sub} strokeWidth={2} />
               </Svg>
             )}
-          </View>
+          </ShadowCard>
         );
       })()}
 
@@ -1043,7 +1042,7 @@ function makeStyles(ink: string, card: string) {
     ...coloredShadow("#3FA0A6"),
   },
   cardHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
-  cardTitle: { fontSize: 19, fontWeight: "800" },
+  cardTitle: { fontSize: 19, fontWeight: "900", letterSpacing: -0.5 },
   alertCard: {
     borderRadius: 22,
     borderWidth: 2,
@@ -1079,21 +1078,21 @@ function makeStyles(ink: string, card: string) {
   },
   rangeBtnText: { fontSize: 11, fontWeight: "800", letterSpacing: 0.4 },
   glucoseCurrentBox: {
-    borderRadius: 22,
+    borderRadius: 16,
     borderWidth: 2,
     borderColor: ink,
-    padding: 14,
+    padding: 10,
     marginTop: 12,
     flexDirection: "row",
     alignItems: "center",
     shadowColor: "rgba(60,40,20,0.1)",
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.1,
-    shadowRadius: 12,
+    shadowRadius: 10,
     elevation: 3,
   },
-  glucoseCurrentValue: { fontSize: 52, fontWeight: "900" },
-  glucoseMinAgo: { fontSize: 11, marginTop: 2 },
+  glucoseCurrentValue: { fontSize: 26, fontWeight: "900" },
+  glucoseMinAgo: { fontSize: 10, marginTop: 1 },
   deltaBadge: {
     borderWidth: 2,
     borderColor: "rgba(128,128,128,0.4)",

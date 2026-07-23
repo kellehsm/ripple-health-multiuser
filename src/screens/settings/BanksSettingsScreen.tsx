@@ -185,7 +185,7 @@ export function BanksSettingsScreen() {
 
 const s = StyleSheet.create({
   content: { padding: 16, gap: 12, paddingBottom: 40 },
-  sectionLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.2, marginTop: 4, marginBottom: -4 },
+  sectionLabel: { fontSize: 9, fontWeight: "900", letterSpacing: 0.6, marginTop: 4, marginBottom: -4 },
   connectBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center",
     gap: 8, borderRadius: 22, borderWidth: 2, paddingVertical: 14,

@@ -38,7 +38,7 @@ export function AppearanceSettingsScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
-  groupLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.2, marginTop: 4, marginBottom: -4 },
+  groupLabel: { fontSize: 9, fontWeight: "900", letterSpacing: 0.6, marginTop: 4, marginBottom: -4 },
   card: { borderRadius: 22, borderWidth: 2, padding: 16, gap: 8 },
   sectionDesc: { fontSize: 12, marginBottom: 4 },
   row: {

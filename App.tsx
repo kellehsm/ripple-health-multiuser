@@ -30,7 +30,7 @@ import { SignupScreen } from "./src/screens/SignupScreen";
 import { AppErrorBoundary } from "./src/components/AppErrorBoundary";
 import { navigationRef } from "./src/navigation/navigationRef";
 import { api } from "./src/api/client";
-import { getToken, clearToken, registerLogoutHandler } from "./src/lib/auth";
+import { getToken, setToken, clearToken, registerLogoutHandler } from "./src/lib/auth";
 import {
   isBiometricLockEnabled,
   isCurrentlyUnlocked,
@@ -199,6 +199,9 @@ export default function App() {
       setAppState("login");
       return;
     }
+    // Keep the widget auth file in sync on every launch so the Android home
+    // screen widget can always find the token (setToken is only called at login).
+    setToken(token).catch(() => {});
     try {
       const user = await api.me();
       if (!user) throw new Error("no user");

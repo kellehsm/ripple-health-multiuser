@@ -298,7 +298,7 @@ function makeStyles(ink: string, card: string) {
   content: { padding: 16, gap: 12, paddingBottom: 32 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   card: { borderRadius: 26, borderWidth: 2, borderColor: ink, padding: 16, backgroundColor: card, ...shadow },
-  sectionTitle: { fontSize: 16, fontWeight: "800", marginBottom: 12 },
+  sectionTitle: { fontSize: 16, fontWeight: "900", letterSpacing: -0.5, marginBottom: 12 },
 
   statsRow: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   stat: { flex: 1, minWidth: 70 },
@@ -324,7 +324,7 @@ function makeStyles(ink: string, card: string) {
 
   avgsRow: { flexDirection: "row", gap: 24 },
   avgCell: { flex: 1 },
-  avgVal: { fontSize: 22, fontWeight: "800" },
+  avgVal: { fontSize: 22, fontWeight: "900" },
   avgLbl: { fontSize: 11, marginTop: 2 },
   avgDiffTxt: { fontSize: 12, marginTop: 12 },
 

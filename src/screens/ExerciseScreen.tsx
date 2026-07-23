@@ -3,6 +3,7 @@ import { View, Text, Pressable, ScrollView, StyleSheet, Alert, Image, Modal } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
+import { ShadowCard } from '../components/ShadowCard';
 import { api } from '../api/client';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { WorkoutSetupWizard } from './WorkoutSetupWizard';
@@ -448,12 +449,12 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     elevation: 4,
   },
-  startBtnText: { fontSize: 16, fontWeight: '800' },
+  startBtnText: { fontSize: 16, fontWeight: '900', letterSpacing: -0.3 },
   center: { paddingTop: 40, alignItems: 'center' },
   empty: { paddingTop: 48, alignItems: 'center', gap: 10 },
   emptyTitle: { fontSize: 18, fontWeight: '800' },
   emptySub: { fontSize: 14, textAlign: 'center' },
-  sectionLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2, marginTop: 4 },
+  sectionLabel: { fontSize: 9, fontWeight: '900', letterSpacing: 0.6, marginTop: 4, textTransform: 'uppercase' },
   suggestionCard: {
     borderRadius: 26,
     borderWidth: 2,
