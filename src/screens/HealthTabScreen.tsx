@@ -18,6 +18,8 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { api } from '../api/client';
 import { LongPressActionMenu } from '../components/LongPressActionMenu';
 import { SectionEditorModal, SectionDef } from '../components/SectionEditorModal';
+import { FeatureTour, TourStep } from '../components/FeatureTour';
+import { hasSeenTooltip, markTooltipSeen } from '../utils/tooltipSeen';
 
 const HEALTH_SECTIONS: SectionDef[] = [
   { id: 'cycle_tab',    label: 'Cycle tracking', description: 'Menstrual cycle calendar and logging' },
@@ -1934,11 +1936,22 @@ export function HealthTabScreen() {
   const [activeSubTab, setActiveSubTab] = useState<SubTab>(medication ? 'medication' : 'cycle');
   const [hiddenSections, setHiddenSections] = useState<string[]>([]);
   const [showSectionEditor, setShowSectionEditor] = useState(false);
+  const [showTour, setShowTour] = useState(false);
+  const tourOverviewRef = useRef<View>(null);
+  const tourContentRef = useRef<View>(null);
+
+  const HEALTH_TOUR_STEPS: TourStep[] = [
+    { ref: tourOverviewRef, title: "Health Hub", body: "Switch between Medications, Cycle tracking, and Symptoms using the tiles at the top." },
+    { ref: tourContentRef,  title: "Medication Schedule", body: "See today's scheduled doses and your full medication list. Tap any med for details, dosage, and history." },
+  ];
 
   useFocusEffect(useCallback(() => {
     api.getSettings().then((s: any) => {
       setHiddenSections(s?.health_hidden_sections ?? []);
     }).catch(() => {});
+    hasSeenTooltip("health-tour").then(seen => {
+      if (!seen) { markTooltipSeen("health-tour"); setTimeout(() => setShowTour(true), 600); }
+    });
   }, []));
 
   async function handleSaveSections(newHidden: string[]) {
@@ -1975,13 +1988,17 @@ export function HealthTabScreen() {
                 <Ionicons name="pencil-outline" size={17} color={theme.textSoft} />
               </Pressable>
             </View>
-            <OverviewBlocks onNavigate={setActiveSubTab} activeSubTab={effectiveTab} theme={theme} hiddenSections={hiddenSections} />
+            <View ref={tourOverviewRef}>
+              <OverviewBlocks onNavigate={setActiveSubTab} activeSubTab={effectiveTab} theme={theme} hiddenSections={hiddenSections} />
+            </View>
           </View>
 
           {/* Active sub-tab content — not full-screen scrollable, rendered inline */}
-          {effectiveTab === 'medication' && <MedicationList theme={theme} scrollEnabled={false} />}
-          {effectiveTab === 'cycle' && !hiddenSections.includes('cycle_tab') && <CycleView theme={theme} />}
-          {effectiveTab === 'symptoms' && !hiddenSections.includes('symptoms_tab') && <SymptomsView theme={theme} />}
+          <View ref={tourContentRef}>
+            {effectiveTab === 'medication' && <MedicationList theme={theme} scrollEnabled={false} />}
+            {effectiveTab === 'cycle' && !hiddenSections.includes('cycle_tab') && <CycleView theme={theme} />}
+            {effectiveTab === 'symptoms' && !hiddenSections.includes('symptoms_tab') && <SymptomsView theme={theme} />}
+          </View>
         </ScrollView>
       )}
 
@@ -2000,6 +2017,7 @@ export function HealthTabScreen() {
         onSave={handleSaveSections}
         onCancel={() => setShowSectionEditor(false)}
       />
+      <FeatureTour steps={HEALTH_TOUR_STEPS} visible={showTour} onDone={() => setShowTour(false)} />
     </View>
   );
 }

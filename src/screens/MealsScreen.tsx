@@ -29,6 +29,7 @@ import { UndoBanner } from "../components/UndoBanner";
 import { TooltipBubble } from "../components/TooltipBubble";
 import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
 import { SectionEditorModal, SectionDef } from "../components/SectionEditorModal";
+import { FeatureTour, TourStep } from "../components/FeatureTour";
 
 const MEALS_SECTIONS: SectionDef[] = [
   { id: 'your_usual', label: 'Your Usual',    description: 'Quick-add from saved meals and recipes' },
@@ -664,6 +665,14 @@ export function MealsScreen() {
   const [showTooltip, setShowTooltip] = useState(false);
   const [hiddenSections, setHiddenSections] = useState<string[]>([]);
   const [showSectionEditor, setShowSectionEditor] = useState(false);
+  const [showTour, setShowTour] = useState(false);
+  const tourLogRef = useRef<View>(null);
+  const tourHistoryRef = useRef<View>(null);
+
+  const MEALS_TOUR: TourStep[] = [
+    { ref: tourLogRef,     title: "Log a Meal",   body: "Search thousands of foods, scan a barcode, or pick from your saved usuals. Tap a meal type first to categorise it." },
+    { ref: tourHistoryRef, title: "Today's Meals", body: "Everything you've logged today appears here. Tap any entry to edit or delete it." },
+  ];
 
   useFocusEffect(useCallback(() => {
     if (prefsLoading) return;
@@ -675,6 +684,9 @@ export function MealsScreen() {
         setShowTooltip(true);
         markTooltipSeen("meals");
       }
+    });
+    hasSeenTooltip("meals-tour").then(seen => {
+      if (!seen) { markTooltipSeen("meals-tour"); setTimeout(() => setShowTour(true), 600); }
     });
     api.getSettings().then((s: any) => {
       setHiddenSections(s?.meals_hidden_sections ?? []);
@@ -1169,7 +1181,7 @@ export function MealsScreen() {
       )}
 
       {/* Log a meal card */}
-      <View style={[styles.card, { backgroundColor: theme.coral.tint }]}>
+      <View ref={tourLogRef} style={[styles.card, { backgroundColor: theme.coral.tint }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Log a meal</Text>
 
         {/* Frequent meals + recipes */}
@@ -1461,7 +1473,7 @@ export function MealsScreen() {
       )}
 
       {/* Today's meals list */}
-      <View style={[styles.card, { backgroundColor: theme.coral.tint }]}>
+      <View ref={tourHistoryRef} style={[styles.card, { backgroundColor: theme.coral.tint }]}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Today's meals</Text>
 
         {mealsError ? (
@@ -1587,6 +1599,7 @@ export function MealsScreen() {
         theme={theme}
       />
     )}
+    <FeatureTour steps={MEALS_TOUR} visible={showTour} onDone={() => setShowTour(false)} />
     </View>
   );
 }

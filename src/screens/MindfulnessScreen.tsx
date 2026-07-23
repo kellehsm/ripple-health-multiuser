@@ -610,10 +610,10 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
         startPhaseCountdown(phases[0]);
 
         Animated.sequence([
-          Animated.timing(perimeterAnim, { toValue: 1, duration: inh, useNativeDriver: true }),
-          Animated.timing(perimeterAnim, { toValue: 2, duration: holdIn, useNativeDriver: true }),
-          Animated.timing(perimeterAnim, { toValue: 3, duration: exh, useNativeDriver: true }),
-          Animated.timing(perimeterAnim, { toValue: 4, duration: holdOut, useNativeDriver: true }),
+          Animated.timing(perimeterAnim, { toValue: 1, duration: inh, useNativeDriver: false }),
+          Animated.timing(perimeterAnim, { toValue: 2, duration: holdIn, useNativeDriver: false }),
+          Animated.timing(perimeterAnim, { toValue: 3, duration: exh, useNativeDriver: false }),
+          Animated.timing(perimeterAnim, { toValue: 4, duration: holdOut, useNativeDriver: false }),
         ]).start(({ finished }) => {
           if (finished && runningRef.current) {
             setCycles((c) => c + 1);

@@ -35,10 +35,10 @@ const OUTLINE_STROKE = 0.45;
 const DIM = 90;
 const CONTAINER = Math.round(DIM * 2.4) + 8;
 
-// Ring animation timing (slightly slower than loader for logo context)
-const LOOP_MS  = 1400;
-const RING_DUR =  900;
-const RING_GAP =  160;
+// Ring animation timing — matches heartbeat cycle (HB_DRAW + HB_PAUSE = 1800ms)
+const LOOP_MS  = 1800;
+const RING_DUR = 1200;
+const RING_GAP =  250;
 
 const RING_COLORS = [TEAL, CORAL, PURPLE];
 
