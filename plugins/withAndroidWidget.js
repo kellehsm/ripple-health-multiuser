@@ -32,6 +32,7 @@ function withAndroidWidget(config) {
       const layoutDir = path.join(root, 'app/src/main/res/layout');
       fs.mkdirSync(layoutDir, { recursive: true });
       fs.copyFileSync(path.join(SRC, 'ripple_widget.xml'), path.join(layoutDir, 'ripple_widget.xml'));
+      fs.copyFileSync(path.join(SRC, 'ripple_widget_preview.xml'), path.join(layoutDir, 'ripple_widget_preview.xml'));
 
       const drawableDir = path.join(root, 'app/src/main/res/drawable');
       fs.mkdirSync(drawableDir, { recursive: true });
