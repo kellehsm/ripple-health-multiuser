@@ -332,7 +332,7 @@ export function OverviewScreen() {
   const moodModalShownKeyRef = useRef<string | null>(null);
 
   const [milestoneMessage, setMilestoneMessage] = useState<string | null>(null);
-  const [dashboardLayout, setDashboardLayout] = useState<DashboardLayout>({ order: ["metric_chips","trends_nav","daily_summary","top_insight","timeline","insights","weekly_review","mood_pattern"], hidden: [] });
+  const [dashboardLayout, setDashboardLayout] = useState<DashboardLayout>({ order: ["metric_chips","trends_nav","daily_summary","top_insight","timeline","insights","weekly_review","mood_pattern","cross_metric"], hidden: [] });
   const [showTooltip, setShowTooltip] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
   const [showTour, setShowTour] = useState(false);
@@ -356,6 +356,13 @@ export function OverviewScreen() {
 
   // Correlation toggle
   const [correlation, setCorrelation] = useState<"sleep" | "spend">("sleep");
+
+  // Cross-metric correlation data
+  const [crossMetricData, setCrossMetricData] = useState<{
+    exercise: { with_avg: number | null; without_avg: number | null; with_count: number; without_count: number };
+    sleep: { good_avg: number | null; poor_avg: number | null; good_count: number; poor_count: number };
+    total_days: number;
+  } | null>(null);
 
   // Glucose chart scrub
   const [scrub, setScrub] = useState<{ x: number; mgDl: number; yestMgDl: number | null; time: number } | null>(null);
@@ -461,6 +468,8 @@ export function OverviewScreen() {
         ...r,
         recorded_at: new Date(new Date(r.recorded_at).getTime() + dayMs).toISOString(),
       })));
+
+      api.crossMetric().then((cm: any) => { if (cm) setCrossMetricData(cm); }).catch(() => {});
     } catch {
       toast(Msg.loadData, "error");
     } finally {
@@ -1037,6 +1046,75 @@ export function OverviewScreen() {
             </Svg>
           </ShadowCard>
         ) : null;
+
+      case "cross_metric": {
+        if (!crossMetricData) return null;
+        const { exercise: ex, sleep: sl } = crossMetricData;
+        const hasExercise = ex.with_count >= 3 && ex.without_count >= 3 && ex.with_avg !== null && ex.without_avg !== null;
+        const hasSleep    = sl.good_count >= 3 && sl.poor_count >= 3 && sl.good_avg !== null && sl.poor_avg !== null;
+        if (!hasExercise && !hasSleep) return null;
+        return (
+          <ShadowCard size="card" accent={theme.teal.solid} rotate={-0.3}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <Ionicons name="git-compare-outline" size={18} color={theme.teal.solid} />
+              <Text style={[styles.cardTitle, { color: theme.textStrong, marginBottom: 0 }]}>Cross-metric insights</Text>
+            </View>
+            {hasExercise && (function () {
+              const diff = Math.abs(ex.with_avg! - ex.without_avg!);
+              const lower = Math.min(ex.with_avg!, ex.without_avg!);
+              const withIsLower = ex.with_avg! < ex.without_avg!;
+              return (
+                <View style={{ marginBottom: hasSleep ? 16 : 0 }}>
+                  <Text style={{ color: theme.textSoft, fontSize: 10, fontWeight: "800", letterSpacing: 0.5, marginBottom: 6 }}>EXERCISE DAYS VS REST DAYS</Text>
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    <View style={{ flex: 1, backgroundColor: theme.teal.tint, borderRadius: 10, padding: 10, alignItems: "center" }}>
+                      <Text style={{ color: theme.teal.fg, fontSize: 20, fontWeight: "900" }}>{ex.with_avg}</Text>
+                      <Text style={{ color: theme.teal.sub, fontSize: 10, fontWeight: "700", marginTop: 2 }}>mg/dL avg</Text>
+                      <Text style={{ color: theme.teal.sub, fontSize: 10 }}>exercise days</Text>
+                    </View>
+                    <View style={{ flex: 1, backgroundColor: theme.card, borderRadius: 10, padding: 10, alignItems: "center", borderWidth: 1, borderColor: theme.cardBorder }}>
+                      <Text style={{ color: theme.textStrong, fontSize: 20, fontWeight: "900" }}>{ex.without_avg}</Text>
+                      <Text style={{ color: theme.textSoft, fontSize: 10, fontWeight: "700", marginTop: 2 }}>mg/dL avg</Text>
+                      <Text style={{ color: theme.textSoft, fontSize: 10 }}>rest days</Text>
+                    </View>
+                  </View>
+                  {diff >= 3 && (
+                    <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 8, lineHeight: 16 }}>
+                      Glucose averaged {diff} mg/dL {withIsLower ? "lower" : "higher"} on exercise days ({ex.with_count} days). Observation only — not a finding.
+                    </Text>
+                  )}
+                </View>
+              );
+            })()}
+            {hasSleep && (function () {
+              const diff = Math.abs(sl.good_avg! - sl.poor_avg!);
+              const goodIsLower = sl.good_avg! < sl.poor_avg!;
+              return (
+                <View>
+                  <Text style={{ color: theme.textSoft, fontSize: 10, fontWeight: "800", letterSpacing: 0.5, marginBottom: 6 }}>7+ HOURS SLEEP VS LESS</Text>
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    <View style={{ flex: 1, backgroundColor: theme.amber.tint, borderRadius: 10, padding: 10, alignItems: "center" }}>
+                      <Text style={{ color: theme.amber.fg, fontSize: 20, fontWeight: "900" }}>{sl.good_avg}</Text>
+                      <Text style={{ color: theme.amber.sub, fontSize: 10, fontWeight: "700", marginTop: 2 }}>mg/dL avg</Text>
+                      <Text style={{ color: theme.amber.sub, fontSize: 10 }}>7+ h nights</Text>
+                    </View>
+                    <View style={{ flex: 1, backgroundColor: theme.card, borderRadius: 10, padding: 10, alignItems: "center", borderWidth: 1, borderColor: theme.cardBorder }}>
+                      <Text style={{ color: theme.textStrong, fontSize: 20, fontWeight: "900" }}>{sl.poor_avg}</Text>
+                      <Text style={{ color: theme.textSoft, fontSize: 10, fontWeight: "700", marginTop: 2 }}>mg/dL avg</Text>
+                      <Text style={{ color: theme.textSoft, fontSize: 10 }}>{"<"}7 h nights</Text>
+                    </View>
+                  </View>
+                  {diff >= 3 && (
+                    <Text style={{ color: theme.textSoft, fontSize: 11, marginTop: 8, lineHeight: 16 }}>
+                      Glucose averaged {diff} mg/dL {goodIsLower ? "lower" : "higher"} after 7+ hour nights ({sl.good_count} nights). Observation only — not a finding.
+                    </Text>
+                  )}
+                </View>
+              );
+            })()}
+          </ShadowCard>
+        );
+      }
 
       default:
         return null;

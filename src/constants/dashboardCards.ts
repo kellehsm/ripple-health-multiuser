@@ -6,7 +6,8 @@ export type CardId =
   | "timeline"
   | "insights"
   | "weekly_review"
-  | "mood_pattern";
+  | "mood_pattern"
+  | "cross_metric";
 
 export type DashboardCard = {
   id: CardId;
@@ -22,7 +23,8 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
   { id: "timeline",     label: "Today's timeline",     description: "Glucose chart + chronological event feed" },
   { id: "insights",     label: "Insights",             description: "Pattern observations for today" },
   { id: "weekly_review",label: "7-day review",         description: "Steps, glucose avg, hobbies & flags this week" },
-  { id: "mood_pattern", label: "Mood pattern",         description: "7-day mood vs sleep/spending bar chart" },
+  { id: "mood_pattern",  label: "Mood pattern",          description: "7-day mood vs sleep/spending bar chart" },
+  { id: "cross_metric", label: "Cross-metric insights", description: "How exercise and sleep relate to your glucose averages" },
 ];
 
 export const DEFAULT_CARD_ORDER: CardId[] = DASHBOARD_CARDS.map(c => c.id);

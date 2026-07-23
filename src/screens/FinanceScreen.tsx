@@ -173,6 +173,7 @@ export function FinanceScreen() {
   const [editEntry, setEditEntry] = useState<SpendingEntry | null>(null);
   const [editCategory, setEditCategory] = useState("");
   const [moodSuggestion, setMoodSuggestion] = useState<{ spending_id: string; amount: number; merchant_name: string | null; mood_label: string } | null>(null);
+  const [dailyBudget, setDailyBudget] = useState(100);
   const [editNotes, setEditNotes] = useState("");
   const [editSubmitting, setEditSubmitting] = useState(false);
 
@@ -222,6 +223,7 @@ export function FinanceScreen() {
       });
       api.getSettings().then((s: any) => {
         setHiddenSections(s?.finance_hidden_sections ?? []);
+        setDailyBudget(s?.smart_notifications?.spending_alerts?.daily_budget ?? 100);
       }).catch(() => {});
       load();
       syncPlaid();
@@ -257,6 +259,18 @@ export function FinanceScreen() {
 
   const maxCat = categoryTotals[0]?.[1] ?? 1;
   const grouped = useMemo(() => groupByDay(filtered), [filtered]);
+
+  const monthForecast = useMemo(function () {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const dayOfMonth = now.getDate();
+    const monthEntries = entries.filter(e => new Date(e.logged_at) >= monthStart);
+    const monthTotal = monthEntries.reduce((s, e) => s + Number(e.amount), 0);
+    const projected = dayOfMonth > 0 ? (monthTotal / dayOfMonth) * daysInMonth : monthTotal;
+    const budget = dailyBudget * daysInMonth;
+    return { monthTotal, projected, budget, daysInMonth, dayOfMonth };
+  }, [entries, dailyBudget]);
 
   function resetAdd() {
     setAddAmount("");
@@ -455,6 +469,47 @@ export function FinanceScreen() {
           </ShadowCard>
           </View>
         )}
+
+        {/* Month forecast card */}
+        {entries.length > 0 && monthForecast.dayOfMonth >= 3 && (function () {
+          const overBudget = monthForecast.projected > monthForecast.budget;
+          const pct = Math.min(100, Math.round((monthForecast.projected / monthForecast.budget) * 100));
+          const barColor = pct > 110 ? theme.red?.solid ?? "#ef4444" : pct > 90 ? theme.amber?.solid ?? "#f59e0b" : theme.teal.solid;
+          const remaining = monthForecast.budget - monthForecast.projected;
+          return (
+            <ShadowCard size="card" accent={theme.purple.solid} rotate={-0.3}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                <Ionicons name="trending-up-outline" size={18} color={theme.purple.solid} />
+                <Text style={[s.cardTitle, { color: theme.textStrong, marginBottom: 0 }]}>Month forecast</Text>
+              </View>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 10 }}>
+                <View>
+                  <Text style={{ color: theme.textSoft, fontSize: 10, fontWeight: "800", letterSpacing: 0.5 }}>PROJECTED</Text>
+                  <Text style={{ color: overBudget ? (theme.red?.solid ?? "#ef4444") : theme.textStrong, fontSize: 26, fontWeight: "900", letterSpacing: -0.5 }}>
+                    {formatAmount(monthForecast.projected)}
+                  </Text>
+                </View>
+                <View style={{ alignItems: "flex-end" }}>
+                  <Text style={{ color: theme.textSoft, fontSize: 10, fontWeight: "800", letterSpacing: 0.5 }}>BUDGET</Text>
+                  <Text style={{ color: theme.textSoft, fontSize: 26, fontWeight: "900", letterSpacing: -0.5 }}>
+                    {formatAmount(monthForecast.budget)}
+                  </Text>
+                </View>
+              </View>
+              <View style={{ height: 8, backgroundColor: theme.cardBorder, borderRadius: 4, overflow: "hidden", marginBottom: 8 }}>
+                <View style={{ height: 8, width: (pct + "%") as any, backgroundColor: barColor, borderRadius: 4 }} />
+              </View>
+              <Text style={{ color: overBudget ? (theme.red?.solid ?? "#ef4444") : theme.teal.solid, fontSize: 13, fontWeight: "800" }}>
+                {overBudget
+                  ? formatAmount(Math.abs(remaining)) + " over budget at this pace"
+                  : formatAmount(remaining) + " under budget at this pace"}
+              </Text>
+              <Text style={{ color: theme.textSoft, fontSize: 10, marginTop: 4 }}>
+                Based on {monthForecast.dayOfMonth} days of spending · day {monthForecast.dayOfMonth} of {monthForecast.daysInMonth}
+              </Text>
+            </ShadowCard>
+          );
+        })()}
 
         {/* Spending-Mood suggestion banner */}
         {moodSuggestion && !hiddenSections.includes('mood_suggest') && (

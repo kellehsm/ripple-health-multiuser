@@ -128,6 +128,7 @@ export function HealthScreen() {
   const [weekStepsStart, setWeekStepsStart] = useState(1);
   const [sleepDisplay, setSleepDisplay] = useState<string | null>(null);
   const [sleepStatLine, setSleepStatLine] = useState<string | null>(null);
+  const [sleepAvgSecs, setSleepAvgSecs] = useState<number | null>(null);
   const [hrRangeHours, setHrRangeHours] = useState(6);
   const [hrReadings, setHrReadings] = useState<HRReading[]>([]);
   const [hrLoading, setHrLoading] = useState(false);
@@ -204,6 +205,7 @@ export function HealthScreen() {
       const yest = stats?.yesterday_seconds > 0 ? fmt(stats.yesterday_seconds) : "--";
       const avg = stats?.seven_day_average_seconds > 0 ? fmt(stats.seven_day_average_seconds) : "--";
       setSleepStatLine("Yesterday: " + yest + " · 7d avg: " + avg);
+      if (stats?.seven_day_average_seconds > 0) setSleepAvgSecs(stats.seven_day_average_seconds);
     } catch (e) {
       console.error("Failed to load sleep stats", e);
     }
@@ -614,6 +616,36 @@ export function HealthScreen() {
           />
         </Pressable>
       </View>
+
+      {/* Sleep debt counter */}
+      {sleepAvgSecs !== null && (function () {
+        const GOAL_SECS = 8 * 3600;
+        const debtSecs = (GOAL_SECS - sleepAvgSecs) * 7;
+        const isDebt = debtSecs > 0;
+        const absSecs = Math.abs(debtSecs);
+        const h = Math.floor(absSecs / 3600);
+        const m = Math.floor((absSecs % 3600) / 60);
+        const label = h > 0 ? h + "h " + (m > 0 ? m + "m" : "") : m + "m";
+        const pct = Math.min(100, Math.round((sleepAvgSecs / GOAL_SECS) * 100));
+        const barColor = pct >= 90 ? theme.teal.solid : pct >= 75 ? theme.amber?.solid ?? "#f59e0b" : theme.red?.solid ?? "#ef4444";
+        return (
+          <ShadowCard size="card" accent={theme.amber?.solid ?? "#f59e0b"} rotate={0.3}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <Ionicons name="moon-outline" size={17} color={theme.amber?.solid ?? "#f59e0b"} />
+              <Text style={[styles.cardTitle, { color: theme.textStrong, marginBottom: 0 }]}>Sleep debt</Text>
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6, marginBottom: 8 }}>
+              <Text style={{ fontSize: 28, fontWeight: "900", color: isDebt ? (theme.red?.solid ?? "#ef4444") : theme.teal.solid, letterSpacing: -0.5 }}>
+                {isDebt ? "–" : "+"}{label}
+              </Text>
+              <Text style={{ color: theme.textSoft, fontSize: 12 }}>vs 8h/night goal · past 7 days</Text>
+            </View>
+            <View style={{ height: 7, backgroundColor: theme.cardBorder, borderRadius: 4, overflow: "hidden" }}>
+              <View style={{ height: 7, width: (pct + "%") as any, backgroundColor: barColor, borderRadius: 4 }} />
+            </View>
+          </ShadowCard>
+        );
+      })()}
 
       {/* Glucose alert banner */}
       {status && status.alerts && status.alerts.length > 0 ? (
