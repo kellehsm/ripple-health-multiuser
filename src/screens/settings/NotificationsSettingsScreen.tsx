@@ -13,7 +13,7 @@ type SmartNotifs = {
   evening_checkin?: { enabled?: boolean; hour?: number };
   water_reminder?: { enabled?: boolean; start_hour?: number; goal?: number };
   streak_protection?: { enabled?: boolean; hour?: number };
-  mood_checkin?: { enabled?: boolean };
+  mood_checkin?: { enabled?: boolean; hour?: number };
   book_reminder?: { enabled?: boolean; hour?: number };
   hobby_reminder?: { enabled?: boolean; hour?: number };
   spending_alerts?: { enabled?: boolean; daily_budget?: number };
@@ -216,7 +216,7 @@ export function NotificationsSettingsScreen() {
         <ToggleRow label="Daily end-of-day summary" value={sn.evening_checkin?.enabled === true}
           onChange={(v) => save({ evening_checkin: { ...sn.evening_checkin, enabled: v } })} theme={theme} />
         {sn.evening_checkin?.enabled === true && (
-          <HourChips hours={[19, 20, 21, 22]} current={sn.evening_checkin?.hour ?? 21}
+          <HourChips hours={[17, 18, 19, 20, 21, 22, 23]} current={sn.evening_checkin?.hour ?? 21}
             onSelect={(h) => save({ evening_checkin: { ...sn.evening_checkin, hour: h } })}
             accentColor={theme.teal.bar} theme={theme} />
         )}
@@ -231,7 +231,7 @@ export function NotificationsSettingsScreen() {
         {sn.water_reminder?.enabled === true && (
           <>
             <Text style={[styles.subLabel, { color: theme.textStrong }]}>Start at</Text>
-            <HourChips hours={[7, 8, 9, 10]} current={sn.water_reminder?.start_hour ?? 9}
+            <HourChips hours={[5, 6, 7, 8, 9, 10, 11, 12]} current={sn.water_reminder?.start_hour ?? 9}
               onSelect={(h) => save({ water_reminder: { ...sn.water_reminder, start_hour: h } })}
               accentColor={theme.blue.sub} theme={theme} />
           </>
@@ -254,9 +254,14 @@ export function NotificationsSettingsScreen() {
       {/* Mood check-in */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>MOOD CHECK-IN</Text>
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
-        <Text style={[styles.desc, { color: theme.textSoft }]}>Nudges around 2pm and 7pm if you haven't logged a mood check-in.</Text>
+        <Text style={[styles.desc, { color: theme.textSoft }]}>Nudges you to log a mood check-in if you haven't yet.</Text>
         <ToggleRow label="Remind me to check in" value={sn.mood_checkin?.enabled === true}
           onChange={(v) => save({ mood_checkin: { ...sn.mood_checkin, enabled: v } })} theme={theme} />
+        {sn.mood_checkin?.enabled === true && (
+          <HourChips hours={[8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]} current={sn.mood_checkin?.hour ?? 14}
+            onSelect={(h) => save({ mood_checkin: { ...sn.mood_checkin, hour: h } })}
+            accentColor={theme.teal.bar} theme={theme} />
+        )}
       </View>
 
       {/* Book reminder */}
@@ -265,6 +270,11 @@ export function NotificationsSettingsScreen() {
         <Text style={[styles.desc, { color: theme.textSoft }]}>Reminds you to log reading time if you have a book in progress.</Text>
         <ToggleRow label="Remind me to read" value={sn.book_reminder?.enabled === true}
           onChange={(v) => save({ book_reminder: { ...sn.book_reminder, enabled: v } })} theme={theme} />
+        {sn.book_reminder?.enabled === true && (
+          <HourChips hours={[7, 8, 9, 10, 11, 12, 17, 18, 19, 20, 21, 22]} current={sn.book_reminder?.hour ?? 20}
+            onSelect={(h) => save({ book_reminder: { ...sn.book_reminder, hour: h } })}
+            accentColor={theme.teal.bar} theme={theme} />
+        )}
       </View>
 
       {/* Medication reminders */}
@@ -331,6 +341,11 @@ export function NotificationsSettingsScreen() {
         <Text style={[styles.desc, { color: theme.textSoft }]}>Reminds you to log a hobby or activity if you have any set up.</Text>
         <ToggleRow label="Remind me to log activities" value={sn.hobby_reminder?.enabled === true}
           onChange={(v) => save({ hobby_reminder: { ...sn.hobby_reminder, enabled: v } })} theme={theme} />
+        {sn.hobby_reminder?.enabled === true && (
+          <HourChips hours={[7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]} current={sn.hobby_reminder?.hour ?? 18}
+            onSelect={(h) => save({ hobby_reminder: { ...sn.hobby_reminder, hour: h } })}
+            accentColor={theme.teal.bar} theme={theme} />
+        )}
       </View>
 
       {/* Workout reminder */}
@@ -372,7 +387,7 @@ export function NotificationsSettingsScreen() {
         <ToggleRow label="Remind me to practice" value={sn.mindfulness_reminder?.enabled === true}
           onChange={(v) => save({ mindfulness_reminder: { ...sn.mindfulness_reminder, enabled: v } })} theme={theme} />
         {sn.mindfulness_reminder?.enabled === true && (
-          <HourChips hours={[17, 18, 19, 20, 21]} current={sn.mindfulness_reminder?.hour ?? 20}
+          <HourChips hours={[6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]} current={sn.mindfulness_reminder?.hour ?? 20}
             onSelect={(h) => save({ mindfulness_reminder: { ...sn.mindfulness_reminder, hour: h } })}
             accentColor={theme.teal.sub} theme={theme} />
         )}
@@ -385,7 +400,7 @@ export function NotificationsSettingsScreen() {
         <ToggleRow label="Bedtime reminder" value={sn.sleep_reminder?.enabled === true}
           onChange={(v) => save({ sleep_reminder: { ...sn.sleep_reminder, enabled: v } })} theme={theme} />
         {sn.sleep_reminder?.enabled === true && (
-          <HourChips hours={[20, 21, 22, 23]} current={sn.sleep_reminder?.hour ?? 22}
+          <HourChips hours={[18, 19, 20, 21, 22, 23]} current={sn.sleep_reminder?.hour ?? 22}
             onSelect={(h) => save({ sleep_reminder: { ...sn.sleep_reminder, hour: h } })}
             accentColor={theme.teal.sub} theme={theme} />
         )}
