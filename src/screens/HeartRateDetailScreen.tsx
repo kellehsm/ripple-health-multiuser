@@ -261,12 +261,12 @@ function makeStyles(ink: string, card: string) {
   return StyleSheet.create({
   content: { padding: 16, gap: 12, paddingBottom: 32 },
   card: { borderRadius: 26, borderWidth: 2, borderColor: ink, padding: 16, backgroundColor: card, ...shadow },
-  sectionTitle: { fontSize: 16, fontWeight: "800", marginBottom: 10 },
+  sectionTitle: { fontSize: 16, fontWeight: "900", letterSpacing: -0.5, marginBottom: 10 },
   rowBetween: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 2 },
 
   statsRow: { flexDirection: "row", gap: 8 },
   stat: { flex: 1 },
-  statVal: { fontSize: 20, fontWeight: "800" },
+  statVal: { fontSize: 20, fontWeight: "900" },
   statLbl: { fontSize: 11, marginTop: 2 },
   subNote: { fontSize: 11, marginTop: 8 },
 

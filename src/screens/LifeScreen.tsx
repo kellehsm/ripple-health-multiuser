@@ -20,6 +20,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../theme/ThemeContext";
 import { coloredShadow } from "../theme/styleUtils";
+import { ShadowCard } from "../components/ShadowCard";
 import { IconBadge } from "../components/IconBadge";
 import { api } from "../api/client";
 import { UndoBanner } from "../components/UndoBanner";
@@ -455,7 +456,8 @@ export function LifeScreen() {
 
       {/* Add a book card + Currently reading */}
       {!hiddenSections.includes('books') && (<>
-      <View ref={tourBooksRef} style={[styles.card, { backgroundColor: theme.card }]}>
+      <View ref={tourBooksRef}>
+      <ShadowCard size="card">
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Add a book</Text>
         <View style={styles.searchRow}>
           <TextInput
@@ -498,6 +500,7 @@ export function LifeScreen() {
             ))}
           </View>
         )}
+      </ShadowCard>
       </View>
 
       {/* Currently reading — each book its own card */}
@@ -590,7 +593,8 @@ export function LifeScreen() {
 
       {/* Hobbies section — add form + individual cards */}
       {!hiddenSections.includes('hobbies') && (<>
-      <View ref={tourHobbiesRef} style={[styles.card, { backgroundColor: theme.coral.tint }]}>
+      <View ref={tourHobbiesRef}>
+      <ShadowCard size="card" bg={theme.coral.tint} accent={theme.coral.solid} rotate={-0.4}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Hobbies</Text>
         <View style={styles.searchRow}>
           <TextInput
@@ -645,6 +649,7 @@ export function LifeScreen() {
         {createHobbyError ? <Text style={{ color: theme.teal.sub, fontSize: 12, marginTop: 6 }}>{createHobbyError}</Text> : null}
         {logHobbyError ? <Text style={{ color: theme.teal.sub, fontSize: 12, marginTop: 6 }}>{logHobbyError}</Text> : null}
         {hobbyListError ? <Text style={{ color: theme.teal.sub, fontSize: 12, marginTop: 6 }}>{hobbyListError}</Text> : null}
+      </ShadowCard>
       </View>
 
       {/* Individual hobby cards */}
@@ -769,7 +774,7 @@ function makeStyles(ink: string, card: string, border: string) {
     padding: 14,
     ...coloredShadow("#3B82F6"),
   },
-  cardTitle: { fontSize: 19, fontWeight: "800", marginBottom: 8 },
+  cardTitle: { fontSize: 19, fontWeight: "900", letterSpacing: -0.5, marginBottom: 8 },
 
   searchRow: { flexDirection: "row", gap: 8 },
   textInput: {

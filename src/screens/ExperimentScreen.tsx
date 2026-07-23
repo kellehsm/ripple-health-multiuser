@@ -197,7 +197,7 @@ export function ExperimentScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.solid} />}
       >
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-          <Text style={{ fontSize: 10, fontWeight: "800", letterSpacing: 0.8, color: theme.textSoft }}>YOUR EXPERIMENTS</Text>
+          <Text style={{ fontSize: 9, fontWeight: "900", letterSpacing: 0.6, color: theme.textSoft }}>YOUR EXPERIMENTS</Text>
           <Pressable
             onPress={() => setView("new")}
             style={[s.newBtn, { backgroundColor: theme.teal.solid, borderColor: ink }]}
@@ -282,10 +282,10 @@ export function ExperimentScreen() {
           <Text style={{ color: theme.teal.solid, fontSize: 13, fontWeight: "700" }}>Back</Text>
         </Pressable>
 
-        <Text style={{ fontSize: 10, fontWeight: "800", letterSpacing: 0.8, color: theme.textSoft, marginBottom: 4 }}>NEW EXPERIMENT</Text>
+        <Text style={{ fontSize: 9, fontWeight: "900", letterSpacing: 0.6, color: theme.textSoft, marginBottom: 4 }}>NEW EXPERIMENT</Text>
 
         <View style={s.card}>
-          <Text style={{ color: theme.textSoft, fontSize: 11, fontWeight: "700", letterSpacing: 0.6, marginBottom: 6 }}>WHAT WILL YOU TRY?</Text>
+          <Text style={{ color: theme.textSoft, fontSize: 9, fontWeight: "900", letterSpacing: 0.6, marginBottom: 6 }}>WHAT WILL YOU TRY?</Text>
           <TextInput
             value={description}
             onChangeText={setDescription}
@@ -296,7 +296,7 @@ export function ExperimentScreen() {
             style={[s.textInput, { color: theme.textStrong, borderColor: ink, textAlignVertical: "top", minHeight: 70 }]}
           />
 
-          <Text style={{ color: theme.textSoft, fontSize: 11, fontWeight: "700", letterSpacing: 0.6, marginTop: 14, marginBottom: 8 }}>DURATION</Text>
+          <Text style={{ color: theme.textSoft, fontSize: 9, fontWeight: "900", letterSpacing: 0.6, marginTop: 14, marginBottom: 8 }}>DURATION</Text>
           <View style={{ flexDirection: "row", gap: 8 }}>
             {([3, 7] as const).map(d => (
               <Pressable
@@ -314,7 +314,7 @@ export function ExperimentScreen() {
             ))}
           </View>
 
-          <Text style={{ color: theme.textSoft, fontSize: 11, fontWeight: "700", letterSpacing: 0.6, marginTop: 14, marginBottom: 8 }}>METRICS TO TRACK</Text>
+          <Text style={{ color: theme.textSoft, fontSize: 9, fontWeight: "900", letterSpacing: 0.6, marginTop: 14, marginBottom: 8 }}>METRICS TO TRACK</Text>
           {AVAILABLE_METRICS.map(metric => {
             const checked = selectedMetrics.includes(metric);
             return (
@@ -352,7 +352,7 @@ export function ExperimentScreen() {
         <Text style={{ color: theme.teal.solid, fontSize: 13, fontWeight: "700" }}>Back</Text>
       </Pressable>
 
-      <Text style={{ fontSize: 10, fontWeight: "800", letterSpacing: 0.8, color: theme.textSoft, marginBottom: 4 }}>RESULTS</Text>
+      <Text style={{ fontSize: 9, fontWeight: "900", letterSpacing: 0.6, color: theme.textSoft, marginBottom: 4 }}>RESULTS</Text>
 
       {resultsLoading ? (
         <View style={{ alignItems: "center", paddingTop: 40 }}>
@@ -386,7 +386,7 @@ export function ExperimentScreen() {
           {/* Per-metric rows */}
           {results.results && results.results.length > 0 && (
             <View style={s.card}>
-              <Text style={{ color: theme.textSoft, fontSize: 10, fontWeight: "800", letterSpacing: 0.8, marginBottom: 10 }}>BEFORE VS DURING</Text>
+              <Text style={{ color: theme.textSoft, fontSize: 9, fontWeight: "900", letterSpacing: 0.6, marginBottom: 10 }}>BEFORE VS DURING</Text>
               {results.results.map((r, i) => {
                 if (r.before_value === null && r.during_value === null) return null;
                 const delta = deltaStr(r.before_value, r.during_value, r.metric);

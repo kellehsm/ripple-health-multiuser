@@ -21,6 +21,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
 import { onSolid } from "../theme/colorUtils";
 import { coloredShadow } from "../theme/styleUtils";
+import { ShadowCard } from "../components/ShadowCard";
 import { IconBadge } from "../components/IconBadge";
 import { api } from "../api/client";
 
@@ -1195,7 +1196,8 @@ export function MealsScreen() {
       )}
 
       {/* Log a meal card */}
-      <View ref={tourLogRef} style={[styles.card, { backgroundColor: theme.coral.tint }]}>
+      <View ref={tourLogRef}>
+      <ShadowCard size="card" bg={theme.coral.tint} accent={theme.coral.solid} rotate={-0.5}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Log a meal</Text>
 
         {/* Frequent meals + recipes */}
@@ -1399,11 +1401,12 @@ export function MealsScreen() {
             })}
           </View>
         ) : null}
+      </ShadowCard>
       </View>
 
       {/* Alcohol */}
       {!hiddenSections.includes('booze') && (
-      <View style={[styles.card, { backgroundColor: theme.purple.tint, borderColor: theme.cardBorder, ...coloredShadow("#7B3FBF") }]}>
+      <ShadowCard size="card" bg={theme.purple.tint} accent={theme.purple.solid}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Alcohol</Text>
 
         {subTotals.standard_drinks > 0 && (
@@ -1505,11 +1508,12 @@ export function MealsScreen() {
             })}
           </View>
         ) : null}
-      </View>
+      </ShadowCard>
       )}
 
       {/* Today's meals list */}
-      <View ref={tourHistoryRef} style={[styles.card, { backgroundColor: theme.coral.tint }]}>
+      <View ref={tourHistoryRef}>
+      <ShadowCard size="card" bg={theme.coral.tint} accent={theme.coral.solid}>
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Today's meals</Text>
 
         {mealsError ? (
@@ -1591,6 +1595,7 @@ export function MealsScreen() {
             );
           })
         )}
+      </ShadowCard>
       </View>
 
       <BarcodeScannerModal
@@ -1668,7 +1673,7 @@ function makeStyles(ink: string, card: string, border: string) {
     padding: 14,
     ...coloredShadow("#E8654E"),
   },
-  cardTitle: { fontSize: 19, fontWeight: "800", marginBottom: 8 },
+  cardTitle: { fontSize: 19, fontWeight: "900", letterSpacing: -0.5, marginBottom: 8 },
 
   sectionLabel: { fontSize: 9, fontWeight: "800", letterSpacing: 0.7, marginBottom: 6 },
 

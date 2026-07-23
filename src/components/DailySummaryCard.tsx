@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "../theme/ThemeContext";
+import { ShadowCard } from "./ShadowCard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -62,7 +63,7 @@ export function DailySummaryCard({ data }: { data: DailySummaryData }) {
   const overallColor = scoreColor(overall, theme);
 
   return (
-    <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+    <ShadowCard size="card" style={{ marginBottom: 16 }}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.textStrong }]}>TODAY'S OVERVIEW</Text>
@@ -130,19 +131,13 @@ export function DailySummaryCard({ data }: { data: DailySummaryData }) {
           ))}
         </View>
       )}
-    </View>
+    </ShadowCard>
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 16,
-    marginBottom: 16,
-  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -150,9 +145,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   title: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1.2,
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
   },
   updated: {
     fontSize: 11,

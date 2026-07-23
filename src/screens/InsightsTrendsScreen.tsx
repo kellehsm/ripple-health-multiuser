@@ -23,7 +23,7 @@ export function InsightsTrendsScreen({ route }: any) {
           borderBottomColor: active ? theme.ink : "transparent",
         }}
       >
-        <Text style={{ fontSize: 13, fontWeight: "800", color: active ? theme.textStrong : theme.textSoft }}>
+        <Text style={{ fontSize: 13, fontWeight: "900", color: active ? theme.textStrong : theme.textSoft }}>
           {label}
         </Text>
       </Pressable>

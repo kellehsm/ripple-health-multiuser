@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../theme/ThemeContext";
 import { onSolid } from "../theme/colorUtils";
+import { ShadowCard } from "./ShadowCard";
 
 type ColorKey = "teal" | "blue" | "amber" | "coral" | "pink" | "green" | "red" | "berry" | "violet" | "purple";
 
@@ -36,7 +37,7 @@ export function MetricCard({ label, value, icon, colorKey, sublabel, onAction, v
   const shadowTone = variant === "solid" ? c.solid : "rgba(60,40,20,0.1)";
 
   return (
-    <View style={[styles.tile, { backgroundColor: bg, borderColor: chipBorder, shadowColor: shadowTone }]}>
+    <ShadowCard size="tile" bg={bg} accent={c.solid} padding={10} style={{ flexGrow: 1, minWidth: 130 }}>
       <View style={styles.labelRow}>
         <Ionicons name={icon} size={11} color={iconColor} />
         <Text style={[styles.label, { color: subColor }]}>{label.toUpperCase()}</Text>
@@ -59,25 +60,14 @@ export function MetricCard({ label, value, icon, colorKey, sublabel, onAction, v
           <Text style={[styles.actionLabel, { color: variant === "solid" ? solidText : c.fg }]}>+1</Text>
         </Pressable>
       ) : null}
-    </View>
+    </ShadowCard>
   );
 }
 
 const styles = StyleSheet.create({
-  tile: {
-    borderRadius: 22,
-    borderWidth: 2,
-    padding: 10,
-    flexGrow: 1,
-    minWidth: 130,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 3,
-  },
   labelRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 6 },
-  label: { fontSize: 10, fontWeight: "800", letterSpacing: 0.7 },
-  value: { fontSize: 22, fontWeight: "800" },
+  label: { fontSize: 9, fontWeight: "900", letterSpacing: 0.6, textTransform: "uppercase" },
+  value: { fontSize: 22, fontWeight: "900" },
   sublabel: { fontSize: 11, marginTop: 4 },
   actionButton: {
     marginTop: 8,

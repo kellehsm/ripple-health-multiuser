@@ -272,7 +272,7 @@ export function MedicationImportScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 16 },
-  title: { fontSize: 22, fontWeight: '800', textAlign: 'center' },
+  title: { fontSize: 22, fontWeight: '900', letterSpacing: -0.5, textAlign: 'center' },
   subtitle: { fontSize: 14, textAlign: 'center', lineHeight: 21 },
   primaryBtn: {
     borderWidth: 2,
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     elevation: 4,
     minWidth: 160,
   },
-  primaryBtnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  primaryBtnText: { color: '#fff', fontWeight: '900', fontSize: 15 },
   secondaryBtn: {
     borderWidth: 2,
     borderRadius: 22,
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   mappingHeader: { padding: 16, borderBottomWidth: 1 },
-  mappingTitle: { fontSize: 18, fontWeight: '800' },
+  mappingTitle: { fontSize: 18, fontWeight: '900', letterSpacing: -0.5 },
   mappingSubtitle: { fontSize: 12, marginTop: 2 },
   mappingRow: {
     flexDirection: 'row',

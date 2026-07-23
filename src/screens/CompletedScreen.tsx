@@ -178,11 +178,12 @@ function makeStyles(ink: string) {
   return StyleSheet.create({
     content: { padding: 16, gap: 12 },
     sectionLabel: {
-      fontSize: 11,
-      fontWeight: "800",
-      letterSpacing: 0.8,
+      fontSize: 9,
+      fontWeight: "900",
+      letterSpacing: 0.6,
       marginBottom: -4,
       marginTop: 4,
+      textTransform: "uppercase",
     },
     card: {
       borderRadius: 22,
@@ -196,7 +197,7 @@ function makeStyles(ink: string) {
       elevation: 4,
     },
     cover: { width: 44, height: 64, borderRadius: 4 },
-    title: { fontSize: 15, fontWeight: "800", marginBottom: 2 },
+    title: { fontSize: 15, fontWeight: "900", marginBottom: 2 },
     dateLabel: { fontSize: 11, marginTop: 4 },
     iconTile: {
       width: 44,

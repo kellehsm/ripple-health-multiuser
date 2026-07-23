@@ -307,8 +307,8 @@ const styles = StyleSheet.create({
   statRow: { flexDirection: 'row', padding: 16, gap: 0 },
   hrRow: { flexDirection: 'row', padding: 16, borderTopWidth: 1 },
   stat: { flex: 1, alignItems: 'center', gap: 4 },
-  statValue: { fontSize: 20, fontWeight: '800' },
-  statLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.8 },
+  statValue: { fontSize: 20, fontWeight: '900' },
+  statLabel: { fontSize: 9, fontWeight: '900', letterSpacing: 0.6, textTransform: 'uppercase' },
   statDivider: { width: 1, marginVertical: 2 },
   card: {
     borderRadius: 26,
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     elevation: 4,
   },
-  sectionLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2 },
+  sectionLabel: { fontSize: 9, fontWeight: '900', letterSpacing: 0.6, textTransform: 'uppercase' },
   zoneBar: {
     height: 14,
     borderRadius: 7,

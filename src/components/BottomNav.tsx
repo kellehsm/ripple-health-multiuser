@@ -126,11 +126,12 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 44,
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
     paddingBottom: 2,
   },
   emoji: {
     fontSize: 21,
+    textAlign: 'center',
   },
   label: {
     fontSize: 10,

@@ -835,7 +835,7 @@ function makeStyles(ink: string, card: string, cardBorder: string, _width: numbe
     walkthroughPage: { paddingHorizontal: 28, alignItems: "center", paddingBottom: 24 },
     bigEmojiBlock: { width: 110, height: 110, borderRadius: 28, borderWidth: 3, alignItems: "center", justifyContent: "center", marginBottom: 24, ...shadow },
     bigEmoji: { fontSize: 50 },
-    pageLabel: { fontSize: 11, fontWeight: "800", letterSpacing: 1.4, marginBottom: 8 },
+    pageLabel: { fontSize: 9, fontWeight: "900", letterSpacing: 0.6, marginBottom: 8, textTransform: "uppercase" },
     pageDesc: { fontSize: 16, fontWeight: "500", textAlign: "center", lineHeight: 25, marginBottom: 20 },
 
     // ── Preview: shared ──
@@ -908,7 +908,7 @@ function makeStyles(ink: string, card: string, cardBorder: string, _width: numbe
     stepCard: { margin: 20, borderRadius: 16, borderWidth: 2, padding: 24, ...shadow },
     stepEmojiBlock: { width: 88, height: 88, borderRadius: 22, borderWidth: 2, alignItems: "center", justifyContent: "center", marginBottom: 20, alignSelf: "center", shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 4 },
     stepEmoji: { fontSize: 40 },
-    stepTitle: { fontSize: 24, fontWeight: "800", textAlign: "center", marginBottom: 16 },
+    stepTitle: { fontSize: 24, fontWeight: "900", letterSpacing: -0.8, textAlign: "center", marginBottom: 16 },
     stepDesc: { fontSize: 15, lineHeight: 24 },
     stepDescSmall: { fontSize: 13, lineHeight: 20 },
 
@@ -921,7 +921,7 @@ function makeStyles(ink: string, card: string, cardBorder: string, _width: numbe
 
     // ── Disclosure box ──
     disclosureBox: { marginTop: 16, borderRadius: 22, borderWidth: 2, padding: 14, gap: 4 },
-    disclosureLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 0.8 },
+    disclosureLabel: { fontSize: 9, fontWeight: "900", letterSpacing: 0.6, textTransform: "uppercase" },
     disclosureText: { fontSize: 13, lineHeight: 20, fontWeight: "500" },
 
     errorText: { fontSize: 13, marginTop: 10, lineHeight: 19 },

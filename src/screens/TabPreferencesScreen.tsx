@@ -168,7 +168,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: '900',
+    letterSpacing: -0.8,
     marginBottom: 6,
   },
   subtitle: {

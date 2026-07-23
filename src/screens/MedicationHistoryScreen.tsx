@@ -128,8 +128,8 @@ export function MedicationHistoryScreen() {
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 16, gap: 12, paddingBottom: 40 },
-  medName: { fontSize: 22, fontWeight: '800' },
-  subLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2 },
+  medName: { fontSize: 22, fontWeight: '900', letterSpacing: -0.5 },
+  subLabel: { fontSize: 9, fontWeight: '900', letterSpacing: 0.6, textTransform: 'uppercase' },
   empty: { paddingTop: 48, alignItems: 'center', gap: 10 },
   emptyText: { fontSize: 14 },
   timeline: { gap: 0 },

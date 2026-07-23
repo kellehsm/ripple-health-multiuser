@@ -7,6 +7,7 @@ import { LoadingIndicator } from "../components/LoadingIndicator";
 import { useTheme } from "../theme/ThemeContext";
 import { api } from "../api/client";
 import { EmptyState } from "../components/EmptyState";
+import { ShadowCard } from "../components/ShadowCard";
 
 
 type FilterMode = "glucose" | "meals" | "mood" | "spending";
@@ -96,7 +97,7 @@ export function HistoryScreen() {
         ))}
       </View>
 
-      <View style={styles.card}>
+      <ShadowCard size="card" rotate={-0.4}>
         {mode === "glucose" && (
           <>
             <Text style={[styles.fieldLabel, { color: theme.textSoft }]}>Average above (mg/dL)</Text>
@@ -199,15 +200,15 @@ export function HistoryScreen() {
         >
           {loading
             ? <LoadingIndicator size="small" color="#fff" />
-            : <Text style={{ color: "#fff", fontWeight: "600", fontSize: 14 }}>Search</Text>
+            : <Text style={{ color: "#fff", fontWeight: "900", fontSize: 14 }}>Search</Text>
           }
         </Pressable>
-      </View>
+      </ShadowCard>
 
       {searchError ? (
-        <View style={[styles.card, { backgroundColor: theme.coral.tint }]}>
+        <ShadowCard size="card" bg={theme.coral.tint}>
           <Text style={{ color: theme.coral.fg, fontSize: 13 }}>{searchError}</Text>
-        </View>
+        </ShadowCard>
       ) : null}
 
       {!loading && hasSearched && !searchError && results.length === 0 ? (
@@ -219,7 +220,7 @@ export function HistoryScreen() {
       ) : null}
 
       {results.length > 0 ? (
-        <View style={styles.card}>
+        <ShadowCard size="card">
           <Text style={[styles.resultsHeader, { color: theme.textSoft }]}>{results.length} result{results.length === 1 ? "" : "s"}</Text>
           {results.map((r, i) => (
             <View key={i} style={[styles.resultRow, i > 0 && { borderTopWidth: 0.5, borderTopColor: theme.cardBorder }]}>
@@ -253,7 +254,7 @@ export function HistoryScreen() {
               )}
             </View>
           ))}
-        </View>
+        </ShadowCard>
       ) : null}
     </ScrollView>
   );
@@ -275,7 +276,7 @@ function makeStyles(ink: string, card: string) {
     shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 2,
   },
   card: { borderRadius: 26, borderWidth: 2, borderColor: ink, padding: 16, gap: 10, backgroundColor: card, ...shadow },
-  fieldLabel: { fontSize: 12 },
+  fieldLabel: { fontSize: 9, fontWeight: "900", letterSpacing: 0.6, textTransform: "uppercase" },
   input: {
     borderWidth: 2, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14,
     shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 2,
@@ -286,7 +287,7 @@ function makeStyles(ink: string, card: string) {
     borderRadius: 16, borderWidth: 2, borderColor: ink, paddingVertical: 12, alignItems: "center", marginTop: 4,
     shadowColor: "rgba(60,40,20,0.1)", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 2,
   },
-  resultsHeader: { fontSize: 12, marginBottom: 4 },
+  resultsHeader: { fontSize: 9, fontWeight: "900", letterSpacing: 0.6, textTransform: "uppercase", marginBottom: 4 },
   resultRow: { paddingVertical: 10, gap: 2 },
   resultDate: { fontSize: 11 },
   });

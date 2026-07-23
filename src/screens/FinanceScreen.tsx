@@ -10,6 +10,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
 import { useTheme } from "../theme/ThemeContext";
 import { coloredShadow } from "../theme/styleUtils";
+import { ShadowCard } from "../components/ShadowCard";
 import { IconBadge } from "../components/IconBadge";
 import { api } from "../api/client";
 import { LoadingIndicator } from "../components/LoadingIndicator";
@@ -399,7 +400,8 @@ export function FinanceScreen() {
 
         {/* Total card */}
         {!hiddenSections.includes('totals') && (
-        <View ref={tourTotalsRef} style={[s.card, { backgroundColor: theme.purple.tint, borderColor: theme.purple.solid }]}>
+        <View ref={tourTotalsRef}>
+        <ShadowCard size="hero" bg={theme.purple.tint} accent={theme.purple.solid} rotate={0.6}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
             <View>
               <Text style={[s.label, { color: theme.purple.sub }]}>
@@ -420,12 +422,14 @@ export function FinanceScreen() {
               <Ionicons name="add" size={20} color="#fff" />
             </Pressable>
           </View>
+        </ShadowCard>
         </View>
         )}
 
         {/* Category breakdown chart */}
         {categoryTotals.length > 0 && !hiddenSections.includes('breakdown') && (
-          <View ref={tourBreakdownRef} style={[s.card, { borderColor: theme.cardBorder }]}>
+          <View ref={tourBreakdownRef}>
+          <ShadowCard size="card">
             <Text style={[s.cardTitle, { color: theme.textStrong }]}>Where it went</Text>
             <View style={{ gap: 11, marginTop: 6 }}>
               {categoryTotals.map(([cat, amt]) => {
@@ -443,6 +447,7 @@ export function FinanceScreen() {
                 );
               })}
             </View>
+          </ShadowCard>
           </View>
         )}
 
@@ -747,9 +752,9 @@ function makeStyles(ink: string, card: string, border: string) {
     toggleBtn:   { flex: 1, paddingVertical: 10, alignItems: "center" },
     toggleText:  { fontSize: 13, fontWeight: "700" },
     card:        { borderRadius: 26, borderWidth: 2, padding: 16, backgroundColor: card, ...shadowCard, gap: 4 },
-    cardTitle:   { fontSize: 15, fontWeight: "800", marginBottom: 2 },
-    label:       { fontSize: 10, fontWeight: "800", letterSpacing: 0.8, marginBottom: 2 },
-    totalAmt:    { fontSize: 48, fontWeight: "900", lineHeight: 56 },
+    cardTitle:   { fontSize: 17, fontWeight: "900", letterSpacing: -0.5, marginBottom: 2 },
+    label:       { fontSize: 9, fontWeight: "900", letterSpacing: 0.6, marginBottom: 2, textTransform: "uppercase" },
+    totalAmt:    { fontSize: 44, fontWeight: "900", lineHeight: 52, letterSpacing: -1 },
     sublabel:    { fontSize: 12, marginTop: 2 },
     addBtn: {
       width: 38, height: 38, borderRadius: 19, borderWidth: 2,

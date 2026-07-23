@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { LoadingIndicator } from "../components/LoadingIndicator";
+import { ShadowCard } from "../components/ShadowCard";
 import { RippleLoader } from "../components/RippleLoader";
 import * as Haptics from "expo-haptics";
 import { useFocusEffect } from "@react-navigation/native";
@@ -492,31 +493,22 @@ function TileGrid({ theme, ink, onSelect }: { theme: any; ink: string; onSelect:
         Choose a practice to begin.
       </Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
-        {tiles.map((t) => {
+        {tiles.map((t, idx) => {
           const c = theme[t.colorKey];
+          const rotation = idx % 2 === 0 ? -0.5 : 0.5;
           return (
             <Pressable
               key={t.section}
               onPress={() => onSelect(t.section)}
-              style={{
-                width: "47%",
-                borderRadius: 26,
-                borderWidth: 2,
-                borderColor: ink,
-                backgroundColor: c?.solid ?? ink,
-                padding: 18,
-                shadowColor: "rgba(60,40,20,0.1)",
-                shadowOffset: { width: 0, height: 10 },
-                shadowOpacity: 0.12,
-                shadowRadius: 14,
-                elevation: 4,
-              }}
+              style={{ width: "47%" }}
               accessibilityRole="button"
               accessibilityLabel={t.title}
             >
-              <Text style={{ fontSize: 32, marginBottom: 8 }}>{t.emoji}</Text>
-              <Text style={{ color: "#fff", fontSize: 17, fontWeight: "900", marginBottom: 4 }}>{t.title}</Text>
-              <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 12 }}>{t.desc}</Text>
+              <ShadowCard size="card" bg={c?.solid ?? ink} accent={c?.solid} rotate={rotation} padding={18}>
+                <Text style={{ fontSize: 32, marginBottom: 8 }}>{t.emoji}</Text>
+                <Text style={{ color: "#fff", fontSize: 17, fontWeight: "900", marginBottom: 4 }}>{t.title}</Text>
+                <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 12 }}>{t.desc}</Text>
+              </ShadowCard>
             </Pressable>
           );
         })}
@@ -811,20 +803,22 @@ function BreathingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
       ) : !running ? (
         <>
           <Text style={{ color: theme.textSoft, fontSize: 13, marginBottom: 10 }}>Choose a pattern to begin.</Text>
-          {(Object.keys(BREATH_PATTERNS) as BreathPattern[]).map((key) => {
+          {(Object.keys(BREATH_PATTERNS) as BreathPattern[]).map((key, idx) => {
             const p = BREATH_PATTERNS[key];
+            const rotation = idx % 2 === 0 ? -0.4 : 0.4;
             return (
               <Pressable
                 key={key}
                 onPress={() => handlePatternSelect(key)}
-                style={[styles.card, { backgroundColor: theme.teal.tint, borderColor: theme.teal.solid }]}
                 accessibilityRole="button"
               >
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: theme.teal.fg, fontSize: 16, fontWeight: "800" }}>{p.label}</Text>
-                  <Text style={{ color: theme.teal.sub, fontSize: 12, marginTop: 2 }}>{p.desc}</Text>
-                </View>
-                <Text style={{ color: theme.teal.fg, fontSize: 20 }}>›</Text>
+                <ShadowCard size="card" bg={theme.teal.tint} accent={theme.teal.solid} rotate={rotation}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: theme.teal.fg, fontSize: 16, fontWeight: "900" }}>{p.label}</Text>
+                    <Text style={{ color: theme.teal.sub, fontSize: 12, marginTop: 2 }}>{p.desc}</Text>
+                  </View>
+                  <Text style={{ color: theme.teal.fg, fontSize: 20 }}>›</Text>
+                </ShadowCard>
               </Pressable>
             );
           })}
@@ -1057,18 +1051,19 @@ function GroundingSection({ theme, ink, onBack }: { theme: any; ink: string; onB
             { key: "54321", label: "5-4-3-2-1 Sensory",            desc: "Engage all five senses sequentially" },
             { key: "pmr",   label: "Progressive Muscle Relaxation", desc: "Tense and release each muscle group" },
             { key: "stop",  label: "STOP Technique",                desc: "Stop · Take a breath · Observe · Proceed" },
-          ] as const).map((t) => (
+          ] as const).map((t, idx) => (
             <Pressable
               key={t.key}
               onPress={() => selectTechnique(t.key)}
-              style={[styles.card, { backgroundColor: (theme.coral as any)?.tint, borderColor: (theme.coral as any)?.solid }]}
               accessibilityRole="button"
             >
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: (theme.coral as any)?.fg, fontSize: 15, fontWeight: "800" }}>{t.label}</Text>
-                <Text style={{ color: (theme.coral as any)?.sub, fontSize: 12, marginTop: 2 }}>{t.desc}</Text>
-              </View>
-              <Text style={{ color: (theme.coral as any)?.fg, fontSize: 20 }}>▶</Text>
+              <ShadowCard size="card" bg={(theme.coral as any)?.tint} accent={(theme.coral as any)?.solid} rotate={idx % 2 === 0 ? -0.4 : 0.4}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: (theme.coral as any)?.fg, fontSize: 15, fontWeight: "900" }}>{t.label}</Text>
+                  <Text style={{ color: (theme.coral as any)?.sub, fontSize: 12, marginTop: 2 }}>{t.desc}</Text>
+                </View>
+                <Text style={{ color: (theme.coral as any)?.fg, fontSize: 20 }}>▶</Text>
+              </ShadowCard>
             </Pressable>
           ))}
         </>
@@ -1436,31 +1431,33 @@ function MeditationSection({ theme, ink, onBack }: { theme: any; ink: string; on
           <Text style={{ color: theme.textSoft, fontSize: 13, marginBottom: 10 }}>Choose a session type.</Text>
           <Pressable
             onPress={() => setMode("guided")}
-            style={[styles.card, { backgroundColor: (theme.purple as any)?.tint, borderColor: (theme.purple as any)?.solid }]}
             accessibilityRole="button"
           >
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-              <Text style={{ fontSize: 32 }}>🎵</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: (theme.purple as any)?.fg, fontSize: 16, fontWeight: "800" }}>Guided</Text>
-                <Text style={{ color: (theme.purple as any)?.sub, fontSize: 12, marginTop: 2 }}>Music & voice prompts</Text>
+            <ShadowCard size="card" bg={(theme.purple as any)?.tint} accent={(theme.purple as any)?.solid} rotate={-0.4}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+                <Text style={{ fontSize: 32 }}>🎵</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: (theme.purple as any)?.fg, fontSize: 16, fontWeight: "900" }}>Guided</Text>
+                  <Text style={{ color: (theme.purple as any)?.sub, fontSize: 12, marginTop: 2 }}>Music & voice prompts</Text>
+                </View>
+                <Text style={{ color: (theme.purple as any)?.fg, fontSize: 20 }}>›</Text>
               </View>
-              <Text style={{ color: (theme.purple as any)?.fg, fontSize: 20 }}>›</Text>
-            </View>
+            </ShadowCard>
           </Pressable>
           <Pressable
             onPress={() => setMode("unguided")}
-            style={[styles.card, { backgroundColor: (theme.purple as any)?.tint, borderColor: (theme.purple as any)?.solid }]}
             accessibilityRole="button"
           >
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
-              <Text style={{ fontSize: 32 }}>🔇</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: (theme.purple as any)?.fg, fontSize: 16, fontWeight: "800" }}>Unguided</Text>
-                <Text style={{ color: (theme.purple as any)?.sub, fontSize: 12, marginTop: 2 }}>Quiet timed session</Text>
+            <ShadowCard size="card" bg={(theme.purple as any)?.tint} accent={(theme.purple as any)?.solid} rotate={0.4}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+                <Text style={{ fontSize: 32 }}>🔇</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: (theme.purple as any)?.fg, fontSize: 16, fontWeight: "900" }}>Unguided</Text>
+                  <Text style={{ color: (theme.purple as any)?.sub, fontSize: 12, marginTop: 2 }}>Quiet timed session</Text>
+                </View>
+                <Text style={{ color: (theme.purple as any)?.fg, fontSize: 20 }}>›</Text>
               </View>
-              <Text style={{ color: (theme.purple as any)?.fg, fontSize: 20 }}>›</Text>
-            </View>
+            </ShadowCard>
           </Pressable>
         </>
       ) : !running && !done ? (
@@ -1626,10 +1623,10 @@ function GratitudeSection({ theme, ink, onBack }: { theme: any; ink: string; onB
         </View>
       ) : (
         <>
-          <View style={[styles.card, { backgroundColor: (theme.berry as any)?.tint, borderColor: (theme.berry as any)?.solid }]}>
+          <ShadowCard size="card" bg={(theme.berry as any)?.tint} accent={(theme.berry as any)?.solid} rotate={-0.5}>
             {/* Header row with label and reroll button */}
             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
-              <Text style={{ color: (theme.berry as any)?.sub, fontSize: 10, fontWeight: "800", letterSpacing: 0.8, flex: 1 }}>
+              <Text style={{ color: (theme.berry as any)?.sub, fontSize: 9, fontWeight: "900", letterSpacing: 0.6, flex: 1 }}>
                 TODAY'S PROMPT
               </Text>
               <Pressable
@@ -1648,7 +1645,7 @@ function GratitudeSection({ theme, ink, onBack }: { theme: any; ink: string; onB
             <Text style={{ color: (theme.berry as any)?.fg, fontSize: 16, lineHeight: 24, fontWeight: "600" }}>
               {GRATITUDE_PROMPTS[promptIdx]}
             </Text>
-          </View>
+          </ShadowCard>
 
           <TextInput
             value={text}

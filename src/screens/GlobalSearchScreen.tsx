@@ -225,9 +225,9 @@ const styles = StyleSheet.create({
   },
   content: { paddingHorizontal: 16, paddingBottom: 32 },
   sectionHeader: { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 6 },
-  sectionLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.2 },
+  sectionLabel: { fontSize: 9, fontWeight: "900", letterSpacing: 0.6, textTransform: "uppercase" },
   countBadge: { borderRadius: 8, borderWidth: 1, paddingHorizontal: 6, paddingVertical: 1, marginLeft: 2 },
-  countText: { fontSize: 10, fontWeight: "800" },
+  countText: { fontSize: 9, fontWeight: "900" },
   sectionCard: {
     borderRadius: 22,
     borderWidth: 2,
