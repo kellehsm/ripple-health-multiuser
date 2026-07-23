@@ -12,12 +12,15 @@ import {
   Alert,
   RefreshControl
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { LoadingIndicator } from "../components/LoadingIndicator";
 import { toast, Msg } from "../lib/toast";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../theme/ThemeContext";
+import { coloredShadow } from "../theme/styleUtils";
+import { IconBadge } from "../components/IconBadge";
 import { api } from "../api/client";
 import { UndoBanner } from "../components/UndoBanner";
 import { HOBBY_LIST } from "../lib/hobbyList";
@@ -407,8 +410,9 @@ export function LifeScreen() {
 
   return (
     <View style={{ flex: 1 }}>
+    <LinearGradient colors={[theme.page, theme.gradientEnd]} style={{ flex: 1 }}>
     <ScrollView
-      style={{ backgroundColor: theme.page }}
+      style={{ backgroundColor: "transparent" }}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
     >
@@ -452,6 +456,7 @@ export function LifeScreen() {
       {/* Add a book card + Currently reading */}
       {!hiddenSections.includes('books') && (<>
       <View ref={tourBooksRef} style={[styles.card, { backgroundColor: theme.card }]}>
+        <View style={{ height: 4, backgroundColor: theme.teal.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Add a book</Text>
         <View style={styles.searchRow}>
           <TextInput
@@ -512,6 +517,7 @@ export function LifeScreen() {
 
           return (
             <View key={book.id} style={[styles.card, { backgroundColor: theme.coral.tint }]}>
+              <View style={{ height: 4, backgroundColor: theme.coral.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
               <View style={styles.bookRow}>
                 {book.cover_url ? (
                   <Image source={{ uri: book.cover_url }} style={styles.coverThumb} />
@@ -587,6 +593,7 @@ export function LifeScreen() {
       {/* Hobbies section — add form + individual cards */}
       {!hiddenSections.includes('hobbies') && (<>
       <View ref={tourHobbiesRef} style={[styles.card, { backgroundColor: theme.coral.tint }]}>
+        <View style={{ height: 4, backgroundColor: theme.coral.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Hobbies</Text>
         <View style={styles.searchRow}>
           <TextInput
@@ -656,8 +663,8 @@ export function LifeScreen() {
           return (
             <View key={hobby.id} style={[styles.card, { backgroundColor: theme.coral.tint }]}>
               <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
-                <View style={[styles.hobbyIconTile, { backgroundColor: theme.coral.solid }]}>
-                  <Ionicons name="star" size={16} color="#fff" />
+                <View style={{ marginRight: 12 }}>
+                  <IconBadge name="star" color="#fff" bgColor={theme.coral.solid} size={16} containerSize={44} borderRadius={16} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.hobbyName, { color: theme.textStrong }]}>{hobby.name}</Text>
@@ -718,6 +725,7 @@ export function LifeScreen() {
       )}
       </>)}
     </ScrollView>
+    </LinearGradient>
     {undoInfo && (
       <UndoBanner
         message={undoInfo.type === "book" ? `"${(undoInfo.data as Book).title}" deleted` : `"${(undoInfo.data as Hobby).name}" deleted`}
@@ -762,11 +770,7 @@ function makeStyles(ink: string, card: string, border: string) {
     borderWidth: 2,
     borderColor: border,
     padding: 14,
-    shadowColor: "rgba(60,40,20,0.1)",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    elevation: 4,
+    ...coloredShadow("#3B82F6"),
   },
   cardTitle: { fontSize: 19, fontWeight: "800", marginBottom: 8 },
 

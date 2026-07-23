@@ -11,12 +11,14 @@ import {
   PanResponder,
   AccessibilityInfo,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import Svg, { Rect, Text as SvgText, Polyline, Circle, Line as SvgLine } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../theme/ThemeContext";
 import { onSolid } from "../theme/colorUtils";
+import { coloredShadow } from "../theme/styleUtils";
 import { api } from "../api/client";
 import { DailySummaryCard, type DailySummaryData } from "../components/DailySummaryCard";
 import { InsightCard, type Insight } from "../components/InsightCard";
@@ -694,10 +696,11 @@ export function OverviewScreen() {
           <Pressable
             ref={tourTrendsRef}
             onPress={() => navigation.getParent()?.navigate("Insights")}
-            style={[styles.card, { backgroundColor: theme.violet.tint }]}
+            style={[styles.card, { backgroundColor: theme.violet.tint, ...coloredShadow(theme.violet.solid) }]}
             accessibilityRole="button"
             accessibilityLabel="View Trends and Insights"
           >
+            <View style={{ height: 4, backgroundColor: theme.violet.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.cardTitle, { color: theme.violet.fg }]}>Trends & Insights</Text>
@@ -728,7 +731,8 @@ export function OverviewScreen() {
 
       case "timeline":
         return (
-          <View ref={tourTimelineRef} style={[styles.card, { backgroundColor: glucoseOutOfRange ? theme.red.tint : theme.card }]}>
+          <View ref={tourTimelineRef} style={[styles.card, { backgroundColor: glucoseOutOfRange ? theme.red.tint : theme.card, ...coloredShadow(theme.berry.solid) }]}>
+            <View style={{ height: 4, backgroundColor: theme.berry.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
             <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Today's timeline</Text>
             {loading ? (
               <SkeletonBox style={{ height: CHART_H, marginBottom: 8 }} />
@@ -889,7 +893,8 @@ export function OverviewScreen() {
             <SkeletonBox style={{ height: 14, width: "75%" }} />
           </View>
         ) : insights.length > 0 ? (
-          <View ref={tourInsightsRef} style={[styles.card, { backgroundColor: theme.card }]}>
+          <View ref={tourInsightsRef} style={[styles.card, { backgroundColor: theme.card, ...coloredShadow(theme.violet.solid) }]}>
+            <View style={{ height: 4, backgroundColor: theme.violet.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
               <View style={[styles.insightIcon, { backgroundColor: theme.violet.solid }]}>
                 <Ionicons name="bulb-outline" size={14} color={onSolid(theme.violet.solid)} />
@@ -929,7 +934,8 @@ export function OverviewScreen() {
                 ) : null}
               </View>
             ) : null}
-            <View style={[styles.card, { backgroundColor: theme.card }]}>
+            <View style={[styles.card, { backgroundColor: theme.card, ...coloredShadow(theme.teal.solid) }]}>
+              <View style={{ height: 4, backgroundColor: theme.teal.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
               <Text style={[styles.cardTitle, { color: theme.textStrong }]}>7-day review</Text>
               {loading ? (
                 <View style={{ gap: 8, marginTop: 10 }}>
@@ -1035,8 +1041,9 @@ export function OverviewScreen() {
 
   return (
     <View style={{ flex: 1 }}>
+    <LinearGradient colors={[theme.page, theme.gradientEnd]} style={{ flex: 1 }}>
     <ScrollView
-      style={{ backgroundColor: theme.page }}
+      style={{ backgroundColor: "transparent" }}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.teal.bar} />}
       accessibilityLabel="Today dashboard"
@@ -1095,7 +1102,7 @@ export function OverviewScreen() {
       {/* ── Today's Snapshot label ── */}
       {!loading && (
         <>
-          <Text style={{ fontSize: 22, fontWeight: "900", letterSpacing: 0.4, color: theme.textStrong }}>Today's Snapshot</Text>
+          <Text style={{ fontSize: 28, fontWeight: "900", letterSpacing: 0.4, color: theme.textStrong }}>Today's Snapshot</Text>
         </>
       )}
 
@@ -1108,6 +1115,7 @@ export function OverviewScreen() {
           return <React.Fragment key={id}>{node}</React.Fragment>;
         })}
     </ScrollView>
+    </LinearGradient>
     {milestoneMessage && (
       <MilestoneBanner
         message={milestoneMessage}
@@ -1160,11 +1168,7 @@ function makeStyles(ink: string, card: string, border: string) {
       borderWidth: 2,
       padding: 10,
       backgroundColor: card,
-      shadowColor: "rgba(60,40,20,0.1)",
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.1,
-      shadowRadius: 12,
-      elevation: 3,
+      ...coloredShadow("#3FA0A6", 0.8),
     },
     chipIcon: {
       width: 22,
@@ -1174,7 +1178,7 @@ function makeStyles(ink: string, card: string, border: string) {
       justifyContent: "center",
       marginBottom: 6,
     },
-    chipValue: { fontSize: 16, fontWeight: "800", lineHeight: 18, marginBottom: 1 },
+    chipValue: { fontSize: 20, fontWeight: "900", lineHeight: 22, marginBottom: 1 },
     chipSub: { fontSize: 10, lineHeight: 13 },
     chipLabel: { fontSize: 9, fontWeight: "800", letterSpacing: 0.6, marginTop: 4 },
 
@@ -1183,11 +1187,7 @@ function makeStyles(ink: string, card: string, border: string) {
       borderWidth: 2,
       borderColor: border,
       padding: 14,
-      shadowColor: "rgba(60,40,20,0.1)",
-      shadowOffset: { width: 0, height: 10 },
-      shadowOpacity: 0.12,
-      shadowRadius: 14,
-      elevation: 4,
+      ...coloredShadow("#3FA0A6"),
     },
     cardTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
     cardTitle: { fontSize: 19, fontWeight: "800" },
