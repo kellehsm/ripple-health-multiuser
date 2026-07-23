@@ -400,7 +400,6 @@ export function FinanceScreen() {
         {/* Total card */}
         {!hiddenSections.includes('totals') && (
         <View ref={tourTotalsRef} style={[s.card, { backgroundColor: theme.purple.tint, borderColor: theme.purple.solid }]}>
-          <View style={{ height: 4, backgroundColor: theme.purple.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -16, marginTop: -16 }} />
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
             <View>
               <Text style={[s.label, { color: theme.purple.sub }]}>
@@ -427,7 +426,6 @@ export function FinanceScreen() {
         {/* Category breakdown chart */}
         {categoryTotals.length > 0 && !hiddenSections.includes('breakdown') && (
           <View ref={tourBreakdownRef} style={[s.card, { borderColor: theme.cardBorder }]}>
-            <View style={{ height: 4, backgroundColor: theme.purple.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -16, marginTop: -16 }} />
             <Text style={[s.cardTitle, { color: theme.textStrong }]}>Where it went</Text>
             <View style={{ gap: 11, marginTop: 6 }}>
               {categoryTotals.map(([cat, amt]) => {

@@ -456,7 +456,6 @@ export function LifeScreen() {
       {/* Add a book card + Currently reading */}
       {!hiddenSections.includes('books') && (<>
       <View ref={tourBooksRef} style={[styles.card, { backgroundColor: theme.card }]}>
-        <View style={{ height: 4, backgroundColor: theme.teal.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Add a book</Text>
         <View style={styles.searchRow}>
           <TextInput
@@ -517,7 +516,6 @@ export function LifeScreen() {
 
           return (
             <View key={book.id} style={[styles.card, { backgroundColor: theme.coral.tint }]}>
-              <View style={{ height: 4, backgroundColor: theme.coral.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
               <View style={styles.bookRow}>
                 {book.cover_url ? (
                   <Image source={{ uri: book.cover_url }} style={styles.coverThumb} />
@@ -593,7 +591,6 @@ export function LifeScreen() {
       {/* Hobbies section — add form + individual cards */}
       {!hiddenSections.includes('hobbies') && (<>
       <View ref={tourHobbiesRef} style={[styles.card, { backgroundColor: theme.coral.tint }]}>
-        <View style={{ height: 4, backgroundColor: theme.coral.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Hobbies</Text>
         <View style={styles.searchRow}>
           <TextInput

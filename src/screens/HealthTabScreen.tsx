@@ -919,7 +919,6 @@ function MedicationList({ theme, scrollEnabled = true }: { theme: any; scrollEna
             if (meds.length === 0) return null;
             return (
               <View key={bucket} style={[medStyles.bucket, { backgroundColor: theme.card, borderColor: theme.cardBorder, ...coloredShadow(theme.teal.solid) }]}>
-                <View style={{ height: 4, backgroundColor: theme.teal.solid, borderRadius: 4, marginBottom: 8, marginHorizontal: -14, marginTop: -14 }} />
                 <View style={medStyles.bucketHeader}>
                   <Text style={[medStyles.bucketLabel, { color: theme.textStrong }]}>{BUCKET_LABELS[bucket]}</Text>
                   <Pressable onPress={() => markAllTaken(bucket)}>

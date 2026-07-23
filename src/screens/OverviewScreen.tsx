@@ -700,7 +700,6 @@ export function OverviewScreen() {
             accessibilityRole="button"
             accessibilityLabel="View Trends and Insights"
           >
-            <View style={{ height: 4, backgroundColor: theme.violet.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.cardTitle, { color: theme.violet.fg }]}>Trends & Insights</Text>
@@ -732,7 +731,6 @@ export function OverviewScreen() {
       case "timeline":
         return (
           <View ref={tourTimelineRef} style={[styles.card, { backgroundColor: glucoseOutOfRange ? theme.red.tint : theme.card, ...coloredShadow(theme.berry.solid) }]}>
-            <View style={{ height: 4, backgroundColor: theme.berry.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
             <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Today's timeline</Text>
             {loading ? (
               <SkeletonBox style={{ height: CHART_H, marginBottom: 8 }} />
@@ -894,7 +892,6 @@ export function OverviewScreen() {
           </View>
         ) : insights.length > 0 ? (
           <View ref={tourInsightsRef} style={[styles.card, { backgroundColor: theme.card, ...coloredShadow(theme.violet.solid) }]}>
-            <View style={{ height: 4, backgroundColor: theme.violet.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
               <View style={[styles.insightIcon, { backgroundColor: theme.violet.solid }]}>
                 <Ionicons name="bulb-outline" size={14} color={onSolid(theme.violet.solid)} />
@@ -935,7 +932,6 @@ export function OverviewScreen() {
               </View>
             ) : null}
             <View style={[styles.card, { backgroundColor: theme.card, ...coloredShadow(theme.teal.solid) }]}>
-              <View style={{ height: 4, backgroundColor: theme.teal.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
               <Text style={[styles.cardTitle, { color: theme.textStrong }]}>7-day review</Text>
               {loading ? (
                 <View style={{ gap: 8, marginTop: 10 }}>

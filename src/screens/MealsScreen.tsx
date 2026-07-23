@@ -1196,7 +1196,6 @@ export function MealsScreen() {
 
       {/* Log a meal card */}
       <View ref={tourLogRef} style={[styles.card, { backgroundColor: theme.coral.tint }]}>
-        <View style={{ height: 4, backgroundColor: theme.coral.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Log a meal</Text>
 
         {/* Frequent meals + recipes */}
@@ -1405,7 +1404,6 @@ export function MealsScreen() {
       {/* Alcohol */}
       {!hiddenSections.includes('booze') && (
       <View style={[styles.card, { backgroundColor: theme.purple.tint, borderColor: theme.cardBorder, ...coloredShadow("#7B3FBF") }]}>
-        <View style={{ height: 4, backgroundColor: theme.purple.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Alcohol</Text>
 
         {subTotals.standard_drinks > 0 && (
@@ -1512,7 +1510,6 @@ export function MealsScreen() {
 
       {/* Today's meals list */}
       <View ref={tourHistoryRef} style={[styles.card, { backgroundColor: theme.coral.tint }]}>
-        <View style={{ height: 4, backgroundColor: theme.coral.solid, borderRadius: 4, marginBottom: 10, marginHorizontal: -14, marginTop: -14 }} />
         <Text style={[styles.cardTitle, { color: theme.textStrong }]}>Today's meals</Text>
 
         {mealsError ? (
