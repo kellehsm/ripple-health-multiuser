@@ -124,26 +124,28 @@ class RippleWidgetProvider : AppWidgetProvider() {
         null
     }
 
-    private fun fetchGlucose(token: String): String = try {
-        val conn = URL("$API/glucose/status").openConnection() as HttpsURLConnection
-        conn.connectTimeout = 5000
-        conn.readTimeout = 5000
-        conn.setRequestProperty("Authorization", "Bearer $token")
-        val code = conn.responseCode
-        if (code == 401 || code == 403) {
+    private fun fetchGlucose(token: String): String {
+        return try {
+            val conn = URL("$API/glucose/status").openConnection() as HttpsURLConnection
+            conn.connectTimeout = 5000
+            conn.readTimeout = 5000
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            val code = conn.responseCode
+            if (code == 401 || code == 403) {
+                conn.disconnect()
+                return "Auth err"
+            }
+            val obj = JSONObject(conn.inputStream.bufferedReader().readText())
             conn.disconnect()
-            return "Auth err"
+            if (obj.optBoolean("hasData", false)) {
+                val mg = obj.optInt("mg_dl", 0)
+                val arrow = obj.optString("arrow", "").trim()
+                if (arrow.isNotEmpty()) "$mg $arrow" else "$mg mg/dL"
+            } else "--"
+        } catch (e: Exception) {
+            Log.w(TAG, "fetchGlucose failed", e)
+            "Err"
         }
-        val obj = JSONObject(conn.inputStream.bufferedReader().readText())
-        conn.disconnect()
-        if (obj.optBoolean("hasData", false)) {
-            val mg = obj.optInt("mg_dl", 0)
-            val arrow = obj.optString("arrow", "").trim()
-            if (arrow.isNotEmpty()) "$mg $arrow" else "$mg mg/dL"
-        } else "--"
-    } catch (e: Exception) {
-        Log.w(TAG, "fetchGlucose failed", e)
-        "Err"
     }
 
     private fun fetchSteps(token: String): String = try {
