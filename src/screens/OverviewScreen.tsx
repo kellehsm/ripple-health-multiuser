@@ -34,6 +34,7 @@ import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
 import { DashboardEditorModal } from "../components/DashboardEditorModal";
 import { FeatureTour, type TourStep } from "../components/FeatureTour";
 import { useFocusEffect } from "@react-navigation/native";
+import { maybeFireWeeklyDigest } from "../lib/smartNotifications";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -80,6 +81,9 @@ type WeeklyDigest = {
   heart_rate: { has_data: boolean; resting?: number; peak?: number };
   steps: { this_week: number; last_week: number };
   hobbies: { this_week_sessions: number; last_week_sessions: number };
+  exercise?: { sessions_this_week: number; total_minutes_this_week: number };
+  books?: { finished_this_month: number };
+  mood?: { avg_this_week: number | null };
 };
 
 type GlucoseStatus = { hasData: boolean; mg_dl: number | null; arrow: string | null };
@@ -310,6 +314,7 @@ export function OverviewScreen() {
   const [yesterdayGlucose, setYesterdayGlucose] = useState<GlucoseReading[]>([]);
   const [dayEvents, setDayEvents] = useState<DayEvent[]>([]);
   const [streak, setStreak] = useState(0);
+  const [allStreaks, setAllStreaks] = useState<{ label: string; icon: string; count: number; color: (t: any) => string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [recapDismissed, setRecapDismissed] = useState(false);
@@ -436,10 +441,21 @@ export function OverviewScreen() {
       setWeeklyData(Array.isArray(weekly) ? weekly : []);
       setPatternEvents(Array.isArray(pattern) ? pattern : []);
       setDigest(dig ?? null);
-      const mealStreak = Number(streakData?.meal_streak ?? 0);
-      const moodStreak = Number(streakData?.mood_streak ?? 0);
+      if (dig) maybeFireWeeklyDigest(dig).catch(() => {});
+      const mealStreak     = Number(streakData?.meal_streak     ?? 0);
+      const moodStreak     = Number(streakData?.mood_streak     ?? 0);
+      const stepsStreak    = Number(streakData?.steps_streak    ?? 0);
+      const exerciseStreak = Number(streakData?.exercise_streak ?? 0);
+      const readingStreak  = Number(streakData?.reading_streak  ?? 0);
       const stepsVal = steps?.steps ?? null;
       setStreak(mealStreak);
+      setAllStreaks([
+        { label: "Meals",    icon: "🍽",  count: mealStreak,     color: (t: any) => t.teal.solid },
+        { label: "Mood",     icon: "😊",  count: moodStreak,     color: (t: any) => t.violet?.solid ?? t.purple.solid },
+        { label: "Steps",    icon: "👟",  count: stepsStreak,    color: (t: any) => t.teal.solid },
+        { label: "Exercise", icon: "🏋️", count: exerciseStreak, color: (t: any) => t.coral.solid },
+        { label: "Reading",  icon: "📚",  count: readingStreak,  color: (t: any) => t.amber.solid },
+      ].filter(s => s.count >= 2));
       setGlucoseStatus(glucSt);
       setTodayMeals(Array.isArray(meals) ? meals : []);
       setStepsCount(stepsVal);
@@ -975,6 +991,28 @@ export function OverviewScreen() {
                       <Text style={[styles.summaryBlockValue, { color: onSolid(theme.coral.solid) }]}>{digest.meal_flags.length === 0 ? "All clear" : digest.meal_flags.length + " flagged"}</Text>
                     </View>
                   </View>
+                  {(digest.exercise || digest.books || digest.mood) ? (
+                    <View style={styles.summaryBlocksRow}>
+                      {digest.exercise && digest.exercise.sessions_this_week > 0 ? (
+                        <View style={[styles.summaryBlock, { backgroundColor: theme.coral.solid }]}>
+                          <Text style={[styles.summaryBlockLabel, { color: onSolid(theme.coral.solid) }]}>WORKOUTS</Text>
+                          <Text style={[styles.summaryBlockValue, { color: onSolid(theme.coral.solid) }]}>{digest.exercise.sessions_this_week} sess.</Text>
+                        </View>
+                      ) : null}
+                      {digest.books && digest.books.finished_this_month > 0 ? (
+                        <View style={[styles.summaryBlock, { backgroundColor: theme.amber.solid }]}>
+                          <Text style={[styles.summaryBlockLabel, { color: onSolid(theme.amber.solid) }]}>BOOKS</Text>
+                          <Text style={[styles.summaryBlockValue, { color: onSolid(theme.amber.solid) }]}>{digest.books.finished_this_month} done</Text>
+                        </View>
+                      ) : null}
+                      {digest.mood?.avg_this_week != null ? (
+                        <View style={[styles.summaryBlock, { backgroundColor: theme.violet?.solid ?? theme.purple.solid }]}>
+                          <Text style={[styles.summaryBlockLabel, { color: onSolid(theme.violet?.solid ?? theme.purple.solid) }]}>MOOD AVG</Text>
+                          <Text style={[styles.summaryBlockValue, { color: onSolid(theme.violet?.solid ?? theme.purple.solid) }]}>{digest.mood.avg_this_week.toFixed(1)} / 5</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  ) : null}
                   {digest.heart_rate.has_data ? (
                     <>
                       <Text style={[styles.digestLabel, { color: theme.textSoft }]}>Heart rate</Text>
@@ -1159,11 +1197,19 @@ export function OverviewScreen() {
           </Pressable>
         </View>
 
-        {streak >= 3 ? (
-          <View style={[styles.streakPill, { backgroundColor: theme.teal.solid }]}>
-            <Ionicons name="flame" size={12} color={onSolid(theme.teal.solid)} style={{ marginRight: 4 }} />
-            <Text style={[styles.streakPillText, { color: onSolid(theme.teal.solid) }]}>{streak} DAY STREAK</Text>
-          </View>
+        {allStreaks.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 6 }}>
+            <View style={{ flexDirection: "row", gap: 6, paddingRight: 4 }}>
+              {allStreaks.map(s => (
+                <View key={s.label} style={[styles.streakPill, { backgroundColor: s.color(theme) }]}>
+                  <Text style={{ fontSize: 11, marginRight: 4 }}>{s.icon}</Text>
+                  <Text style={[styles.streakPillText, { color: onSolid(s.color(theme)) }]}>
+                    {s.count}d {s.label.toUpperCase()}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
         ) : null}
       </View>
 

@@ -185,6 +185,12 @@ export function SettingsScreen() {
         <MenuRow title="Preferences" subtitle="Week start day & home screen" onPress={() => nav("SettingsPreferences")} theme={theme} />
       </View>
 
+      {/* Friend Sharing */}
+      <Text style={[styles.groupLabel, { color: theme.textSoft }]}>FRIEND SHARING</Text>
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
+        <MenuRow title="Friend Sharing" subtitle="Control what friends can see and social notifications" onPress={() => nav("SettingsSocial")} theme={theme} />
+      </View>
+
       {/* Export & Backup */}
       <Text style={[styles.groupLabel, { color: theme.textSoft }]}>EXPORT & BACKUP</Text>
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.cardBorder }]}>
