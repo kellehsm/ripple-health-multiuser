@@ -310,6 +310,7 @@ export function OverviewScreen() {
   const [yesterdayGlucose, setYesterdayGlucose] = useState<GlucoseReading[]>([]);
   const [dayEvents, setDayEvents] = useState<DayEvent[]>([]);
   const [streak, setStreak] = useState(0);
+  const [allStreaks, setAllStreaks] = useState<{ label: string; icon: string; count: number; color: (t: any) => string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [recapDismissed, setRecapDismissed] = useState(false);
@@ -436,10 +437,20 @@ export function OverviewScreen() {
       setWeeklyData(Array.isArray(weekly) ? weekly : []);
       setPatternEvents(Array.isArray(pattern) ? pattern : []);
       setDigest(dig ?? null);
-      const mealStreak = Number(streakData?.meal_streak ?? 0);
-      const moodStreak = Number(streakData?.mood_streak ?? 0);
+      const mealStreak     = Number(streakData?.meal_streak     ?? 0);
+      const moodStreak     = Number(streakData?.mood_streak     ?? 0);
+      const stepsStreak    = Number(streakData?.steps_streak    ?? 0);
+      const exerciseStreak = Number(streakData?.exercise_streak ?? 0);
+      const readingStreak  = Number(streakData?.reading_streak  ?? 0);
       const stepsVal = steps?.steps ?? null;
       setStreak(mealStreak);
+      setAllStreaks([
+        { label: "Meals",    icon: "🍽",  count: mealStreak,     color: (t: any) => t.teal.solid },
+        { label: "Mood",     icon: "😊",  count: moodStreak,     color: (t: any) => t.violet?.solid ?? t.purple.solid },
+        { label: "Steps",    icon: "👟",  count: stepsStreak,    color: (t: any) => t.teal.solid },
+        { label: "Exercise", icon: "🏋️", count: exerciseStreak, color: (t: any) => t.coral.solid },
+        { label: "Reading",  icon: "📚",  count: readingStreak,  color: (t: any) => t.amber.solid },
+      ].filter(s => s.count >= 2));
       setGlucoseStatus(glucSt);
       setTodayMeals(Array.isArray(meals) ? meals : []);
       setStepsCount(stepsVal);
@@ -1159,11 +1170,19 @@ export function OverviewScreen() {
           </Pressable>
         </View>
 
-        {streak >= 3 ? (
-          <View style={[styles.streakPill, { backgroundColor: theme.teal.solid }]}>
-            <Ionicons name="flame" size={12} color={onSolid(theme.teal.solid)} style={{ marginRight: 4 }} />
-            <Text style={[styles.streakPillText, { color: onSolid(theme.teal.solid) }]}>{streak} DAY STREAK</Text>
-          </View>
+        {allStreaks.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 6 }}>
+            <View style={{ flexDirection: "row", gap: 6, paddingRight: 4 }}>
+              {allStreaks.map(s => (
+                <View key={s.label} style={[styles.streakPill, { backgroundColor: s.color(theme) }]}>
+                  <Text style={{ fontSize: 11, marginRight: 4 }}>{s.icon}</Text>
+                  <Text style={[styles.streakPillText, { color: onSolid(s.color(theme)) }]}>
+                    {s.count}d {s.label.toUpperCase()}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
         ) : null}
       </View>
 
