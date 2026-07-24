@@ -251,6 +251,8 @@ type DayRow = {
   avg_mg_dl: number | null;
   caffeine_mg: number;
   standard_drinks: number;
+  steps: number;
+  exercise_minutes: number;
 };
 
 interface CtxObs { key: string; label: string; observation: string; sample_days: number }
@@ -321,6 +323,8 @@ export function TrendsScreen() {
               avg_mg_dl: glucoseByDate.get(r.date?.slice(0, 10)) ?? null,
               caffeine_mg: caffeineByDate.get(r.date?.slice(0, 10)) ?? 0,
               standard_drinks: drinksByDate.get(r.date?.slice(0, 10)) ?? 0,
+              steps: Number(r.steps ?? 0),
+              exercise_minutes: Number(r.exercise_minutes ?? 0),
             }))
           : []
       );
@@ -351,14 +355,23 @@ export function TrendsScreen() {
   const cgRows = rows.filter(r => r.caffeine_mg > 0 && r.avg_mg_dl !== null);
   const asRows = rows.filter(r => r.standard_drinks > 0 && r.sleep_hours > 0);
   const cmRows = rows.filter(r => r.caffeine_mg > 0 && r.avg_mood !== null);
+  // Activity correlations — only include days that actually have data
+  const stmRows = rows.filter(r => r.steps > 0 && r.avg_mood !== null);
+  const exmRows = rows.filter(r => r.exercise_minutes > 0 && r.avg_mood !== null);
+  const stsRows = rows.filter(r => r.steps > 0 && r.sleep_hours > 0);
+  const exsRows = rows.filter(r => r.exercise_minutes > 0 && r.sleep_hours > 0);
 
-  const smXs = smRows.map(r => r.sleep_hours),       smYs = smRows.map(r => r.avg_mood!);
-  const spXs = spRows.map(r => r.total_spent),        spYs = spRows.map(r => r.avg_mood!);
-  const gmXs = gmRows.map(r => r.avg_mg_dl!),         gmYs = gmRows.map(r => r.avg_mood!);
-  const sgXs = sgRows.map(r => r.sleep_hours),        sgYs = sgRows.map(r => r.avg_mg_dl!);
-  const cgXs = cgRows.map(r => r.caffeine_mg),        cgYs = cgRows.map(r => r.avg_mg_dl!);
-  const asXs = asRows.map(r => r.standard_drinks),    asYs = asRows.map(r => r.sleep_hours);
-  const cmXs = cmRows.map(r => r.caffeine_mg),        cmYs = cmRows.map(r => r.avg_mood!);
+  const smXs = smRows.map(r => r.sleep_hours),         smYs = smRows.map(r => r.avg_mood!);
+  const spXs = spRows.map(r => r.total_spent),          spYs = spRows.map(r => r.avg_mood!);
+  const gmXs = gmRows.map(r => r.avg_mg_dl!),           gmYs = gmRows.map(r => r.avg_mood!);
+  const sgXs = sgRows.map(r => r.sleep_hours),          sgYs = sgRows.map(r => r.avg_mg_dl!);
+  const cgXs = cgRows.map(r => r.caffeine_mg),          cgYs = cgRows.map(r => r.avg_mg_dl!);
+  const asXs = asRows.map(r => r.standard_drinks),      asYs = asRows.map(r => r.sleep_hours);
+  const cmXs = cmRows.map(r => r.caffeine_mg),          cmYs = cmRows.map(r => r.avg_mood!);
+  const stmXs = stmRows.map(r => r.steps),              stmYs = stmRows.map(r => r.avg_mood!);
+  const exmXs = exmRows.map(r => r.exercise_minutes),   exmYs = exmRows.map(r => r.avg_mood!);
+  const stsXs = stsRows.map(r => r.steps),              stsYs = stsRows.map(r => r.sleep_hours);
+  const exsXs = exsRows.map(r => r.exercise_minutes),   exsYs = exsRows.map(r => r.sleep_hours);
 
   return (
     <ScrollView
@@ -493,6 +506,62 @@ export function TrendsScreen() {
               dotColor={theme.coral.sub}
               lineColor={theme.coral.sub}
               insight={insightMood(cmXs, cmYs, "Higher-caffeine days", "lower-caffeine days")}
+              theme={theme}
+            />
+          )}
+
+          {stmRows.length >= 3 && (
+            <CorrCard
+              title="Steps ↔ Mood"
+              xLabel="Daily steps"
+              yLabel="Mood"
+              xs={stmXs}
+              ys={stmYs}
+              dotColor={theme.teal.sub}
+              lineColor={theme.teal.sub}
+              insight={insightMood(stmXs, stmYs, "Higher-step days", "lower-step days")}
+              theme={theme}
+            />
+          )}
+
+          {exmRows.length >= 3 && (
+            <CorrCard
+              title="Exercise ↔ Mood"
+              xLabel="Exercise (min)"
+              yLabel="Mood"
+              xs={exmXs}
+              ys={exmYs}
+              dotColor={theme.coral.sub}
+              lineColor={theme.coral.sub}
+              insight={insightMood(exmXs, exmYs, "Days you exercised", "rest days")}
+              theme={theme}
+            />
+          )}
+
+          {stsRows.length >= 3 && (
+            <CorrCard
+              title="Steps ↔ Sleep"
+              xLabel="Daily steps"
+              yLabel="Sleep hours"
+              xs={stsXs}
+              ys={stsYs}
+              dotColor={theme.amber.sub}
+              lineColor={theme.amber.sub}
+              insight={insightMetric(stsXs, stsYs, "higher-step days", "lower-step days", "Sleep")}
+              theme={theme}
+            />
+          )}
+
+          {exsRows.length >= 3 && (
+            <CorrCard
+              title="Exercise ↔ Sleep"
+              xLabel="Exercise (min)"
+              yLabel="Sleep hours"
+              xs={exsXs}
+              ys={exsYs}
+              dotColor={theme.purple.sub}
+              lineColor={theme.purple.sub}
+              insight={insightMetric(exsXs, exsYs, "days you exercised", "rest days", "Sleep")}
               theme={theme}
             />
           )}
