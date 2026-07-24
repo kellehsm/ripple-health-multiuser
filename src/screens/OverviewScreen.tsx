@@ -34,6 +34,7 @@ import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
 import { DashboardEditorModal } from "../components/DashboardEditorModal";
 import { FeatureTour, type TourStep } from "../components/FeatureTour";
 import { useFocusEffect } from "@react-navigation/native";
+import { maybeFireWeeklyDigest } from "../lib/smartNotifications";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -80,6 +81,9 @@ type WeeklyDigest = {
   heart_rate: { has_data: boolean; resting?: number; peak?: number };
   steps: { this_week: number; last_week: number };
   hobbies: { this_week_sessions: number; last_week_sessions: number };
+  exercise?: { sessions_this_week: number; total_minutes_this_week: number };
+  books?: { finished_this_month: number };
+  mood?: { avg_this_week: number | null };
 };
 
 type GlucoseStatus = { hasData: boolean; mg_dl: number | null; arrow: string | null };
@@ -437,6 +441,7 @@ export function OverviewScreen() {
       setWeeklyData(Array.isArray(weekly) ? weekly : []);
       setPatternEvents(Array.isArray(pattern) ? pattern : []);
       setDigest(dig ?? null);
+      if (dig) maybeFireWeeklyDigest(dig).catch(() => {});
       const mealStreak     = Number(streakData?.meal_streak     ?? 0);
       const moodStreak     = Number(streakData?.mood_streak     ?? 0);
       const stepsStreak    = Number(streakData?.steps_streak    ?? 0);
@@ -986,6 +991,28 @@ export function OverviewScreen() {
                       <Text style={[styles.summaryBlockValue, { color: onSolid(theme.coral.solid) }]}>{digest.meal_flags.length === 0 ? "All clear" : digest.meal_flags.length + " flagged"}</Text>
                     </View>
                   </View>
+                  {(digest.exercise || digest.books || digest.mood) ? (
+                    <View style={styles.summaryBlocksRow}>
+                      {digest.exercise && digest.exercise.sessions_this_week > 0 ? (
+                        <View style={[styles.summaryBlock, { backgroundColor: theme.coral.solid }]}>
+                          <Text style={[styles.summaryBlockLabel, { color: onSolid(theme.coral.solid) }]}>WORKOUTS</Text>
+                          <Text style={[styles.summaryBlockValue, { color: onSolid(theme.coral.solid) }]}>{digest.exercise.sessions_this_week} sess.</Text>
+                        </View>
+                      ) : null}
+                      {digest.books && digest.books.finished_this_month > 0 ? (
+                        <View style={[styles.summaryBlock, { backgroundColor: theme.amber.solid }]}>
+                          <Text style={[styles.summaryBlockLabel, { color: onSolid(theme.amber.solid) }]}>BOOKS</Text>
+                          <Text style={[styles.summaryBlockValue, { color: onSolid(theme.amber.solid) }]}>{digest.books.finished_this_month} done</Text>
+                        </View>
+                      ) : null}
+                      {digest.mood?.avg_this_week != null ? (
+                        <View style={[styles.summaryBlock, { backgroundColor: theme.violet?.solid ?? theme.purple.solid }]}>
+                          <Text style={[styles.summaryBlockLabel, { color: onSolid(theme.violet?.solid ?? theme.purple.solid) }]}>MOOD AVG</Text>
+                          <Text style={[styles.summaryBlockValue, { color: onSolid(theme.violet?.solid ?? theme.purple.solid) }]}>{digest.mood.avg_this_week.toFixed(1)} / 5</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  ) : null}
                   {digest.heart_rate.has_data ? (
                     <>
                       <Text style={[styles.digestLabel, { color: theme.textSoft }]}>Heart rate</Text>
