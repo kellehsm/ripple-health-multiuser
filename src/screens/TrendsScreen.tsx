@@ -6,7 +6,7 @@ import {
   Text,
   Pressable,
   StyleSheet,
-  Dimensions
+  Dimensions,
 } from "react-native";
 import { LoadingIndicator } from "../components/LoadingIndicator";
 import Svg, { Circle, Line, Rect, Text as SvgText } from "react-native-svg";
@@ -263,6 +263,28 @@ const CTX_KEYS: Array<{ key: string; label: string }> = [
   { key: "social_battery", label: "Social Battery" },
 ];
 
+type MetricKey = keyof Omit<DayRow, "date" | "avg_mood"> | "avg_mood";
+
+const METRIC_OPTIONS: Array<{ key: MetricKey; label: string; unit: string; color: (t: any) => string }> = [
+  { key: "avg_mood",         label: "Mood",     unit: "1–5",     color: t => t.violet?.sub  ?? t.purple.sub },
+  { key: "sleep_hours",      label: "Sleep",    unit: "hrs",     color: t => t.amber.sub },
+  { key: "steps",            label: "Steps",    unit: "steps",   color: t => t.teal.sub },
+  { key: "exercise_minutes", label: "Exercise", unit: "min",     color: t => t.coral.sub },
+  { key: "total_spent",      label: "Spending", unit: "$",       color: t => t.purple.sub },
+  { key: "avg_mg_dl",        label: "Glucose",  unit: "mg/dL",  color: t => t.berry?.sub   ?? t.coral.sub },
+  { key: "caffeine_mg",      label: "Caffeine", unit: "mg",      color: t => t.coral.sub },
+  { key: "standard_drinks",  label: "Alcohol",  unit: "drinks",  color: t => t.amber.sub },
+];
+
+function extractMetric(rows: DayRow[], key: MetricKey): (number | null)[] {
+  return rows.map(r => {
+    const v = r[key as keyof DayRow];
+    if (v === null || v === undefined) return null;
+    const n = Number(v);
+    return isNaN(n) ? null : n;
+  });
+}
+
 export function TrendsScreen() {
   const { theme } = useTheme();
   const ink = theme.ink;
@@ -273,6 +295,8 @@ export function TrendsScreen() {
   const [rows, setRows] = useState<DayRow[]>([]);
   const [showTooltip, setShowTooltip] = useState(false);
   const [ctxObs, setCtxObs] = useState<CtxObs[]>([]);
+  const [customX, setCustomX] = useState<MetricKey>("steps");
+  const [customY, setCustomY] = useState<MetricKey>("avg_mood");
 
   useFocusEffect(
     useCallback(() => {
@@ -585,6 +609,92 @@ export function TrendsScreen() {
               ))}
             </ShadowCard>
           )}
+
+          {(() => {
+            const xOpt = METRIC_OPTIONS.find(m => m.key === customX)!;
+            const yOpt = METRIC_OPTIONS.find(m => m.key === customY)!;
+            const dotColor = xOpt.color(theme);
+            const rawX = extractMetric(rows, customX);
+            const rawY = extractMetric(rows, customY);
+            const pairs: [number, number][] = [];
+            for (let i = 0; i < rows.length; i++) {
+              const x = rawX[i], y = rawY[i];
+              if (x !== null && x !== 0 && y !== null && y !== 0) pairs.push([x, y]);
+            }
+            const cxs = pairs.map(p => p[0]);
+            const cys = pairs.map(p => p[1]);
+            const sameMetric = customX === customY;
+            return (
+              <ShadowCard size="card" accent={dotColor}>
+                <Text style={[s.cardTitle, { color: theme.textStrong, marginBottom: 4 }]}>Compare any two</Text>
+                <Text style={[s.cardSubtitle, { color: theme.textSoft, marginBottom: 10 }]}>
+                  Pick an X and Y axis to build your own scatter plot.
+                </Text>
+
+                {(["X", "Y"] as const).map(axis => {
+                  const selected = axis === "X" ? customX : customY;
+                  const setSelected = axis === "X" ? setCustomX : setCustomY;
+                  return (
+                    <View key={axis} style={{ marginBottom: 10 }}>
+                      <Text style={{ color: theme.textSoft, fontSize: 11, fontWeight: "700", letterSpacing: 0.5, marginBottom: 5 }}>
+                        {axis} AXIS
+                      </Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -4 }}>
+                        <View style={{ flexDirection: "row", gap: 6, paddingHorizontal: 4 }}>
+                          {METRIC_OPTIONS.map(opt => {
+                            const active = selected === opt.key;
+                            return (
+                              <Pressable
+                                key={opt.key}
+                                onPress={() => setSelected(opt.key)}
+                                style={{
+                                  paddingHorizontal: 12,
+                                  paddingVertical: 6,
+                                  borderRadius: 20,
+                                  borderWidth: 2,
+                                  borderColor: active ? opt.color(theme) : theme.cardBorder,
+                                  backgroundColor: active ? opt.color(theme) + "22" : theme.page,
+                                }}
+                              >
+                                <Text style={{
+                                  color: active ? opt.color(theme) : theme.textSoft,
+                                  fontSize: 12,
+                                  fontWeight: active ? "800" : "400",
+                                }}>
+                                  {opt.label}
+                                </Text>
+                              </Pressable>
+                            );
+                          })}
+                        </View>
+                      </ScrollView>
+                    </View>
+                  );
+                })}
+
+                {sameMetric ? (
+                  <Text style={[s.noData, { color: theme.textSoft, marginTop: 4 }]}>
+                    Pick two different metrics to compare.
+                  </Text>
+                ) : pairs.length < 5 ? (
+                  <Text style={[s.noData, { color: theme.textSoft, marginTop: 4 }]}>
+                    Not enough overlapping data yet — keep logging both to reveal patterns.
+                  </Text>
+                ) : (
+                  <>
+                    <View style={s.axisRow}>
+                      <Text style={[s.axisLbl, { color: theme.textSoft }]}>{xOpt.label} ({xOpt.unit}) →</Text>
+                      <Text style={[s.axisLbl, { color: theme.textSoft }]}>↑ {yOpt.label} ({yOpt.unit})</Text>
+                    </View>
+                    <ScatterPlot xs={cxs} ys={cys} dotColor={dotColor} lineColor={dotColor} />
+                    <Text style={[s.insight, { color: theme.textSoft, marginTop: 6 }]}>
+                      {insightMetric(cxs, cys, `higher ${xOpt.label.toLowerCase()} days`, `lower ${xOpt.label.toLowerCase()} days`, yOpt.label)}
+                    </Text>
+                  </>
+                )}
+              </ShadowCard>
+            );
+          })()}
 
           <View style={{ alignItems: "center" }}>
             <Text style={[s.footnote, { color: theme.textSoft }]}>
