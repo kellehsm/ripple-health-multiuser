@@ -39,6 +39,13 @@ import { MedicationImportScreen } from "../screens/MedicationImportScreen";
 import { MedicationHistoryScreen } from "../screens/MedicationHistoryScreen";
 import { ExperimentScreen } from "../screens/ExperimentScreen";
 import { OnboardingFlow } from "../screens/OnboardingFlow";
+import { FriendsScreen } from "../screens/FriendsScreen";
+import { FriendsOnboardingScreen } from "../screens/FriendsOnboardingScreen";
+import { LeaderboardScreen } from "../screens/LeaderboardScreen";
+import { ChallengesScreen } from "../screens/ChallengesScreen";
+import { ChallengeDetailScreen } from "../screens/ChallengeDetailScreen";
+import { NewChallengeScreen } from "../screens/NewChallengeScreen";
+import { SocialSettingsScreen } from "../screens/settings/SocialSettingsScreen";
 import { BottomNav } from "../components/BottomNav";
 import { useTabPreferences } from "../hooks/useTabPreferences";
 import { useTheme } from "../theme/ThemeContext";
@@ -112,7 +119,7 @@ function TabNavigator() {
           >
             {([
               { emoji: "💡", label: "INSIGHT", screen: "InsightsTrends", params: { tab: "insights" } },
-              { emoji: "📈", label: "TRENDS", screen: "InsightsTrends", params: { tab: "trends" } },
+              { emoji: "👥", label: "FRIENDS", screen: "Friends", params: undefined },
               { emoji: "🔍", label: "SEARCH", screen: "GlobalSearch", params: undefined },
               { emoji: "⚙️", label: "SETTINGS", screen: "Settings", params: undefined },
             ] as const).map((btn, i) => (
@@ -189,6 +196,13 @@ export function RootTabs({ onNavigationStateChange }: RootTabsProps) {
         <Stack.Screen name="MedicationImport" component={MedicationImportScreen} options={{ title: "Import Medications" }} />
         <Stack.Screen name="MedicationHistory" component={MedicationHistoryScreen} options={({ route }: any) => ({ title: route.params?.medicationName ?? "Medication History" })} />
         <Stack.Screen name="Experiments" component={ExperimentScreen} options={{ title: "Experiments" }} />
+        <Stack.Screen name="Friends" component={FriendsScreen} options={{ title: "Friends" }} />
+        <Stack.Screen name="FriendsOnboarding" component={FriendsOnboardingScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Leaderboard" component={LeaderboardScreen} options={({ route }: any) => ({ title: (route.params?.category ?? "Leaderboard").charAt(0).toUpperCase() + (route.params?.category ?? "leaderboard").slice(1) + " Leaderboard" })} />
+        <Stack.Screen name="Challenges" component={ChallengesScreen} options={{ title: "Challenges" }} />
+        <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} options={{ title: "Challenge" }} />
+        <Stack.Screen name="NewChallenge" component={NewChallengeScreen} options={{ title: "New Challenge" }} />
+        <Stack.Screen name="SettingsSocial" component={SocialSettingsScreen} options={{ title: "Friend Sharing" }} />
         <Stack.Screen name="SettingsCustomizeTabs" options={{ title: "Customize Tabs" }}>
           {({ navigation }) => (
             <TabPreferencesScreen
