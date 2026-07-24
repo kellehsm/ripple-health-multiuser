@@ -132,15 +132,16 @@ class RippleWidgetProvider : AppWidgetProvider() {
         val code = conn.responseCode
         if (code == 401 || code == 403) {
             conn.disconnect()
-            return "Auth err"
+            "Auth err"
+        } else {
+            val obj = JSONObject(conn.inputStream.bufferedReader().readText())
+            conn.disconnect()
+            if (obj.optBoolean("hasData", false)) {
+                val mg = obj.optInt("mg_dl", 0)
+                val arrow = obj.optString("arrow", "").trim()
+                if (arrow.isNotEmpty()) "$mg $arrow" else "$mg mg/dL"
+            } else "--"
         }
-        val obj = JSONObject(conn.inputStream.bufferedReader().readText())
-        conn.disconnect()
-        if (obj.optBoolean("hasData", false)) {
-            val mg = obj.optInt("mg_dl", 0)
-            val arrow = obj.optString("arrow", "").trim()
-            if (arrow.isNotEmpty()) "$mg $arrow" else "$mg mg/dL"
-        } else "--"
     } catch (e: Exception) {
         Log.w(TAG, "fetchGlucose failed", e)
         "Err"
