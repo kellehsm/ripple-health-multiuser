@@ -20,6 +20,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   { id: 'hobbies',  label: 'Hobbies',  emoji: '📖' },
   { id: 'finance',  label: 'Finance',  emoji: '💳' },
 ];
+// Friends is accessed from the top header bar, not the bottom tab bar.
 
 export const HOME_MODULE = {
   id: 'home' as const,
@@ -37,7 +38,7 @@ export interface TabPreferences {
   health: HealthSubPreferences;
 }
 
-/** Hard cap: 6 modules + Home = 7 icons total. All 6 defined modules fit. */
+/** Hard cap: 6 modules + Home = 7 icons total. */
 export const MAX_SELECTED_MODULES = 6;
 
 export const DEFAULT_TAB_PREFERENCES: TabPreferences = {

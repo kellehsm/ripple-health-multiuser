@@ -1,4 +1,5 @@
 import notifee, { AndroidImportance } from "@notifee/react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { api } from "../api/client";
 import { isMuted } from "./muteNotifications";
 
@@ -8,6 +9,7 @@ export const CH_MEALS        = "ripple-meal-reminders";
 export const CH_GLUCOSE      = "ripple-glucose";
 export const CH_EVENING      = "ripple-evening";
 export const CH_WATER        = "ripple-water";
+export const CH_WEEKLY       = "ripple-weekly";
 export const CH_STREAK       = "ripple-streak";
 export const CH_MOOD         = "ripple-mood";
 export const CH_BOOKS        = "ripple-books";
@@ -35,6 +37,7 @@ export async function initSmartChannels() {
     notifee.createChannel({ id: CH_EXERCISE,    name: "Workout Alerts",         importance: AndroidImportance.HIGH }),
     notifee.createChannel({ id: CH_MINDFULNESS, name: "Mindfulness Reminders",  importance: AndroidImportance.DEFAULT }),
     notifee.createChannel({ id: CH_SLEEP,       name: "Sleep Reminders",        importance: AndroidImportance.DEFAULT }),
+    notifee.createChannel({ id: CH_WEEKLY,      name: "Weekly Digest",          importance: AndroidImportance.DEFAULT }),
   ]);
 }
 
@@ -975,4 +978,41 @@ export async function checkStepGoal(settings: any, now: Date) {
       });
     }
   } catch (_) {}
+}
+
+// ─── Weekly digest notification ───────────────────────────────────────────────
+
+function isoWeek(d: Date): string {
+  const jan4 = new Date(d.getFullYear(), 0, 4);
+  const weekNum = Math.ceil(((d.getTime() - jan4.getTime()) / 86400000 + jan4.getDay() + 1) / 7);
+  return `${d.getFullYear()}-W${String(weekNum).padStart(2, "0")}`;
+}
+
+export async function maybeFireWeeklyDigest(digest: {
+  steps: { this_week: number };
+  exercise?: { sessions_this_week: number; total_minutes_this_week: number };
+  books?: { finished_this_month: number };
+  hobbies?: { this_week_sessions: number };
+}) {
+  const dow = new Date().getDay(); // 0=Sun, 1=Mon
+  if (dow !== 0 && dow !== 1) return;
+
+  const key = `weekly_digest_notif_${isoWeek(new Date())}`;
+  const already = await AsyncStorage.getItem(key);
+  if (already) return;
+  await AsyncStorage.setItem(key, "1");
+
+  const parts: string[] = [];
+  if (digest.steps.this_week > 0) parts.push(`${digest.steps.this_week.toLocaleString()} steps`);
+  if (digest.exercise?.sessions_this_week) parts.push(`${digest.exercise.sessions_this_week} workout${digest.exercise.sessions_this_week === 1 ? "" : "s"}`);
+  if (digest.hobbies?.this_week_sessions) parts.push(`${digest.hobbies.this_week_sessions} hobby session${digest.hobbies.this_week_sessions === 1 ? "" : "s"}`);
+  if (digest.books?.finished_this_month) parts.push(`${digest.books.finished_this_month} book${digest.books.finished_this_month === 1 ? "" : "s"} this month`);
+
+  if (parts.length === 0) return;
+
+  await notifee.displayNotification({
+    title: "Your week in review",
+    body: parts.join(" · "),
+    android: { channelId: CH_WEEKLY, smallIcon: "ic_notification", pressAction: { id: "default" } },
+  });
 }

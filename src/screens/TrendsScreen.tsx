@@ -6,7 +6,7 @@ import {
   Text,
   Pressable,
   StyleSheet,
-  Dimensions
+  Dimensions,
 } from "react-native";
 import { LoadingIndicator } from "../components/LoadingIndicator";
 import Svg, { Circle, Line, Rect, Text as SvgText } from "react-native-svg";
@@ -251,6 +251,8 @@ type DayRow = {
   avg_mg_dl: number | null;
   caffeine_mg: number;
   standard_drinks: number;
+  steps: number;
+  exercise_minutes: number;
 };
 
 interface CtxObs { key: string; label: string; observation: string; sample_days: number }
@@ -260,6 +262,28 @@ const CTX_KEYS: Array<{ key: string; label: string }> = [
   { key: "stress",         label: "Stress" },
   { key: "social_battery", label: "Social Battery" },
 ];
+
+type MetricKey = keyof Omit<DayRow, "date" | "avg_mood"> | "avg_mood";
+
+const METRIC_OPTIONS: Array<{ key: MetricKey; label: string; unit: string; color: (t: any) => string }> = [
+  { key: "avg_mood",         label: "Mood",     unit: "1–5",     color: t => t.violet?.sub  ?? t.purple.sub },
+  { key: "sleep_hours",      label: "Sleep",    unit: "hrs",     color: t => t.amber.sub },
+  { key: "steps",            label: "Steps",    unit: "steps",   color: t => t.teal.sub },
+  { key: "exercise_minutes", label: "Exercise", unit: "min",     color: t => t.coral.sub },
+  { key: "total_spent",      label: "Spending", unit: "$",       color: t => t.purple.sub },
+  { key: "avg_mg_dl",        label: "Glucose",  unit: "mg/dL",  color: t => t.berry?.sub   ?? t.coral.sub },
+  { key: "caffeine_mg",      label: "Caffeine", unit: "mg",      color: t => t.coral.sub },
+  { key: "standard_drinks",  label: "Alcohol",  unit: "drinks",  color: t => t.amber.sub },
+];
+
+function extractMetric(rows: DayRow[], key: MetricKey): (number | null)[] {
+  return rows.map(r => {
+    const v = r[key as keyof DayRow];
+    if (v === null || v === undefined) return null;
+    const n = Number(v);
+    return isNaN(n) ? null : n;
+  });
+}
 
 export function TrendsScreen() {
   const { theme } = useTheme();
@@ -271,6 +295,8 @@ export function TrendsScreen() {
   const [rows, setRows] = useState<DayRow[]>([]);
   const [showTooltip, setShowTooltip] = useState(false);
   const [ctxObs, setCtxObs] = useState<CtxObs[]>([]);
+  const [customX, setCustomX] = useState<MetricKey>("steps");
+  const [customY, setCustomY] = useState<MetricKey>("avg_mood");
 
   useFocusEffect(
     useCallback(() => {
@@ -321,6 +347,8 @@ export function TrendsScreen() {
               avg_mg_dl: glucoseByDate.get(r.date?.slice(0, 10)) ?? null,
               caffeine_mg: caffeineByDate.get(r.date?.slice(0, 10)) ?? 0,
               standard_drinks: drinksByDate.get(r.date?.slice(0, 10)) ?? 0,
+              steps: Number(r.steps ?? 0),
+              exercise_minutes: Number(r.exercise_minutes ?? 0),
             }))
           : []
       );
@@ -351,14 +379,23 @@ export function TrendsScreen() {
   const cgRows = rows.filter(r => r.caffeine_mg > 0 && r.avg_mg_dl !== null);
   const asRows = rows.filter(r => r.standard_drinks > 0 && r.sleep_hours > 0);
   const cmRows = rows.filter(r => r.caffeine_mg > 0 && r.avg_mood !== null);
+  // Activity correlations — only include days that actually have data
+  const stmRows = rows.filter(r => r.steps > 0 && r.avg_mood !== null);
+  const exmRows = rows.filter(r => r.exercise_minutes > 0 && r.avg_mood !== null);
+  const stsRows = rows.filter(r => r.steps > 0 && r.sleep_hours > 0);
+  const exsRows = rows.filter(r => r.exercise_minutes > 0 && r.sleep_hours > 0);
 
-  const smXs = smRows.map(r => r.sleep_hours),       smYs = smRows.map(r => r.avg_mood!);
-  const spXs = spRows.map(r => r.total_spent),        spYs = spRows.map(r => r.avg_mood!);
-  const gmXs = gmRows.map(r => r.avg_mg_dl!),         gmYs = gmRows.map(r => r.avg_mood!);
-  const sgXs = sgRows.map(r => r.sleep_hours),        sgYs = sgRows.map(r => r.avg_mg_dl!);
-  const cgXs = cgRows.map(r => r.caffeine_mg),        cgYs = cgRows.map(r => r.avg_mg_dl!);
-  const asXs = asRows.map(r => r.standard_drinks),    asYs = asRows.map(r => r.sleep_hours);
-  const cmXs = cmRows.map(r => r.caffeine_mg),        cmYs = cmRows.map(r => r.avg_mood!);
+  const smXs = smRows.map(r => r.sleep_hours),         smYs = smRows.map(r => r.avg_mood!);
+  const spXs = spRows.map(r => r.total_spent),          spYs = spRows.map(r => r.avg_mood!);
+  const gmXs = gmRows.map(r => r.avg_mg_dl!),           gmYs = gmRows.map(r => r.avg_mood!);
+  const sgXs = sgRows.map(r => r.sleep_hours),          sgYs = sgRows.map(r => r.avg_mg_dl!);
+  const cgXs = cgRows.map(r => r.caffeine_mg),          cgYs = cgRows.map(r => r.avg_mg_dl!);
+  const asXs = asRows.map(r => r.standard_drinks),      asYs = asRows.map(r => r.sleep_hours);
+  const cmXs = cmRows.map(r => r.caffeine_mg),          cmYs = cmRows.map(r => r.avg_mood!);
+  const stmXs = stmRows.map(r => r.steps),              stmYs = stmRows.map(r => r.avg_mood!);
+  const exmXs = exmRows.map(r => r.exercise_minutes),   exmYs = exmRows.map(r => r.avg_mood!);
+  const stsXs = stsRows.map(r => r.steps),              stsYs = stsRows.map(r => r.sleep_hours);
+  const exsXs = exsRows.map(r => r.exercise_minutes),   exsYs = exsRows.map(r => r.sleep_hours);
 
   return (
     <ScrollView
@@ -497,6 +534,62 @@ export function TrendsScreen() {
             />
           )}
 
+          {stmRows.length >= 3 && (
+            <CorrCard
+              title="Steps ↔ Mood"
+              xLabel="Daily steps"
+              yLabel="Mood"
+              xs={stmXs}
+              ys={stmYs}
+              dotColor={theme.teal.sub}
+              lineColor={theme.teal.sub}
+              insight={insightMood(stmXs, stmYs, "Higher-step days", "lower-step days")}
+              theme={theme}
+            />
+          )}
+
+          {exmRows.length >= 3 && (
+            <CorrCard
+              title="Exercise ↔ Mood"
+              xLabel="Exercise (min)"
+              yLabel="Mood"
+              xs={exmXs}
+              ys={exmYs}
+              dotColor={theme.coral.sub}
+              lineColor={theme.coral.sub}
+              insight={insightMood(exmXs, exmYs, "Days you exercised", "rest days")}
+              theme={theme}
+            />
+          )}
+
+          {stsRows.length >= 3 && (
+            <CorrCard
+              title="Steps ↔ Sleep"
+              xLabel="Daily steps"
+              yLabel="Sleep hours"
+              xs={stsXs}
+              ys={stsYs}
+              dotColor={theme.amber.sub}
+              lineColor={theme.amber.sub}
+              insight={insightMetric(stsXs, stsYs, "higher-step days", "lower-step days", "Sleep")}
+              theme={theme}
+            />
+          )}
+
+          {exsRows.length >= 3 && (
+            <CorrCard
+              title="Exercise ↔ Sleep"
+              xLabel="Exercise (min)"
+              yLabel="Sleep hours"
+              xs={exsXs}
+              ys={exsYs}
+              dotColor={theme.purple.sub}
+              lineColor={theme.purple.sub}
+              insight={insightMetric(exsXs, exsYs, "days you exercised", "rest days", "Sleep")}
+              theme={theme}
+            />
+          )}
+
           {ctxObs.length > 0 && (
             <ShadowCard size="card" accent={theme.amber.solid}>
               <Text style={[s.cardTitle, { color: theme.textStrong }]}>Context Patterns</Text>
@@ -516,6 +609,92 @@ export function TrendsScreen() {
               ))}
             </ShadowCard>
           )}
+
+          {(() => {
+            const xOpt = METRIC_OPTIONS.find(m => m.key === customX)!;
+            const yOpt = METRIC_OPTIONS.find(m => m.key === customY)!;
+            const dotColor = xOpt.color(theme);
+            const rawX = extractMetric(rows, customX);
+            const rawY = extractMetric(rows, customY);
+            const pairs: [number, number][] = [];
+            for (let i = 0; i < rows.length; i++) {
+              const x = rawX[i], y = rawY[i];
+              if (x !== null && x !== 0 && y !== null && y !== 0) pairs.push([x, y]);
+            }
+            const cxs = pairs.map(p => p[0]);
+            const cys = pairs.map(p => p[1]);
+            const sameMetric = customX === customY;
+            return (
+              <ShadowCard size="card" accent={dotColor}>
+                <Text style={[s.cardTitle, { color: theme.textStrong, marginBottom: 4 }]}>Compare any two</Text>
+                <Text style={[s.cardSubtitle, { color: theme.textSoft, marginBottom: 10 }]}>
+                  Pick an X and Y axis to build your own scatter plot.
+                </Text>
+
+                {(["X", "Y"] as const).map(axis => {
+                  const selected = axis === "X" ? customX : customY;
+                  const setSelected = axis === "X" ? setCustomX : setCustomY;
+                  return (
+                    <View key={axis} style={{ marginBottom: 10 }}>
+                      <Text style={{ color: theme.textSoft, fontSize: 11, fontWeight: "700", letterSpacing: 0.5, marginBottom: 5 }}>
+                        {axis} AXIS
+                      </Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -4 }}>
+                        <View style={{ flexDirection: "row", gap: 6, paddingHorizontal: 4 }}>
+                          {METRIC_OPTIONS.map(opt => {
+                            const active = selected === opt.key;
+                            return (
+                              <Pressable
+                                key={opt.key}
+                                onPress={() => setSelected(opt.key)}
+                                style={{
+                                  paddingHorizontal: 12,
+                                  paddingVertical: 6,
+                                  borderRadius: 20,
+                                  borderWidth: 2,
+                                  borderColor: active ? opt.color(theme) : theme.cardBorder,
+                                  backgroundColor: active ? opt.color(theme) + "22" : theme.page,
+                                }}
+                              >
+                                <Text style={{
+                                  color: active ? opt.color(theme) : theme.textSoft,
+                                  fontSize: 12,
+                                  fontWeight: active ? "800" : "400",
+                                }}>
+                                  {opt.label}
+                                </Text>
+                              </Pressable>
+                            );
+                          })}
+                        </View>
+                      </ScrollView>
+                    </View>
+                  );
+                })}
+
+                {sameMetric ? (
+                  <Text style={[s.noData, { color: theme.textSoft, marginTop: 4 }]}>
+                    Pick two different metrics to compare.
+                  </Text>
+                ) : pairs.length < 5 ? (
+                  <Text style={[s.noData, { color: theme.textSoft, marginTop: 4 }]}>
+                    Not enough overlapping data yet — keep logging both to reveal patterns.
+                  </Text>
+                ) : (
+                  <>
+                    <View style={s.axisRow}>
+                      <Text style={[s.axisLbl, { color: theme.textSoft }]}>{xOpt.label} ({xOpt.unit}) →</Text>
+                      <Text style={[s.axisLbl, { color: theme.textSoft }]}>↑ {yOpt.label} ({yOpt.unit})</Text>
+                    </View>
+                    <ScatterPlot xs={cxs} ys={cys} dotColor={dotColor} lineColor={dotColor} />
+                    <Text style={[s.insight, { color: theme.textSoft, marginTop: 6 }]}>
+                      {insightMetric(cxs, cys, `higher ${xOpt.label.toLowerCase()} days`, `lower ${xOpt.label.toLowerCase()} days`, yOpt.label)}
+                    </Text>
+                  </>
+                )}
+              </ShadowCard>
+            );
+          })()}
 
           <View style={{ alignItems: "center" }}>
             <Text style={[s.footnote, { color: theme.textSoft }]}>
