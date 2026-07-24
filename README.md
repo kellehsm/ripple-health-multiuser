@@ -13,7 +13,7 @@
 
 ## What it is
 
-Ripple Wellness is a **personal health OS** — not a step counter, not a calorie tracker, not a mood diary. All of those, integrated, with the data you actually want to see. It pulls together a Dexcom continuous glucose monitor, nutrition database lookups, mood journaling, Health Connect data (steps, sleep, heart rate), and spending tracking into a single Android app backed by a self-hosted PostgreSQL server.
+Ripple Wellness is a **personal wellness app** — not a step counter, not a calorie tracker, not a mood diary. All of those, integrated, with the data you actually want to see. It pulls together a Dexcom continuous glucose monitor, nutrition database lookups, mood journaling, Health Connect data (steps, sleep, heart rate), and spending tracking into a single Android app backed by a self-hosted PostgreSQL server.
 
 **Why self-hosted:** your glucose readings, meal logs, and mood history are sensitive. They don't belong in a startup's cloud. Everything runs on a VPS you control.
 
