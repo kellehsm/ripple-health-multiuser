@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useRef } from "react";
+import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import {
   ScrollView, View, Text, TextInput, Pressable, StyleSheet,
   RefreshControl, Alert, Modal, KeyboardAvoidingView, Platform,
@@ -20,6 +20,9 @@ import { TooltipBubble } from "../components/TooltipBubble";
 import { hasSeenTooltip, markTooltipSeen } from "../utils/tooltipSeen";
 import { SectionEditorModal, SectionDef } from "../components/SectionEditorModal";
 import { FeatureTour, TourStep } from "../components/FeatureTour";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import notifee from "@notifee/react-native";
+import { CH_SPENDING } from "../lib/smartNotifications";
 
 const FINANCE_SECTIONS: SectionDef[] = [
   { id: 'totals',       label: 'Total spent',              description: 'Spending total card with add button' },
@@ -271,6 +274,30 @@ export function FinanceScreen() {
     const budget = dailyBudget * daysInMonth;
     return { monthTotal, projected, budget, daysInMonth, dayOfMonth };
   }, [entries, dailyBudget]);
+
+  useEffect(() => {
+    if (monthForecast.dayOfMonth < 3 || monthForecast.budget <= 0) return;
+    const pct = Math.round((monthForecast.projected / monthForecast.budget) * 100);
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}_${now.getMonth() + 1}`;
+
+    async function checkBudgetAlert() {
+      const tier = pct >= 100 ? 100 : pct >= 80 ? 80 : null;
+      if (tier === null) return;
+      const key = `budget_alert_${monthKey}_${tier}`;
+      const already = await AsyncStorage.getItem(key);
+      if (already) return;
+      await AsyncStorage.setItem(key, "1");
+      await notifee.displayNotification({
+        title: tier >= 100 ? "You've hit your monthly budget" : "Budget check",
+        body: tier >= 100
+          ? `You've spent ${formatAmount(monthForecast.monthTotal)} — your full ${formatAmount(monthForecast.budget)} budget for the month.`
+          : `You've used ${pct}% of your monthly budget (${formatAmount(monthForecast.projected)} projected of ${formatAmount(monthForecast.budget)}).`,
+        android: { channelId: CH_SPENDING, smallIcon: "ic_notification", pressAction: { id: "default" } },
+      });
+    }
+    checkBudgetAlert().catch(() => {});
+  }, [monthForecast]);
 
   function resetAdd() {
     setAddAmount("");
