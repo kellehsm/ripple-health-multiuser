@@ -239,7 +239,7 @@ Convention for async errors: screens use `try/catch` + local state for user-visi
 
 Builds run **locally on the user's machine**, not on EAS servers — but Claude may run them **when the user asks**. `eas.json` still exists (profiles: development/preview/production, autoIncrement on preview+production); since builds are local, `app.json android.versionCode` is authoritative.
 
-Current: `app.json version: "1.5.0"`, `versionCode: 29`. Bundle IDs: `com.kellehs.wellness` (iOS + Android).
+Current: `app.json version: "1.5.1"`, `versionCode: 37` (built 2026-08-30 as `build-1788132507519.apk`). Bundle IDs: `com.kellehs.wellness` (iOS + Android).
 
 Note: every *attempted* local build increments `versionCode`, including ones that fail. A run that dies in setup still burns a number, so gaps in the sequence are expected and not a sign of a lost build.
 
@@ -314,17 +314,9 @@ adb -s <phone> install -r build-<ts>.apk
 
 ### Pending native changes (batched for next local build)
 
-Both phone (SM-A326U) and watch (SM-L330) are on vc 30. The items below landed after that build and still need a native rebuild to reach devices:
+Both phone (SM-A326U) and watch (SM-L330) are on **vc 37 / 1.5.1** (built and installed 2026-08-30), which carries every native change in the tree — the previous backlog (watch breathing redesign, widget sleep-path fix, the three extra Health Connect permissions, expo-image-picker, watch swipeable insights, `ripple-widget-sync`, round-screen padding, the 2026-08 watch/widget polish wave and the 2026-08-24 widget review wave) all shipped.
 
-- **Watch breathing activity** — redesigned layout + BoxAnimView + ripple animations (`RippleWearBreathingActivity.kt`, `RippleWearBreatheTileService.kt`, `RippleWearLogTileService.kt`, `RippleWearMainActivity.kt`).
-- **Widget sleep path fix** — `RippleWidgetProvider.kt` corrected to call `/api/health-connect/sleep/stats` (was 404ing on wrong path).
-- **New Android Health Connect permissions** in `app.json`: `READ_EXERCISE`, `READ_WEIGHT`, `READ_OXYGEN_SATURATION` (enables `sync_exercise` / `sync_weight` / `sync_spo2` toggles in Health Connect settings).
-- **expo-image-picker** (new native module) — gallery photo selection for the meal photo scanner (`PhotoScannerModal`, "Pick from photos" in the add-food sheet).
-- **Watch swipeable insights** — multi-insight ViewFlipper on the wear main activity (`RippleWidgetProvider.kt`, `WearDataBridge.kt.template`, `WearDataListenerService.kt`, `WearCache.kt`, `RippleWearMainActivity.kt`).
-- **ripple-widget-sync local Expo module** — app-triggered widget/watch refresh (`WIDGET_WEAR_SYNC` action in `RippleWidgetProvider.kt`); fixes watch never getting steps/sleep without a pinned widget and stale water counts after in-app logs.
-- **Round-screen padding fix** — `RippleWearMainActivity.kt` pads 48/52dp top/bottom on round faces so the title clears the bezel.
-- **Watch/widget polish wave (2026-08)** — urgent-glucose double-buzz haptic with 15-min debounce (`WearDataListenerService.kt`), "Updated X" timestamp + mood stat row + water progress arc on the watch home screen (`RippleWearMainActivity.kt`), mood pushed through the data bridge (`WearDataBridge.kt.template`, `WearCache.kt`), "phone not reachable" state instead of silent optimistic bumps in `RippleWearLogActivity.kt`, breathing screen dims to 1% brightness after 60 s (touch restores; `RippleWearBreathingActivity.kt`), widget mood-trend dot strip (`RippleWidgetProvider.kt`, `ripple_widget.xml`).
-- **Widget review wave (2026-08-24)** — robustness: 30-min backup refresh alarm (`onEnabled`/`onDisabled`), `runAsync` watchdog releases `goAsync()` within 9 s (ANR guard), per-widget-id PendingIntent request codes, single `/mindfulness/stats` fetch per refresh, `HttpsURLConnection.disconnect()` in `finally`, score-card rotation moved from onUpdate drift to tap-to-advance (`ACTION_NEXT_STAT`); `withAndroidWidget.js` now rewrites `ACTION_WEAR_SYNC`/`ACTION_NEXT_STAT` for non-default package names and `ripple-widget-sync` builds its action/class from `context.packageName`. Features: exercise minutes on the steps chip sub-label, meal kcal in the meal chip, 🔥 mindfulness-streak header badge, ⚠ urgent-glucose label, 🧘 breathe deeplink button, toast feedback on widget water/mood logs. Polish: status text 11sp, tokenized compact-widget colors (dark mode fix), status-color hexes aligned to app tokens, emoji dropped from chip labels, contentDescriptions on all tap targets, insight flipper 12 s, water chips deeplink to `ripple://water`. New deeplink actions in `App.tsx`: `water`, `exercise`, `mindfulness`.
+**Nothing is currently pending.** Add native-touching work here as it lands — new packages with native modules, permissions, icon assets, plugin config, Kotlin in `plugins/` or `modules/` — so the next build has a checklist.
 
 ### Dev client vs Expo Go
 

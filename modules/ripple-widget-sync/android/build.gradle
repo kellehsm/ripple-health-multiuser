@@ -6,4 +6,12 @@ version = '1.0.0'
 
 android {
   namespace "expo.modules.ripplewidgetsync"
+
+  // expo-autolinking reads android.defaultConfig.versionName when configuring
+  // this project; without it the whole Gradle configuration phase fails with
+  // "'android.defaultConfig.versionName' is not defined".
+  defaultConfig {
+    versionCode 1
+    versionName "1.0.0"
+  }
 }
