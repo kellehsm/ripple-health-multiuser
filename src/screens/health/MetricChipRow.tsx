@@ -18,20 +18,26 @@ import { AnimatedProgressRing } from "../../components/AnimatedProgressRing";
 import { toast } from "../../lib/toast";
 import { CHIP_GAP, PopText, StepsRing, MiniDroplet, type GlucoseStatus, type HRReading } from "./healthScreenShared";
 
+// Decorative panel to the left of the Mindfulness tile. CAT_SIZE drives both
+// the illustration and the non-cat placeholder so the tile keeps the same
+// width across themes.
+const CAT_SIZE  = 92;
+const PANEL_W   = CAT_SIZE + 4;
+
 function MindfulnessSidePanel({ theme }: { theme: Theme }) {
   const isCatTheme = theme.id === "cozy-cat";
   const catImage = require("../../../assets/themes/cat/greeting_morning.png");
 
   return (
-    <View style={{ width: 72, alignItems: "center", justifyContent: "center" }}>
+    <View style={{ width: PANEL_W, alignItems: "center", justifyContent: "center" }}>
       {isCatTheme ? (
         <Image
           source={catImage}
-          style={{ width: 68, height: 68 }}
+          style={{ width: CAT_SIZE, height: CAT_SIZE }}
           resizeMode="contain"
         />
       ) : (
-        <View style={{ width: 68, height: 68, borderRadius: 34, backgroundColor: theme.purple.tint, opacity: 0.5 }} />
+        <View style={{ width: CAT_SIZE, height: CAT_SIZE, borderRadius: CAT_SIZE / 2, backgroundColor: theme.purple.tint, opacity: 0.5 }} />
       )}
     </View>
   );

@@ -121,6 +121,8 @@ Greeting updates: `greeting.evening` → 🌆; `greeting.night` added → 🌙.
 
 **Image asset `scale`:** `ImageAsset`/`UriAsset` accept an optional `scale` multiplier applied to the slot's requested size, for illustration icons that read too small at emoji-equivalent sizes. Cozy Cat uses 1.35 for content icons and 2.6 for tab-bar slots (`tab.home`, `tab.meals`, `tab.exercise`, `tab.wellness`, `tab.hobbies`). The greeting cat renders to the **right** of the greeting text at 128px in `HeaderCard` when an image override exists for the slot.
 
+**Mindfulness side cat:** the decorative cat left of the Mindfulness tile on the Wellness screen is *not* an icon slot — it is a hardcoded `Image` in `MindfulnessSidePanel` (`src/screens/health/MetricChipRow.tsx`), sized by the local `CAT_SIZE` constant (92px). The same constant sizes the tinted-circle placeholder shown on non-cat themes, so the tile keeps its width across themes; change `CAT_SIZE` to resize both.
+
 **`EmptyState` component** (`src/components/EmptyState.tsx`) accepts a `slot` prop that resolves the icon through `iconRegistry`, taking precedence over a raw `icon`/`emoji` prop.
 
 ### Health Connect (`src/lib/healthConnect.ts`)
